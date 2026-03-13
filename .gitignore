@@ -1,0 +1,26 @@
+# Build output
+bin/
+obj/
+out/
+
+# VS / Rider
+.vs/
+.idea/
+*.user
+*.suo
+
+# EF Core Migrations bundle
+efbundle
+
+# Secrets
+appsettings.*.json
+!appsettings.json
+!appsettings.Development.json
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
