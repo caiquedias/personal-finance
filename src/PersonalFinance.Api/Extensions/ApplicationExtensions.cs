@@ -44,6 +44,8 @@ public static class ApplicationExtensions
         services.AddScoped<GetPeriodByIdUseCase>();
         services.AddScoped<CreatePeriodUseCase>();
         services.AddScoped<GetPeriodSummaryUseCase>();
+        services.AddScoped<TogglePeriodActiveUseCase>();
+        services.AddScoped<DeletePeriodUseCase>();
 
         // ── Financial — Expenses ──────────────────────────────────────────────
         services.AddScoped<GetExpensesByPeriodUseCase>();

@@ -4,7 +4,7 @@ using PersonalFinance.Application.DTOs.Admin;
 using PersonalFinance.Application.UseCases.Admin;
 using PersonalFinance.Application.UseCases.Config;
 
-namespace PersonalFinance.Api.Controllers.V1;
+namespace PersonalFinance.Api.Controllers.V1.Config;
 
 // ══════════════════════════════════════════════════════════════════════════════
 // CONFIG CONTROLLER — lookup tables gerenciáveis

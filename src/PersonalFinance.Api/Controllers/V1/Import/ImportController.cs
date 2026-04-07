@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using PersonalFinance.Application.DTOs.Import;
 using PersonalFinance.Application.UseCases.Import;
 
-namespace PersonalFinance.Api.Controllers.V1;
+namespace PersonalFinance.Api.Controllers.V1.Import;
 
 /// <summary>
 /// Endpoint de importação do histórico financeiro legado (planilha Excel).

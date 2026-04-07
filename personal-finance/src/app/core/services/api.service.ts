@@ -52,6 +52,14 @@ export class ApiService {
     return this.http.post<PeriodResponse>(`${this.base}/periods`, data);
   }
 
+  togglePeriodActive(id: string): Observable<void> {
+    return this.http.patch<void>(`${this.base}/periods/${id}/toggle-active`, {});
+  }
+
+  deletePeriod(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.base}/periods/${id}`);
+  }
+
   getPeriodSummary(id: string): Observable<PeriodSummary> {
     return this.http.get<PeriodSummary>(`${this.base}/periods/${id}/summary`);
   }
