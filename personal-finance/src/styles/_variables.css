@@ -1,0 +1,117 @@
+/* ── Light theme (padrão) ──────────────────────────────────────────────────── */
+:root {
+  /* Backgrounds */
+  --bg:          #f5f0e8;
+  --bg2:         #ede8de;
+  --bg3:         #e4ddd1;
+  --bg4:         #d9d1c3;
+  --cream:       #faf7f2;
+
+  /* Texto */
+  --ink:         #3a2e22;
+  --ink2:        #5c4e3c;
+  --ink3:        #8a7a68;
+  --ink4:        #b0a090;
+
+  /* Bordas */
+  --border:      #c8bfaf;
+  --border2:     #b8ad9a;
+
+  /* Cores de acento */
+  --sage:        #6b8f71;
+  --sage2:       #527a58;
+  --terra:       #b5674a;
+  --terra2:      #9a5339;
+  --sand:        #c4a882;
+  --sand2:       #a88d68;
+  --rust:        #c0603a;
+  --rust2:       #a34e2c;
+  --olive:       #7a8c4a;
+  --olive2:      #667840;
+
+  /* Semânticas */
+  --color-success:        var(--sage);
+  --color-success-bg:     #eaf2eb;
+  --color-warning:        #c49a3a;
+  --color-warning-bg:     #fef8ec;
+  --color-danger:         var(--rust);
+  --color-danger-bg:      #fdf0ec;
+  --color-info:           #4a7fa5;
+  --color-info-bg:        #edf4fb;
+
+  /* Superfícies */
+  --surface:              var(--cream);
+  --surface-raised:       #fff;
+  --surface-overlay:      rgba(58, 46, 34, 0.04);
+
+  /* Sombras */
+  --shadow-card:          0 1px 3px rgba(58, 46, 34, 0.08);
+  --shadow-card-hover:    0 4px 12px rgba(58, 46, 34, 0.12);
+  --shadow-modal:         0 8px 32px rgba(58, 46, 34, 0.16);
+
+  /* Sidebar */
+  --sidebar-bg:           var(--bg3);
+  --sidebar-width:        240px;
+  --sidebar-border:       var(--border);
+  --sidebar-item-hover:   var(--bg4);
+  --sidebar-item-active-bg: rgba(107, 143, 113, 0.12);
+  --sidebar-item-active:  var(--sage2);
+
+  /* Raios */
+  --radius-sm:  4px;
+  --radius:     8px;
+  --radius-lg:  12px;
+  --radius-xl:  16px;
+
+  /* Transições */
+  --transition: 150ms ease;
+}
+
+/* ── Dark theme ────────────────────────────────────────────────────────────── */
+.dark {
+  --bg:          #1e1a14;
+  --bg2:         #26211a;
+  --bg3:         #2f2920;
+  --bg4:         #3a3026;
+  --cream:       #1a1610;
+
+  --ink:         #e8e0d4;
+  --ink2:        #c8bfaf;
+  --ink3:        #a89888;
+  --ink4:        #7a6a58;
+
+  --border:      #4a3f32;
+  --border2:     #5c4e3c;
+
+  --sage:        #7aaa80;
+  --sage2:       #8fba95;
+  --terra:       #c87860;
+  --terra2:      #b56850;
+  --rust:        #d07050;
+  --rust2:       #bc5e3e;
+  --olive:       #92a45c;
+  --olive2:      #a8ba70;
+
+  --color-success:        var(--sage);
+  --color-success-bg:     rgba(122, 170, 128, 0.12);
+  --color-warning:        #d4aa50;
+  --color-warning-bg:     rgba(212, 170, 80, 0.12);
+  --color-danger:         var(--rust);
+  --color-danger-bg:      rgba(208, 112, 80, 0.12);
+  --color-info:           #6a9fc5;
+  --color-info-bg:        rgba(106, 159, 197, 0.12);
+
+  --surface:              var(--bg2);
+  --surface-raised:       var(--bg3);
+  --surface-overlay:      rgba(232, 224, 212, 0.04);
+
+  --shadow-card:          0 1px 3px rgba(0, 0, 0, 0.24);
+  --shadow-card-hover:    0 4px 12px rgba(0, 0, 0, 0.32);
+  --shadow-modal:         0 8px 32px rgba(0, 0, 0, 0.48);
+
+  --sidebar-bg:           var(--bg2);
+  --sidebar-border:       var(--border);
+  --sidebar-item-hover:   var(--bg3);
+  --sidebar-item-active-bg: rgba(122, 170, 128, 0.12);
+  --sidebar-item-active:  var(--sage);
+}

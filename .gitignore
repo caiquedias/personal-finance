@@ -24,3 +24,6 @@ logs/
 # OS
 .DS_Store
 Thumbs.db
+
+/personal-finance/.angular/cache/
+/personal-finance/node_modules/

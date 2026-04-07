@@ -1,0 +1,160 @@
+import { Injectable, inject } from '@angular/core';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
+import {
+  CategoryResponse, CreateCategoryRequest, UpdateCategoryRequest,
+  PeriodResponse, CreatePeriodRequest, PeriodSummary,
+  ExpenseResponse, CreateExpenseRequest, UpdateExpenseRequest, MarkAsPaidRequest,
+  IncomeResponse, CreateIncomeRequest,
+  LookupItem, CreatePaymentStatusRequest, CreateSourceTypeRequest, CreateFortnightTypeRequest,
+  AdminUserResponse, AssignRoleRequest, ResetPasswordRequest,
+} from '../models/models';
+
+@Injectable({ providedIn: 'root' })
+export class ApiService {
+  private readonly http = inject(HttpClient);
+  private readonly base = environment.apiUrl;
+
+  // ── Categories ────────────────────────────────────────────────────────────
+
+  getCategories(): Observable<CategoryResponse[]> {
+    return this.http.get<CategoryResponse[]>(`${this.base}/categories`);
+  }
+
+  getCategoryById(id: string): Observable<CategoryResponse> {
+    return this.http.get<CategoryResponse>(`${this.base}/categories/${id}`);
+  }
+
+  createCategory(data: CreateCategoryRequest): Observable<CategoryResponse> {
+    return this.http.post<CategoryResponse>(`${this.base}/categories`, data);
+  }
+
+  updateCategory(id: string, data: UpdateCategoryRequest): Observable<void> {
+    return this.http.put<void>(`${this.base}/categories/${id}`, data);
+  }
+
+  deleteCategory(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.base}/categories/${id}`);
+  }
+
+  // ── Periods ───────────────────────────────────────────────────────────────
+
+  getPeriods(): Observable<PeriodResponse[]> {
+    return this.http.get<PeriodResponse[]>(`${this.base}/periods`);
+  }
+
+  getPeriodById(id: string): Observable<PeriodResponse> {
+    return this.http.get<PeriodResponse>(`${this.base}/periods/${id}`);
+  }
+
+  createPeriod(data: CreatePeriodRequest): Observable<PeriodResponse> {
+    return this.http.post<PeriodResponse>(`${this.base}/periods`, data);
+  }
+
+  getPeriodSummary(id: string): Observable<PeriodSummary> {
+    return this.http.get<PeriodSummary>(`${this.base}/periods/${id}/summary`);
+  }
+
+  // ── Expenses ──────────────────────────────────────────────────────────────
+
+  getExpensesByPeriod(periodId: string): Observable<ExpenseResponse[]> {
+    const params = new HttpParams().set('periodId', periodId);
+    return this.http.get<ExpenseResponse[]>(`${this.base}/expenses`, { params });
+  }
+
+  getExpenseById(id: string): Observable<ExpenseResponse> {
+    return this.http.get<ExpenseResponse>(`${this.base}/expenses/${id}`);
+  }
+
+  createExpense(data: CreateExpenseRequest): Observable<ExpenseResponse> {
+    return this.http.post<ExpenseResponse>(`${this.base}/expenses`, data);
+  }
+
+  updateExpense(id: string, data: UpdateExpenseRequest): Observable<void> {
+    return this.http.put<void>(`${this.base}/expenses/${id}`, data);
+  }
+
+  markExpenseAsPaid(id: string, data: MarkAsPaidRequest): Observable<void> {
+    return this.http.patch<void>(`${this.base}/expenses/${id}/pay`, data);
+  }
+
+  cancelExpense(id: string): Observable<void> {
+    return this.http.patch<void>(`${this.base}/expenses/${id}/cancel`, {});
+  }
+
+  markExpenseAsPartial(id: string): Observable<void> {
+    return this.http.patch<void>(`${this.base}/expenses/${id}/partial`, {});
+  }
+
+  deleteExpense(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.base}/expenses/${id}`);
+  }
+
+  // ── Incomes ───────────────────────────────────────────────────────────────
+
+  getIncomesByPeriod(periodId: string): Observable<IncomeResponse[]> {
+    const params = new HttpParams().set('periodId', periodId);
+    return this.http.get<IncomeResponse[]>(`${this.base}/incomes`, { params });
+  }
+
+  getIncomeById(id: string): Observable<IncomeResponse> {
+    return this.http.get<IncomeResponse>(`${this.base}/incomes/${id}`);
+  }
+
+  createIncome(data: CreateIncomeRequest): Observable<IncomeResponse> {
+    return this.http.post<IncomeResponse>(`${this.base}/incomes`, data);
+  }
+
+  deleteIncome(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.base}/incomes/${id}`);
+  }
+
+  // ── Config — lookup tables ─────────────────────────────────────────────────
+
+  getPaymentStatuses(): Observable<LookupItem[]> {
+    return this.http.get<LookupItem[]>(`${this.base}/config/payment-statuses`);
+  }
+
+  createPaymentStatus(data: CreatePaymentStatusRequest): Observable<LookupItem> {
+    return this.http.post<LookupItem>(`${this.base}/config/payment-statuses`, data);
+  }
+
+  getSourceTypes(): Observable<LookupItem[]> {
+    return this.http.get<LookupItem[]>(`${this.base}/config/source-types`);
+  }
+
+  createSourceType(data: CreateSourceTypeRequest): Observable<LookupItem> {
+    return this.http.post<LookupItem>(`${this.base}/config/source-types`, data);
+  }
+
+  getFortnightTypes(): Observable<LookupItem[]> {
+    return this.http.get<LookupItem[]>(`${this.base}/config/fortnight-types`);
+  }
+
+  createFortnightType(data: CreateFortnightTypeRequest): Observable<LookupItem> {
+    return this.http.post<LookupItem>(`${this.base}/config/fortnight-types`, data);
+  }
+
+  // ── Admin ─────────────────────────────────────────────────────────────────
+
+  getAdminUsers(): Observable<AdminUserResponse[]> {
+    return this.http.get<AdminUserResponse[]>(`${this.base}/admin/users`);
+  }
+
+  toggleUserActive(userId: string): Observable<void> {
+    return this.http.patch<void>(`${this.base}/admin/users/${userId}/toggle-active`, {});
+  }
+
+  assignRole(userId: string, data: AssignRoleRequest): Observable<void> {
+    return this.http.post<void>(`${this.base}/admin/users/${userId}/roles`, data);
+  }
+
+  removeRole(userId: string, roleId: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/admin/users/${userId}/roles/${roleId}`);
+  }
+
+  resetUserPassword(userId: string, data: ResetPasswordRequest): Observable<void> {
+    return this.http.patch<void>(`${this.base}/admin/users/${userId}/reset-password`, data);
+  }
+}

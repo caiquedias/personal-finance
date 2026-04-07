@@ -8,19 +8,19 @@ namespace PersonalFinance.Domain.Entities.Shared;
 /// </summary>
 public abstract class EntityBase
 {
-    public Guid      Id        { get; private set; }
-    public DateTime  CreatedAt { get; private set; }
-    public DateTime  UpdatedAt { get; private set; }
+    public Guid Id { get; private set; }
+    public DateTime CreatedAt { get; private set; }
+    public DateTime UpdatedAt { get; private set; }
     public DateTime? DeletedAt { get; private set; }
-    public bool      IsActive  { get; private set; }
-    public bool      IsDeleted => DeletedAt.HasValue;
+    public bool IsActive { get; private set; }
+    public bool IsDeleted => DeletedAt.HasValue;
 
     protected EntityBase()
     {
-        Id        = Guid.NewGuid();
+        Id = Guid.NewGuid();
         CreatedAt = DateTime.UtcNow;
         UpdatedAt = CreatedAt;
-        IsActive  = true;
+        IsActive = true;
     }
 
     /// <summary>
@@ -31,7 +31,7 @@ public abstract class EntityBase
     {
         if (IsDeleted) return;
         DeletedAt = DateTime.UtcNow;
-        IsActive  = false;
+        IsActive = false;
         SetUpdatedAt();
     }
 
@@ -42,7 +42,7 @@ public abstract class EntityBase
     public void Reactivate()
     {
         DeletedAt = null;
-        IsActive  = true;
+        IsActive = true;
         SetUpdatedAt();
     }
 

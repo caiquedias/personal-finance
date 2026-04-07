@@ -10,6 +10,7 @@ using PersonalFinance.Infrastructure.Persistence.Context;
 using PersonalFinance.Infrastructure.Persistence.Repositories.Auth;
 using PersonalFinance.Infrastructure.Persistence.Repositories.Config;
 using PersonalFinance.Infrastructure.Persistence.Repositories.Financial;
+using PersonalFinance.Infrastructure.Services;
 
 namespace PersonalFinance.Infrastructure.Extensions;
 
@@ -17,7 +18,7 @@ public static class InfrastructureExtensions
 {
     public static IServiceCollection AddInfrastructure(
         this IServiceCollection services,
-        IConfiguration          configuration)
+        IConfiguration configuration)
     {
         // ── DbContext ─────────────────────────────────────────────────────────
         services.AddDbContext<AppDbContext>(options =>
@@ -34,24 +35,28 @@ public static class InfrastructureExtensions
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 
         // ── Repositórios — Domain ─────────────────────────────────────────────
-        services.AddScoped<IUserRepository,     UserRepository>();
+        services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<ICategoryRepository, CategoryRepository>();
-        services.AddScoped<IPeriodRepository,   PeriodRepository>();
-        services.AddScoped<IExpenseRepository,  ExpenseRepository>();
-        services.AddScoped<IIncomeRepository,   IncomeRepository>();
-        services.AddScoped<IReportRepository,   ReportRepository>();
+        services.AddScoped<IPeriodRepository, PeriodRepository>();
+        services.AddScoped<IExpenseRepository, ExpenseRepository>();
+        services.AddScoped<IIncomeRepository, IncomeRepository>();
+        services.AddScoped<IReportRepository, ReportRepository>();
 
         // ── Repositórios — Config / Admin ─────────────────────────────────────
-        services.AddScoped<IPaymentStatusRepository,  PaymentStatusRepository>();
-        services.AddScoped<ISourceTypeRepository,     SourceTypeRepository>();
-        services.AddScoped<IFortnightTypeRepository,  FortnightTypeRepository>();
-        services.AddScoped<IUserRoleRepository,       UserRoleRepository>();
-        services.AddScoped<IAdminUserRepository,      AdminUserRepository>();
+        services.AddScoped<IPaymentStatusRepository, PaymentStatusRepository>();
+        services.AddScoped<ISourceTypeRepository, SourceTypeRepository>();
+        services.AddScoped<IFortnightTypeRepository, FortnightTypeRepository>();
+        services.AddScoped<IUserRoleRepository, UserRoleRepository>();
+        services.AddScoped<IAdminUserRepository, AdminUserRepository>();
 
         // ── Auth ──────────────────────────────────────────────────────────────
         services.Configure<JwtSettings>(configuration.GetSection("JwtSettings"));
         services.AddScoped<IPasswordHasher, Argon2PasswordHasher>();
-        services.AddScoped<ITokenService,   JwtTokenService>();
+        services.AddScoped<ITokenService, JwtTokenService>();
+
+        // ── Import (legado Excel) ─────────────────────────────────────────────────────
+        services.AddScoped<IExcelParserService, ExcelParserService>();
+
 
         return services;
     }

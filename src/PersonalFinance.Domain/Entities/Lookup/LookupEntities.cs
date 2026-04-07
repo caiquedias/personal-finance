@@ -6,8 +6,8 @@ namespace PersonalFinance.Domain.Entities.Lookup;
 /// </summary>
 public sealed class Role
 {
-    public int    Id          { get; set; }
-    public string Name        { get; set; } = default!;
+    public int Id { get; set; }
+    public string Name { get; set; } = default!;
     public string Description { get; set; } = default!;
 }
 
@@ -17,7 +17,7 @@ public sealed class Role
 /// </summary>
 public sealed class SourceType
 {
-    public int    Id   { get; set; }
+    public int Id { get; set; }
     public string Name { get; set; } = default!;
 }
 
@@ -27,7 +27,7 @@ public sealed class SourceType
 /// </summary>
 public sealed class FortnightType
 {
-    public int    Id   { get; set; }
+    public int Id { get; set; }
     public string Name { get; set; } = default!;
 }
 
@@ -37,7 +37,7 @@ public sealed class FortnightType
 /// </summary>
 public sealed class PaymentStatus
 {
-    public int    Id          { get; set; }
-    public string Name        { get; set; } = default!;
+    public int Id { get; set; }
+    public string Name { get; set; } = default!;
     public string Description { get; set; } = default!;
 }

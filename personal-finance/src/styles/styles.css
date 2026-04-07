@@ -1,0 +1,150 @@
+@import '_variables.css';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Base ────────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+html { font-size: 16px; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Tipografia ──────────────────────────────────────────────────────────── */
+h1, h2, h3, h4, h5, h6 {
+  margin: 0;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.3;
+}
+
+p { margin: 0; }
+
+a {
+  color: var(--sage2);
+  text-decoration: none;
+  transition: color var(--transition);
+}
+a:hover { color: var(--sage); }
+
+/* ── Componentes utilitários ─────────────────────────────────────────────── */
+.card {
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+}
+
+.card:hover { box-shadow: var(--shadow-card-hover); }
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.badge-success { background: var(--color-success-bg); color: var(--color-success); }
+.badge-warning { background: var(--color-warning-bg); color: var(--color-warning); }
+.badge-danger  { background: var(--color-danger-bg);  color: var(--color-danger);  }
+.badge-info    { background: var(--color-info-bg);    color: var(--color-info);    }
+.badge-neutral { background: var(--bg3); color: var(--ink3); }
+
+/* ── Inputs ──────────────────────────────────────────────────────────────── */
+.input {
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--ink);
+  font-size: 0.9375rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.input:focus {
+  border-color: var(--sage);
+  box-shadow: 0 0 0 3px rgba(107, 143, 113, 0.15);
+}
+
+.input.error {
+  border-color: var(--rust);
+  box-shadow: 0 0 0 3px rgba(192, 96, 58, 0.12);
+}
+
+.input::placeholder { color: var(--ink4); }
+
+/* ── Botões ──────────────────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: var(--radius);
+  font-size: 0.875rem;
+  font-weight: 500;
+  font-family: inherit;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all var(--transition);
+  white-space: nowrap;
+}
+
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-primary {
+  background: var(--sage2);
+  color: #fff;
+  border-color: var(--sage2);
+}
+.btn-primary:hover:not(:disabled) { background: var(--sage); border-color: var(--sage); }
+
+.btn-secondary {
+  background: var(--surface-raised);
+  color: var(--ink2);
+  border-color: var(--border);
+}
+.btn-secondary:hover:not(:disabled) { background: var(--bg2); border-color: var(--border2); }
+
+.btn-danger {
+  background: var(--rust);
+  color: #fff;
+  border-color: var(--rust);
+}
+.btn-danger:hover:not(:disabled) { background: var(--rust2); }
+
+.btn-ghost {
+  background: transparent;
+  color: var(--ink2);
+  border-color: transparent;
+}
+.btn-ghost:hover:not(:disabled) { background: var(--surface-overlay); color: var(--ink); }
+
+.btn-sm { padding: 5px 10px; font-size: 0.8125rem; }
+.btn-lg { padding: 11px 20px; font-size: 1rem; }
+
+/* ── Scrollbar ───────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--border2); }
+
+/* ── Utilitários ─────────────────────────────────────────────────────────── */
+.text-muted    { color: var(--ink3); }
+.text-subtle   { color: var(--ink4); }
+.divider       { border: none; border-top: 1px solid var(--border); margin: 0; }
+.page-title    { font-size: 1.375rem; font-weight: 600; color: var(--ink); }
+.section-title { font-size: 0.8125rem; font-weight: 600; color: var(--ink3); text-transform: uppercase; letter-spacing: 0.06em; }

@@ -11,21 +11,14 @@ namespace PersonalFinance.Api.Middleware;
 /// KeyNotFoundException        → 404 Not Found
 /// Qualquer outra              → 500 Internal Server Error (sem expor detalhes em produção)
 /// </summary>
-public sealed class ExceptionMiddleware
+public sealed class ExceptionMiddleware(
+    RequestDelegate next,
+    ILogger<ExceptionMiddleware> logger,
+    IHostEnvironment env)
 {
-    private readonly RequestDelegate _next;
-    private readonly ILogger<ExceptionMiddleware> _logger;
-    private readonly IHostEnvironment _env;
-
-    public ExceptionMiddleware(
-        RequestDelegate next,
-        ILogger<ExceptionMiddleware> logger,
-        IHostEnvironment env)
-    {
-        _next   = next;
-        _logger = logger;
-        _env    = env;
-    }
+    private readonly RequestDelegate _next = next;
+    private readonly ILogger<ExceptionMiddleware> _logger = logger;
+    private readonly IHostEnvironment _env = env;
 
     public async Task InvokeAsync(HttpContext context)
     {
@@ -65,16 +58,21 @@ public sealed class ExceptionMiddleware
         string message)
     {
         context.Response.ContentType = "application/json";
-        context.Response.StatusCode  = (int)statusCode;
+        context.Response.StatusCode = (int)statusCode;
 
         var payload = JsonSerializer.Serialize(new
         {
-            status  = (int)statusCode,
-            error   = statusCode.ToString(),
+            status = (int)statusCode,
+            error = statusCode.ToString(),
             message = message,
             traceId = context.TraceIdentifier
-        });
+        }, _jsonOptions);
 
         await context.Response.WriteAsync(payload);
     }
+
+    private static readonly JsonSerializerOptions _jsonOptions = new()
+    {
+        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+    };
 }

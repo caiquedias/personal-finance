@@ -175,33 +175,33 @@ public sealed class ReportRepository : IReportRepository
         if (row is null) return null;
 
         return new PeriodSummaryDto(
-            PeriodId:             row.PeriodId,
-            UserId:               row.UserId,
-            Year:                 row.Year,
-            Month:                row.Month,
-            TotalIncome:          row.TotalIncome,
-            TotalExpense:         row.TotalExpense,
-            TotalPaid:            row.TotalPaid,
-            TotalOwed:            row.TotalOwed,
-            TotalFirstFortnight:  row.TotalFirstFortnight,
+            PeriodId: row.PeriodId,
+            UserId: row.UserId,
+            Year: row.Year,          // short → int implícito
+            Month: row.Month,         // byte → int implícito
+            TotalIncome: row.TotalIncome,
+            TotalExpense: row.TotalExpense,
+            TotalPaid: row.TotalPaid,
+            TotalOwed: row.TotalOwed,
+            TotalFirstFortnight: row.TotalFirstFortnight,
             TotalSecondFortnight: row.TotalSecondFortnight,
-            Balance:              row.Balance
+            Balance: row.Balance
         );
     }
 
     // Tipo interno para mapeamento do SQL raw — nunca exposto fora da Infrastructure
     private sealed class PeriodSummaryRaw
     {
-        public Guid    PeriodId             { get; set; }
-        public Guid    UserId               { get; set; }
-        public int     Year                 { get; set; }
-        public int     Month                { get; set; }
-        public decimal TotalIncome          { get; set; }
-        public decimal TotalExpense         { get; set; }
-        public decimal TotalPaid            { get; set; }
-        public decimal TotalOwed            { get; set; }
-        public decimal TotalFirstFortnight  { get; set; }
+        public Guid PeriodId { get; set; }
+        public Guid UserId { get; set; }
+        public short Year { get; set; }  // smallint no banco
+        public byte Month { get; set; }  // tinyint no banco
+        public decimal TotalIncome { get; set; }
+        public decimal TotalExpense { get; set; }
+        public decimal TotalPaid { get; set; }
+        public decimal TotalOwed { get; set; }
+        public decimal TotalFirstFortnight { get; set; }
         public decimal TotalSecondFortnight { get; set; }
-        public decimal Balance              { get; set; }
+        public decimal Balance { get; set; }
     }
 }

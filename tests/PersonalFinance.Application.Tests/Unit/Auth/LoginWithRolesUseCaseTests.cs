@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Moq;
 using PersonalFinance.Application.DTOs.Auth;
+using PersonalFinance.Application.UseCases.Admin;
 using PersonalFinance.Application.UseCases.Auth;
 using PersonalFinance.Domain.Entities.Auth;
 using PersonalFinance.Domain.Exceptions;
@@ -12,17 +13,17 @@ namespace PersonalFinance.Application.Tests.Unit.Auth;
 
 public class LoginWithRolesUseCaseTests
 {
-    private readonly Mock<IUserRepository>     _userRepo  = new();
-    private readonly Mock<IUserRoleRepository> _roleRepo  = new();
-    private readonly Mock<IPasswordHasher>     _hasher    = new();
-    private readonly Mock<ITokenService>       _tokenSvc  = new();
-    private readonly LoginWithRolesUseCase     _sut;
+    private readonly Mock<IUserRepository> _userRepo = new();
+    private readonly Mock<IUserRoleRepository> _roleRepo = new();
+    private readonly Mock<IPasswordHasher> _hasher = new();
+    private readonly Mock<ITokenService> _tokenSvc = new();
+    private readonly LoginWithRolesUseCase _sut;
 
     public LoginWithRolesUseCaseTests()
     {
         _sut = new LoginWithRolesUseCase(
             _userRepo.Object, _roleRepo.Object,
-            _hasher.Object,   _tokenSvc.Object);
+            _hasher.Object, _tokenSvc.Object);
     }
 
     private static User FakeUser() =>
@@ -31,7 +32,7 @@ public class LoginWithRolesUseCaseTests
     [Fact(DisplayName = "Deve retornar token com roles para credenciais válidas")]
     public async Task Execute_WithValidCredentials_ShouldReturnTokenWithRoles()
     {
-        var user  = FakeUser();
+        var user = FakeUser();
         var roles = new[] { "User" };
 
         _userRepo.Setup(r => r.GetByEmailAsync("caique@monkeybomb.com", default)).ReturnsAsync(user);
@@ -48,7 +49,7 @@ public class LoginWithRolesUseCaseTests
     [Fact(DisplayName = "Deve incluir todas as roles do usuário no token")]
     public async Task Execute_AdminUser_ShouldPassAllRolesToToken()
     {
-        var user  = FakeUser();
+        var user = FakeUser();
         var roles = new[] { "Admin", "User" };
 
         _userRepo.Setup(r => r.GetByEmailAsync("caique@monkeybomb.com", default)).ReturnsAsync(user);

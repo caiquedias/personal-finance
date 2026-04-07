@@ -59,16 +59,17 @@ public class ExceptionMiddlewareTests
         status.Should().Be((int)HttpStatusCode.Unauthorized);
     }
 
-    [Fact(DisplayName = "KeyNotFoundException deve retornar 404")]
+    [Fact(DisplayName = "KeyNotFoundException deve retornar 404 com a mensagem")]
     public async Task Invoke_KeyNotFoundException_ShouldReturn404()
     {
         var middleware = CreateSut(_ => throw new KeyNotFoundException("Recurso não encontrado."));
         var ctx = CreateContext();
 
         var (status, body) = await InvokeAsync(middleware, ctx);
+        var json = JsonSerializer.Deserialize<JsonElement>(body);
 
         status.Should().Be((int)HttpStatusCode.NotFound);
-        body.Should().Contain("Recurso não encontrado.");
+        json.GetProperty("message").GetString().Should().Be("Recurso não encontrado.");
     }
 
     [Fact(DisplayName = "Exception genérica deve retornar 500")]

@@ -1,0 +1,368 @@
+import { Component, inject, signal, computed, OnInit, input } from '@angular/core';
+import { RouterLink } from '@angular/router';
+import { ApiService } from '../../../core/services/api.service';
+import { HeaderComponent } from '../../../shared/components/header/header.component';
+import { CurrencyBrlPipe } from '../../../shared/pipes/currency-brl.pipe';
+import {
+  PeriodSummary, ExpenseResponse, IncomeResponse, CategoryResponse,
+  MONTH_NAMES, PAYMENT_STATUS_LABELS, SOURCE_TYPE_LABELS,
+  FORTNIGHT_TYPE_LABELS, PaymentStatus, FortnightType
+} from '../../../core/models/models';
+
+@Component({
+  selector: 'app-period-detail',
+  standalone: true,
+  imports: [HeaderComponent, CurrencyBrlPipe, RouterLink],
+  template: `
+    <app-header
+      [title]="headerTitle()"
+      subtitle="Detalhes do período"
+    >
+      <a routerLink="/periods" class="btn btn-secondary btn-sm">← Períodos</a>
+      <a routerLink="/expenses" class="btn btn-primary btn-sm">+ Despesa</a>
+      <a routerLink="/incomes" class="btn btn-ghost btn-sm">+ Receita</a>
+    </app-header>
+
+    <div class="page-content">
+      @if (loading()) {
+        <div class="loading-state"><span class="spinner-lg"></span></div>
+      } @else {
+
+        <!-- Resumo compacto -->
+        @if (summary()) {
+          <div class="summary-bar card">
+            <div class="summary-item">
+              <span class="summary-label">Receitas</span>
+              <span class="summary-value success">{{ summary()!.totalIncome | currencyBrl }}</span>
+            </div>
+            <div class="summary-divider"></div>
+            <div class="summary-item">
+              <span class="summary-label">Despesas</span>
+              <span class="summary-value danger">{{ summary()!.totalExpense | currencyBrl }}</span>
+            </div>
+            <div class="summary-divider"></div>
+            <div class="summary-item">
+              <span class="summary-label">Pago</span>
+              <span class="summary-value">{{ summary()!.totalPaid | currencyBrl }}</span>
+            </div>
+            <div class="summary-divider"></div>
+            <div class="summary-item">
+              <span class="summary-label">A pagar</span>
+              <span class="summary-value warning">{{ summary()!.totalOwed | currencyBrl }}</span>
+            </div>
+            <div class="summary-divider"></div>
+            <div class="summary-item">
+              <span class="summary-label">Saldo</span>
+              <span class="summary-value" [class]="summary()!.balance >= 0 ? 'success' : 'danger'">
+                {{ summary()!.balance | currencyBrl: true }}
+              </span>
+            </div>
+          </div>
+        }
+
+        <!-- Abas -->
+        <div class="tabs">
+          <button class="tab" [class.active]="activeTab() === 'expenses'" (click)="activeTab.set('expenses')">
+            Despesas ({{ expenses().length }})
+          </button>
+          <button class="tab" [class.active]="activeTab() === 'incomes'" (click)="activeTab.set('incomes')">
+            Receitas ({{ incomes().length }})
+          </button>
+        </div>
+
+        <!-- Despesas -->
+        @if (activeTab() === 'expenses') {
+          @if (expenses().length === 0) {
+            <div class="empty-state">
+              <p>Nenhuma despesa neste período.</p>
+              <a routerLink="/expenses" class="btn btn-primary btn-sm">Adicionar despesa</a>
+            </div>
+          } @else {
+            <div class="table-wrap card">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Descrição</th>
+                    <th>Categoria</th>
+                    <th>Quinzena</th>
+                    <th>Vencimento</th>
+                    <th>Valor</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (expense of expenses(); track expense.id) {
+                    <tr>
+                      <td>
+                        <div class="cell-primary">{{ expense.description }}</div>
+                        <div class="cell-secondary">{{ sourceLabel(expense.sourceType) }}</div>
+                      </td>
+                      <td>
+                        <span
+                          class="category-dot"
+                          [style.background]="categoryColor(expense.categoryId)"
+                        ></span>
+                        {{ categoryName(expense.categoryId) }}
+                      </td>
+                      <td class="text-muted text-sm">{{ fortnightLabel(expense.fortnightType) }}</td>
+                      <td class="text-muted text-sm">{{ formatDate(expense.dueDate) }}</td>
+                      <td class="font-semibold">{{ expense.amount | currencyBrl }}</td>
+                      <td>
+                        <span class="badge" [class]="statusBadgeClass(expense.paymentStatus)">
+                          {{ statusLabel(expense.paymentStatus) }}
+                        </span>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        }
+
+        <!-- Receitas -->
+        @if (activeTab() === 'incomes') {
+          @if (incomes().length === 0) {
+            <div class="empty-state">
+              <p>Nenhuma receita neste período.</p>
+              <a routerLink="/incomes" class="btn btn-primary btn-sm">Adicionar receita</a>
+            </div>
+          } @else {
+            <div class="table-wrap card">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Descrição</th>
+                    <th>Quinzena</th>
+                    <th>Recebido em</th>
+                    <th>Valor</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (income of incomes(); track income.id) {
+                    <tr>
+                      <td class="cell-primary">{{ income.description }}</td>
+                      <td class="text-muted text-sm">{{ fortnightLabel(income.fortnightType) }}</td>
+                      <td class="text-muted text-sm">{{ formatDate(income.receivedAt) }}</td>
+                      <td class="font-semibold success-text">{{ income.amount | currencyBrl }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        }
+
+      }
+    </div>
+  `,
+  styles: [`
+    .page-content {
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* Summary bar */
+    .summary-bar {
+      display: flex;
+      align-items: center;
+      padding: 16px 24px;
+      gap: 0;
+    }
+
+    .summary-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      align-items: center;
+    }
+
+    .summary-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--ink3);
+    }
+
+    .summary-value {
+      font-size: 1.0625rem;
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    .summary-value.success { color: var(--sage2); }
+    .summary-value.danger  { color: var(--rust);  }
+    .summary-value.warning { color: var(--color-warning); }
+
+    .summary-divider {
+      width: 1px;
+      height: 32px;
+      background: var(--border);
+      margin: 0 8px;
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 4px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .tab {
+      padding: 10px 16px;
+      border: none;
+      background: none;
+      color: var(--ink3);
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      transition: all var(--transition);
+    }
+
+    .tab:hover  { color: var(--ink); }
+    .tab.active { color: var(--sage2); border-bottom-color: var(--sage2); }
+
+    /* Table */
+    .table-wrap { overflow-x: auto; }
+
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+    }
+
+    .table th {
+      text-align: left;
+      padding: 12px 16px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--ink3);
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+
+    .table td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--bg3);
+      color: var(--ink2);
+      vertical-align: middle;
+    }
+
+    .table tr:last-child td { border-bottom: none; }
+
+    .table tbody tr:hover { background: var(--surface-overlay); }
+
+    .cell-primary   { color: var(--ink); font-weight: 500; }
+    .cell-secondary { font-size: 0.75rem; color: var(--ink3); margin-top: 2px; }
+
+    .category-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 6px;
+    }
+
+    .text-sm   { font-size: 0.8125rem; }
+    .font-semibold { font-weight: 600; color: var(--ink); }
+    .success-text  { color: var(--sage2); }
+
+    .loading-state, .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      padding: 64px;
+      color: var(--ink3);
+    }
+
+    .spinner-lg {
+      width: 32px; height: 32px;
+      border: 3px solid var(--border);
+      border-top-color: var(--sage2);
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+      display: block;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+  `]
+})
+export class PeriodDetailComponent implements OnInit {
+  private readonly api = inject(ApiService);
+
+  // Input via rota (/periods/:id) — Angular 21 com withComponentInputBinding
+  readonly id = input.required<string>();
+
+  readonly loading    = signal(true);
+  readonly activeTab  = signal<'expenses' | 'incomes'>('expenses');
+  readonly summary    = signal<PeriodSummary | null>(null);
+  readonly expenses   = signal<ExpenseResponse[]>([]);
+  readonly incomes    = signal<IncomeResponse[]>([]);
+  readonly categories = signal<CategoryResponse[]>([]);
+
+  readonly headerTitle = computed(() => {
+    const s = this.summary();
+    if (!s) return 'Período';
+    return `${MONTH_NAMES[s.month - 1]} ${s.year}`;
+  });
+
+  ngOnInit(): void {
+    const periodId = this.id();
+
+    Promise.all([
+      this.api.getPeriodSummary(periodId).toPromise(),
+      this.api.getExpensesByPeriod(periodId).toPromise(),
+      this.api.getIncomesByPeriod(periodId).toPromise(),
+      this.api.getCategories().toPromise(),
+    ]).then(([summary, expenses, incomes, categories]) => {
+      this.summary.set(summary ?? null);
+      this.expenses.set(expenses ?? []);
+      this.incomes.set(incomes ?? []);
+      this.categories.set(categories ?? []);
+      this.loading.set(false);
+    }).catch(() => this.loading.set(false));
+  }
+
+  categoryName(categoryId: string): string {
+    return this.categories().find(c => c.id === categoryId)?.name ?? '—';
+  }
+
+  categoryColor(categoryId: string): string {
+    return this.categories().find(c => c.id === categoryId)?.color ?? '#c8bfaf';
+  }
+
+  statusLabel(status: PaymentStatus): string {
+    return PAYMENT_STATUS_LABELS[status] ?? String(status);
+  }
+
+  statusBadgeClass(status: PaymentStatus): string {
+    const map: Record<PaymentStatus, string> = {
+      [PaymentStatus.Pending]:   'badge-warning',
+      [PaymentStatus.Paid]:      'badge-success',
+      [PaymentStatus.Cancelled]: 'badge-neutral',
+      [PaymentStatus.Partial]:   'badge-info',
+    };
+    return map[status] ?? 'badge-neutral';
+  }
+
+  sourceLabel(type: number): string {
+    return SOURCE_TYPE_LABELS[type as keyof typeof SOURCE_TYPE_LABELS] ?? String(type);
+  }
+
+  fortnightLabel(type: FortnightType): string {
+    return FORTNIGHT_TYPE_LABELS[type];
+  }
+
+  formatDate(dateStr: string): string {
+    return new Date(dateStr).toLocaleDateString('pt-BR');
+  }
+}

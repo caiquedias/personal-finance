@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using PersonalFinance.Application.Interfaces;
+using PersonalFinance.Domain.Entities.Lookup;
 using PersonalFinance.Infrastructure.Persistence.Context;
 
 
@@ -23,12 +24,16 @@ public sealed class TestWebApplicationFactory : WebApplicationFactory<Program>
     {
         builder.ConfigureServices(services =>
         {
-            // Substitui o DbContext real por InMemory
-            var dbDescriptor = services.SingleOrDefault(
-                d => d.ServiceType == typeof(DbContextOptions<AppDbContext>));
+            var dbDescriptors = services
+                .Where(d =>
+                    d.ServiceType == typeof(DbContextOptions<AppDbContext>) ||
+                    d.ServiceType == typeof(AppDbContext) ||
+                    (d.ServiceType.IsGenericType &&
+                     d.ServiceType.GenericTypeArguments.Contains(typeof(AppDbContext))))
+                .ToList();
 
-            if (dbDescriptor is not null)
-                services.Remove(dbDescriptor);
+            foreach (var d in dbDescriptors)
+                services.Remove(d);
 
             services.AddDbContext<AppDbContext>(options =>
                 options.UseInMemoryDatabase(_dbName));
@@ -50,7 +55,38 @@ public sealed class TestWebApplicationFactory : WebApplicationFactory<Program>
 
             if (initDescriptor is not null)
                 services.Remove(initDescriptor);
+
+            var sp = services.BuildServiceProvider();
+            using var scope = sp.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            context.Database.EnsureCreated();
+            SeedLookupData(context);
         });
+    }
+
+    private static void SeedLookupData(AppDbContext context)
+    {
+        if (context.Roles.Any()) return; // idempotente — não resemeia se já existe
+
+        context.Roles.AddRange(
+            new Role { Id = 1, Name = "Admin", Description = "Administrador do sistema" },
+            new Role { Id = 2, Name = "User", Description = "Usuário padrão" }
+        );
+        context.SourceTypes.AddRange(
+            new SourceType { Id = 1, Name = "Parental" },
+            new SourceType { Id = 2, Name = "Personal" }
+        );
+        context.FortnightTypes.AddRange(
+            new FortnightType { Id = 1, Name = "First" },
+            new FortnightType { Id = 2, Name = "Second" }
+        );
+        context.PaymentStatuses.AddRange(
+            new PaymentStatus { Id = 1, Name = "Pending", Description = "Pendente" },
+            new PaymentStatus { Id = 2, Name = "Paid", Description = "Pago" },
+            new PaymentStatus { Id = 3, Name = "Cancelled", Description = "Cancelado" },
+            new PaymentStatus { Id = 4, Name = "Partial", Description = "Parcialmente pago" }
+        );
+        context.SaveChanges();
     }
 }
 

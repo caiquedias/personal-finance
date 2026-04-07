@@ -4,6 +4,7 @@ using PersonalFinance.Application.UseCases.Config;
 using PersonalFinance.Application.UseCases.Financial.Expenses;
 using PersonalFinance.Application.UseCases.Financial.Incomes;
 using PersonalFinance.Application.UseCases.Financial.Periods;
+using PersonalFinance.Application.UseCases.Import;
 
 namespace PersonalFinance.Api.Extensions;
 
@@ -56,6 +57,9 @@ public static class ApplicationExtensions
         services.AddScoped<GetIncomeByIdUseCase>();
         services.AddScoped<CreateIncomeUseCase>();
         services.AddScoped<DeleteIncomeUseCase>();
+
+        // ── Import ────────────────────────────────────────────────────────────────────
+        services.AddScoped<ImportLegacyDataUseCase>();
 
         return services;
     }
