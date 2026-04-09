@@ -17,7 +17,7 @@ import { AuthService } from '../../../core/auth/auth.service';
             <span class="login-brand-name">Personal Finance</span>
           </div>
           <blockquote class="login-quote">
-            "Controle financeiro começa com visibilidade."
+            "A economia é muito maior se eu não comprar."
           </blockquote>
           <p class="login-quote-author">— MonkeyBomb</p>
         </div>

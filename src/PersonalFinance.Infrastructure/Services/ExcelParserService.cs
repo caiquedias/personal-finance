@@ -32,27 +32,35 @@ public sealed class ExcelParserService : IExcelParserService
     // ── Mapa cor (ARGB hex) → nome da categoria ───────────────────────────────
     private static readonly Dictionary<string, string> ColorCategoryMap =
         new(StringComparer.OrdinalIgnoreCase)
-    {
-        ["FF00FFFF"] = "Gastos com mercado meus pais",
-        ["FF0000FF"] = "Gastos com mercado meu Apê",
-        ["FFFFFF00"] = "Gasto fútil",
-        ["FFFF9900"] = "Serviços",
-        ["FF980000"] = "Depósitos de PF (declarar)",
-        ["FFFF00FF"] = "Investimento + Rendimento",
-        ["FF93C47D"] = "Despesa Gatinhos",
-        ["FFB4A7D6"] = "Gasolina",
-        ["FF000000"] = "Uber",
-    };
+        {
+            ["FF00FFFF"] = "Gastos com mercado meus pais",
+            ["FF0000FF"] = "Gastos com mercado meu Apê",
+            ["FFFFFF00"] = "Gasto fútil",
+            ["FFFF9900"] = "Serviços",
+            ["FF980000"] = "Depósitos de PF (declarar)",
+            ["FFFF00FF"] = "Investimento + Rendimento",
+            ["FF93C47D"] = "Despesa Gatinhos",
+            ["FFB4A7D6"] = "Gasolina",
+            ["FF000000"] = "Uber",
+        };
 
     // ── Nomes dos meses em PT-BR → número ─────────────────────────────────────
     private static readonly Dictionary<string, int> MonthNames =
         new(StringComparer.OrdinalIgnoreCase)
-    {
-        ["Janeiro"]   = 1,  ["Fevereiro"] = 2,  ["Março"]    = 3,
-        ["Abril"]     = 4,  ["Maio"]      = 5,  ["Junho"]    = 6,
-        ["Julho"]     = 7,  ["Agosto"]    = 8,  ["Setembro"] = 9,
-        ["Outubro"]   = 10, ["Novembro"]  = 11, ["Dezembro"] = 12,
-    };
+        {
+            ["Janeiro"] = 1,
+            ["Fevereiro"] = 2,
+            ["Março"] = 3,
+            ["Abril"] = 4,
+            ["Maio"] = 5,
+            ["Junho"] = 6,
+            ["Julho"] = 7,
+            ["Agosto"] = 8,
+            ["Setembro"] = 9,
+            ["Outubro"] = 10,
+            ["Novembro"] = 11,
+            ["Dezembro"] = 12,
+        };
 
     // Regex para extrair data da descrição ex: "Internet (venc. 20/08)"
     private static readonly Regex DateRegex = new(
@@ -104,36 +112,38 @@ public sealed class ExcelParserService : IExcelParserService
         }
 
         // Lê ranges de quinzena das fórmulas B4/C4
-        var b4Formula = sheet.Cell("B4").FormulaA1 ?? string.Empty;
-        var c4Formula = sheet.Cell("C4").FormulaA1 ?? string.Empty;
+        var b4Cell = sheet.Cell("B4");
+        var c4Cell = sheet.Cell("C4");
+        var b4Formula = b4Cell.FormulaA1 ?? string.Empty;
+        var c4Formula = c4Cell.FormulaA1 ?? string.Empty;
 
         var (q1Start, q1End) = ExtractPRange(b4Formula, fallbackStart: 7, fallbackEnd: 500);
-        var (q2Start, q2End) = ExtractPRange(c4Formula, fallbackStart: 0,  fallbackEnd: 0);
+        var (q2Start, q2End) = ExtractPRange(c4Formula, fallbackStart: 0, fallbackEnd: 0);
 
-        // Receita primária de cada quinzena
-        var income1 = ExtractPrimaryIncome(b4Formula);
-        var income2 = ExtractSecondaryIncome(c4Formula);
+        // Receita primária — tenta fórmula, cai no valor em cache se não houver fórmula
+        var income1 = ExtractPrimaryIncome(b4Cell);
+        var income2 = ExtractSecondaryIncome(c4Cell);
 
-        var incomes  = new List<ParsedIncomeDto>();
+        var incomes = new List<ParsedIncomeDto>();
         var expenses = new List<ParsedExpenseDto>();
 
         // ── Receitas primárias ─────────────────────────────────────────────
         if (income1 > 0)
         {
             incomes.Add(new ParsedIncomeDto(
-                Description:  "Receita 1ª Quinzena",
-                Amount:       income1,
+                Description: "Receita 1ª Quinzena",
+                Amount: income1,
                 FortnightType: FortnightType.First,
-                ReceivedAt:   new DateOnly(year, month, 1)));
+                ReceivedAt: new DateOnly(year, month, 1)));
         }
 
         if (income2 > 0)
         {
             incomes.Add(new ParsedIncomeDto(
-                Description:  "Receita 2ª Quinzena",
-                Amount:       income2,
+                Description: "Receita 2ª Quinzena",
+                Amount: income2,
                 FortnightType: FortnightType.Second,
-                ReceivedAt:   new DateOnly(year, month, 15)));
+                ReceivedAt: new DateOnly(year, month, 15)));
         }
 
         // ── Tabela 1: Despesas Planejadas ──────────────────────────────────
@@ -163,11 +173,11 @@ public sealed class ExcelParserService : IExcelParserService
     // ── Despesas planejadas (tabela A-E) ─────────────────────────────────────
 
     private static void ParsePlannedExpenses(
-        IXLWorksheet      sheet,
-        int               year,
-        int               month,
+        IXLWorksheet sheet,
+        int year,
+        int month,
         List<ParsedExpenseDto> expenses,
-        List<string>      warnings)
+        List<string> warnings)
     {
         // Linha de cabeçalho é identificada pelo conteúdo — não por número fixo
         int dataStartRow = FindPlannedExpenseHeaderRow(sheet) + 1;
@@ -199,16 +209,16 @@ public sealed class ExcelParserService : IExcelParserService
                 : FortnightType.First;
 
             var sourceType = NormalizeSourceType(colA);
-            var isPaid     = colE.Equals("SIM", StringComparison.OrdinalIgnoreCase);
-            var dueDate    = ExtractDueDate(colB, year, month, fortnight);
+            var isPaid = colE.Equals("SIM", StringComparison.OrdinalIgnoreCase);
+            var dueDate = ExtractDueDate(colB, year, month, fortnight);
 
             expenses.Add(new ParsedExpenseDto(
-                Description:  colB,
-                Amount:       (decimal)amount,
-                SourceType:   sourceType,
+                Description: colB,
+                Amount: (decimal)amount,
+                SourceType: sourceType,
                 FortnightType: fortnight,
-                IsPaid:       isPaid,
-                DueDate:      dueDate,
+                IsPaid: isPaid,
+                DueDate: dueDate,
                 CategoryName: "Gasto Recorrente"
             ));
         }
@@ -217,14 +227,14 @@ public sealed class ExcelParserService : IExcelParserService
     // ── Gastos Diversos (col P, por cor) ─────────────────────────────────────
 
     private static void ParseDiverseExpenses(
-        IXLWorksheet      sheet,
-        int               rowStart,
-        int               rowEnd,
-        FortnightType     fortnight,
-        int               year,
-        int               month,
+        IXLWorksheet sheet,
+        int rowStart,
+        int rowEnd,
+        FortnightType fortnight,
+        int year,
+        int month,
         List<ParsedExpenseDto> expenses,
-        List<string>      warnings)
+        List<string> warnings)
     {
         var dueDate = fortnight == FortnightType.First
             ? new DateOnly(year, month, 1)
@@ -247,12 +257,12 @@ public sealed class ExcelParserService : IExcelParserService
                 continue;
 
             expenses.Add(new ParsedExpenseDto(
-                Description:  categoryName,
-                Amount:       (decimal)amount,
-                SourceType:   SourceType.Personal,
+                Description: categoryName,
+                Amount: (decimal)amount,
+                SourceType: SourceType.Personal,
                 FortnightType: fortnight,
-                IsPaid:       true,
-                DueDate:      dueDate,
+                IsPaid: true,
+                DueDate: dueDate,
                 CategoryName: categoryName
             ));
         }
@@ -261,14 +271,14 @@ public sealed class ExcelParserService : IExcelParserService
     // ── Valores Recebidos (col Q, por cor) ───────────────────────────────────
 
     private static void ParseDiverseIncomes(
-        IXLWorksheet    sheet,
-        int             rowStart,
-        int             rowEnd,
-        FortnightType   fortnight,
-        int             year,
-        int             month,
+        IXLWorksheet sheet,
+        int rowStart,
+        int rowEnd,
+        FortnightType fortnight,
+        int year,
+        int month,
         List<ParsedIncomeDto> incomes,
-        List<string>    warnings)
+        List<string> warnings)
     {
         var receivedAt = fortnight == FortnightType.First
             ? new DateOnly(year, month, 1)
@@ -287,10 +297,10 @@ public sealed class ExcelParserService : IExcelParserService
                 continue;
 
             incomes.Add(new ParsedIncomeDto(
-                Description:  colorName,
-                Amount:       (decimal)amount,
+                Description: colorName,
+                Amount: (decimal)amount,
                 FortnightType: fortnight,
-                ReceivedAt:   receivedAt
+                ReceivedAt: receivedAt
             ));
         }
     }
@@ -320,23 +330,49 @@ public sealed class ExcelParserService : IExcelParserService
         return (int.Parse(m.Groups[1].Value), int.Parse(m.Groups[2].Value));
     }
 
-    private static decimal ExtractPrimaryIncome(string formula)
+    private static decimal ExtractPrimaryIncome(IXLCell b4Cell)
     {
-        var m = PrimaryIncomeRegex.Match(formula);
-        if (!m.Success) return 0;
-        var raw = m.Groups[1].Value.Replace(',', '.');
-        return decimal.TryParse(raw, System.Globalization.NumberStyles.Any,
-            System.Globalization.CultureInfo.InvariantCulture, out var val) ? val : 0;
+        var formula = b4Cell.FormulaA1 ?? string.Empty;
+
+        // Caminho 1 — fórmula: =SUM(2613.15)+sum(Q7:Q500)-sum(P7:P500)
+        if (!string.IsNullOrWhiteSpace(formula))
+        {
+            var m = PrimaryIncomeRegex.Match(formula);
+            if (m.Success)
+            {
+                var raw = m.Groups[1].Value.Replace(',', '.');
+                if (decimal.TryParse(raw, System.Globalization.NumberStyles.Any,
+                    System.Globalization.CultureInfo.InvariantCulture, out var val))
+                    return val;
+            }
+        }
+
+        // Caminho 2 — planilha salva sem fórmula, lê o valor calculado em cache
+        if (b4Cell.TryGetValue(out double cached) && cached > 0)
+            return (decimal)cached;
+
+        return 0;
     }
 
-    private static decimal ExtractSecondaryIncome(string formula)
+    private static decimal ExtractSecondaryIncome(IXLCell c4Cell)
     {
-        if (string.IsNullOrWhiteSpace(formula)) return 0;
-        var m = Income2Regex.Match(formula.TrimStart('='));
-        if (!m.Success) return 0;
-        return decimal.TryParse(m.Groups[1].Value,
-            System.Globalization.NumberStyles.Any,
-            System.Globalization.CultureInfo.InvariantCulture, out var val) ? val : 0;
+        var formula = c4Cell.FormulaA1 ?? string.Empty;
+
+        // Caminho 1 — fórmula: =5500+sum(Q51:Q100)-sum(P51:P100)
+        if (!string.IsNullOrWhiteSpace(formula))
+        {
+            var m = Income2Regex.Match(formula.TrimStart('='));
+            if (m.Success &&
+                decimal.TryParse(m.Groups[1].Value, System.Globalization.NumberStyles.Any,
+                    System.Globalization.CultureInfo.InvariantCulture, out var val))
+                return val;
+        }
+
+        // Caminho 2 — valor calculado em cache
+        if (c4Cell.TryGetValue(out double cached) && cached > 0)
+            return (decimal)cached;
+
+        return 0;
     }
 
     private static int FindPlannedExpenseHeaderRow(IXLWorksheet sheet)
@@ -355,8 +391,8 @@ public sealed class ExcelParserService : IExcelParserService
         raw?.Trim() switch
         {
             "Despesa Parental" or "[MEUS PAIS]" => SourceType.Parental,
-            "Despesa Própria"  or "[MEU APÊ]"   => SourceType.Personal,
-            _                                    => SourceType.Personal,
+            "Despesa Própria" or "[MEU APÊ]" => SourceType.Personal,
+            _ => SourceType.Personal,
         };
 
     /// <summary>
@@ -400,7 +436,7 @@ public sealed class ExcelParserService : IExcelParserService
             if (color.ColorType != XLColorType.Color) return null;
 
             var argb = color.Color; // System.Drawing.Color
-            var hex  = $"{argb.A:X2}{argb.R:X2}{argb.G:X2}{argb.B:X2}";
+            var hex = $"{argb.A:X2}{argb.R:X2}{argb.G:X2}{argb.B:X2}";
 
             // Transparente ou branco → sem categoria
             if (hex is "00000000" or "FFFFFFFF") return null;

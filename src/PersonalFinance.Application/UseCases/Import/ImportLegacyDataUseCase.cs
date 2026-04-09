@@ -8,16 +8,25 @@ using PersonalFinance.Domain.Interfaces.Repositories;
 namespace PersonalFinance.Application.UseCases.Import;
 
 /// <summary>
-/// Orquestra a importação do histórico financeiro legado da planilha Excel.
+/// Importa o histórico financeiro legado da planilha Excel com suporte a re-importação.
 ///
-/// Fluxo por aba:
-///   1. Garante existência das categorias globais necessárias
-///   2. Cria o período mensal se não existir
-///   3. Importa receitas primárias (SUM de B4/C4)
-///   4. Importa despesas planejadas (tabela A-E)
-///   5. Importa gastos diversos e valores recebidos (tabela P/Q por cor)
+/// Estratégia de idempotência por entidade:
 ///
-/// Períodos já existentes são ignorados (idempotente por período).
+/// PERÍODO:
+///   - Não existe → cria
+///   - Já existe  → reutiliza (nunca duplica)
+///
+/// DESPESA (chave: PeriodId + Descrição + Valor + Quinzena):
+///   - Não existe → insere
+///   - Existe + dados iguais → ignora (sem UPDATE desnecessário)
+///   - Existe + dados diferentes (ex: status Pago mudou) → atualiza
+///
+/// RECEITA (mesma chave):
+///   - Não existe → insere
+///   - Existe + dados iguais → ignora
+///   - Existe + dados diferentes → atualiza
+///
+/// Registros que existem no banco mas não estão na planilha são preservados.
 /// </summary>
 public sealed class ImportLegacyDataUseCase
 {
@@ -53,19 +62,24 @@ public sealed class ImportLegacyDataUseCase
 
         var warnings = new List<string>();
         int periodsCreated = 0;
-        int periodsSkipped = 0;
+        int periodsReused = 0;
         int categoriesCreated = 0;
-        int expensesImported = 0;
-        int incomesImported = 0;
+        int expensesInserted = 0;
+        int expensesUpdated = 0;
+        int expensesUnchanged = 0;
+        int incomesInserted = 0;
+        int incomesUpdated = 0;
+        int incomesUnchanged = 0;
         int expensesSkipped = 0;
         int incomesSkipped = 0;
 
-        // Garante todas as categorias globais necessárias antes de processar
+        // Garante categorias globais antes de processar qualquer aba
         var categoryNames = sheets
             .SelectMany(s => s.Expenses.Select(e => e.CategoryName))
             .Distinct();
 
         var categoryCache = new Dictionary<string, Guid>(StringComparer.OrdinalIgnoreCase);
+
         foreach (var name in categoryNames)
         {
             var (id, wasCreated) = await EnsureCategoryAsync(name, ct);
@@ -73,101 +87,141 @@ public sealed class ImportLegacyDataUseCase
             if (wasCreated) categoriesCreated++;
         }
 
-        // Categoria padrão para receitas sem categoria específica
         var (receitaDiversaId, receitaCreated) = await EnsureCategoryAsync("Receita Diversa", ct);
         if (receitaCreated) categoriesCreated++;
 
         await _unitOfWork.CommitAsync(ct);
 
-        // Processa cada aba (período)
+        // Processa cada aba
         foreach (var sheet in sheets)
         {
             warnings.AddRange(sheet.Warnings);
 
-            // Ignora período já existente — idempotente
-            var alreadyExists = await _periodRepository.ExistsAsync(
+            // Garante que o período existe — cria ou reutiliza
+            var period = await _periodRepository.GetByUserYearMonthAsync(
                 userId, sheet.Year, sheet.Month, ct);
 
-            if (alreadyExists)
+            if (period is null)
             {
-                periodsSkipped++;
-                warnings.Add(
-                    $"Período {sheet.Month:D2}/{sheet.Year} já existe — ignorado.");
-                continue;
+                period = Period.Create(userId, sheet.Year, sheet.Month);
+                await _periodRepository.AddAsync(period, ct);
+                periodsCreated++;
+            }
+            else
+            {
+                periodsReused++;
             }
 
-            var period = Period.Create(userId, sheet.Year, sheet.Month);
-            await _periodRepository.AddAsync(period, ct);
-
-            // Receitas
-            foreach (var income in sheet.Incomes)
+            // ── Upsert de receitas ─────────────────────────────────────────
+            foreach (var dto in sheet.Incomes)
             {
-                if (income.Amount <= 0)
+                if (dto.Amount <= 0) { incomesSkipped++; continue; }
+
+                var existing = await _incomeRepository.FindByImportKeyAsync(
+                    period.Id, dto.Description, dto.Amount, dto.FortnightType, ct);
+
+                if (existing is null)
                 {
-                    incomesSkipped++;
-                    continue;
+                    var income = Income.Create(
+                        period.Id, userId,
+                        dto.FortnightType,
+                        dto.Description,
+                        dto.Amount,
+                        dto.ReceivedAt,
+                        null);
+
+                    await _incomeRepository.AddAsync(income, ct);
+                    incomesInserted++;
                 }
+                else if (HasIncomeChanged(existing, dto))
+                {
+                    existing.Update(
+                        dto.FortnightType,
+                        dto.Description,
+                        dto.Amount,
+                        dto.ReceivedAt,
+                        existing.Notes);
 
-                var entity = Income.Create(
-                    period.Id, userId,
-                    income.FortnightType,
-                    income.Description,
-                    income.Amount,
-                    income.ReceivedAt,
-                    null);
-
-                await _incomeRepository.AddAsync(entity, ct);
-                incomesImported++;
+                    await _incomeRepository.UpdateAsync(existing, ct);
+                    incomesUpdated++;
+                }
+                else
+                {
+                    incomesUnchanged++;
+                }
             }
 
-            // Despesas
-            foreach (var expense in sheet.Expenses)
+            // ── Upsert de despesas ─────────────────────────────────────────
+            foreach (var dto in sheet.Expenses)
             {
-                if (expense.Amount <= 0)
+                if (dto.Amount <= 0) { expensesSkipped++; continue; }
+
+                if (!categoryCache.TryGetValue(dto.CategoryName, out var catId))
                 {
-                    expensesSkipped++;
-                    continue;
+                    var (newId, wasCreated) = await EnsureCategoryAsync(dto.CategoryName, ct);
+                    catId = newId;
+                    categoryCache[dto.CategoryName] = catId;
+                    if (wasCreated) categoriesCreated++;
                 }
 
-                if (!categoryCache.TryGetValue(expense.CategoryName, out var catId))
+                var existing = await _expenseRepository.FindByImportKeyAsync(
+                    period.Id, dto.Description, dto.Amount, dto.FortnightType, ct);
+
+                var newStatus = dto.IsPaid ? PaymentStatus.Paid : PaymentStatus.Pending;
+                var newPaymentDate = dto.IsPaid ? dto.DueDate : (DateOnly?)null;
+
+                if (existing is null)
                 {
-                    var (newCatId, newCatCreated) = await EnsureCategoryAsync(expense.CategoryName, ct);
-                    catId = newCatId;
-                    if (newCatCreated) categoriesCreated++;
-                    categoryCache[expense.CategoryName] = catId;
+                    var expense = Expense.Create(
+                        period.Id, userId, catId,
+                        dto.SourceType,
+                        dto.FortnightType,
+                        newStatus,
+                        dto.Description,
+                        dto.Amount,
+                        dto.DueDate,
+                        newPaymentDate,
+                        null);
+
+                    await _expenseRepository.AddAsync(expense, ct);
+                    expensesInserted++;
                 }
+                else if (HasExpenseChanged(existing, dto, newStatus))
+                {
+                    // Atualiza apenas campos que podem mudar na planilha
+                    // Atualiza campos via Update (sem PaymentStatus — gerenciado por métodos próprios)
+                    existing.Update(
+                        catId,
+                        dto.SourceType,
+                        dto.FortnightType,
+                        dto.Description,
+                        dto.Amount,
+                        dto.DueDate,
+                        existing.Notes);
 
-                var status = expense.IsPaid
-                    ? PaymentStatus.Paid
-                    : PaymentStatus.Pending;
+                    // Atualiza para Paid se a planilha marcou como pago e o banco ainda não tem
+                    // Não reverte de Paid para Pending — decisão do usuário no sistema prevalece
+                    if (newStatus == PaymentStatus.Paid && existing.PaymentStatus != PaymentStatus.Paid)
+                        existing.MarkAsPaid(dto.DueDate);
 
-                var paymentDate = expense.IsPaid ? expense.DueDate : (DateOnly?)null;
-
-                var entity = Expense.Create(
-                    period.Id, userId, catId,
-                    expense.SourceType,
-                    expense.FortnightType,
-                    status,
-                    expense.Description,
-                    expense.Amount,
-                    expense.DueDate,
-                    paymentDate,
-                    null);
-
-                await _expenseRepository.AddAsync(entity, ct);
-                expensesImported++;
+                    await _expenseRepository.UpdateAsync(existing, ct);
+                    expensesUpdated++;
+                }
+                else
+                {
+                    expensesUnchanged++;
+                }
             }
 
             await _unitOfWork.CommitAsync(ct);
-            periodsCreated++;
         }
 
         return new ImportResultDto(
             PeriodsCreated: periodsCreated,
-            PeriodsSkipped: periodsSkipped,
+            PeriodsSkipped: periodsReused,
             CategoriesCreated: categoriesCreated,
-            ExpensesImported: expensesImported,
-            IncomesImported: incomesImported,
+            ExpensesImported: expensesInserted + expensesUpdated,
+            IncomesImported: incomesInserted + incomesUpdated,
             ExpensesSkipped: expensesSkipped,
             IncomesSkipped: incomesSkipped,
             Warnings: warnings
@@ -176,29 +230,31 @@ public sealed class ImportLegacyDataUseCase
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
-    /// <summary>
-    /// Retorna (id, wasCreated) — wasCreated=true se a categoria foi criada agora.
-    /// Async não suporta ref params, por isso o retorno é um tuple.
-    /// </summary>
+    private static bool HasIncomeChanged(Income existing, ParsedIncomeDto dto) =>
+        existing.FortnightType != dto.FortnightType ||
+        existing.ReceivedAt != dto.ReceivedAt;
+
+    private static bool HasExpenseChanged(
+        Expense existing, ParsedExpenseDto dto, PaymentStatus newStatus) =>
+        // Só considera mudança de Pending→Paid, nunca Paid→Pending
+        (newStatus == PaymentStatus.Paid && existing.PaymentStatus != PaymentStatus.Paid) ||
+        existing.SourceType != dto.SourceType ||
+        existing.FortnightType != dto.FortnightType ||
+        existing.DueDate != dto.DueDate;
+
     private async Task<(Guid id, bool wasCreated)> EnsureCategoryAsync(
         string name, CancellationToken ct)
     {
-        var existing = await _categoryRepository
-            .GetGlobalByNameAsync(name, ct);
-
-        if (existing is not null)
-            return (existing.Id, wasCreated: false);
+        var existing = await _categoryRepository.GetGlobalByNameAsync(name, ct);
+        if (existing is not null) return (existing.Id, false);
 
         var color = CategoryColors.GetFor(name);
         var category = Category.CreateGlobal(name, color, null);
         await _categoryRepository.AddAsync(category, ct);
-        return (category.Id, wasCreated: true);
+        return (category.Id, true);
     }
 }
 
-/// <summary>
-/// Cores padrão por categoria — usadas na criação automática durante a importação.
-/// </summary>
 file static class CategoryColors
 {
     private static readonly Dictionary<string, string> Map =
@@ -218,5 +274,5 @@ file static class CategoryColors
         };
 
     public static string GetFor(string name) =>
-        Map.TryGetValue(name, out var color) ? color : "#8a7a68";
+        Map.TryGetValue(name, out var c) ? c : "#8a7a68";
 }

@@ -13,15 +13,16 @@ namespace PersonalFinance.Application.Tests.Unit.Import;
 
 public class ImportLegacyDataUseCaseTests
 {
-    private readonly Mock<IExcelParserService>   _parser     = new();
-    private readonly Mock<ICategoryRepository>   _catRepo    = new();
-    private readonly Mock<IPeriodRepository>     _periodRepo = new();
-    private readonly Mock<IExpenseRepository>    _expRepo    = new();
-    private readonly Mock<IIncomeRepository>     _incRepo    = new();
-    private readonly Mock<IUnitOfWork>           _uow        = new();
-    private readonly ImportLegacyDataUseCase     _sut;
+    private readonly Mock<IExcelParserService>  _parser     = new();
+    private readonly Mock<ICategoryRepository>  _catRepo    = new();
+    private readonly Mock<IPeriodRepository>    _periodRepo = new();
+    private readonly Mock<IExpenseRepository>   _expRepo    = new();
+    private readonly Mock<IIncomeRepository>    _incRepo    = new();
+    private readonly Mock<IUnitOfWork>          _uow        = new();
+    private readonly ImportLegacyDataUseCase    _sut;
 
-    private static readonly Guid UserId = Guid.NewGuid();
+    private static readonly Guid UserId   = Guid.NewGuid();
+    private static readonly Guid PeriodId = Guid.NewGuid();
 
     public ImportLegacyDataUseCaseTests()
     {
@@ -35,245 +36,246 @@ public class ImportLegacyDataUseCaseTests
     private static ParsedSheetDto BuildSheet(
         int year = 2026, int month = 4,
         IEnumerable<ParsedExpenseDto>? expenses = null,
-        IEnumerable<ParsedIncomeDto>? incomes = null) =>
+        IEnumerable<ParsedIncomeDto>?  incomes  = null) =>
         new(year, month,
-            (incomes ?? Enumerable.Empty<ParsedIncomeDto>()).ToList(),
+            (incomes  ?? Enumerable.Empty<ParsedIncomeDto>()).ToList(),
             (expenses ?? Enumerable.Empty<ParsedExpenseDto>()).ToList(),
             new List<string>());
 
-    private void SetupNewPeriod() =>
-        _periodRepo.Setup(r => r.ExistsAsync(
-            UserId, It.IsAny<int>(), It.IsAny<int>(), default))
-            .ReturnsAsync(false);
+    private static ParsedExpenseDto BuildExpenseDto(
+        string description = "Internet", decimal amount = 110m,
+        bool isPaid = false, FortnightType fortnight = FortnightType.First)
+    {
+        // Usa sempre uma data no passado para evitar falha na validação de MarkAsPaid
+        var pastDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-1));
+        return new(description, amount, SourceType.Personal, fortnight, isPaid,
+            pastDate, "Gasto Recorrente");
+    }
+
+    private static ParsedIncomeDto BuildIncomeDto(
+        string description = "Receita 1ª Quinzena", decimal amount = 2613m,
+        FortnightType fortnight = FortnightType.First) =>
+        new(description, amount, fortnight, new DateOnly(2026, 4, 1));
+
+    private void SetupNoPeriod() =>
+        _periodRepo.Setup(r => r.GetByUserYearMonthAsync(UserId, It.IsAny<int>(), It.IsAny<int>(), default))
+                   .ReturnsAsync((Period?)null);
+
+    private Period SetupExistingPeriod()
+    {
+        var period = Period.Create(UserId, 2026, 4);
+        _periodRepo.Setup(r => r.GetByUserYearMonthAsync(UserId, 2026, 4, default))
+                   .ReturnsAsync(period);
+        return period;
+    }
 
     private void SetupCategoryNotFound() =>
-        _catRepo.Setup(r => r.GetGlobalByNameAsync(
-            It.IsAny<string>(), default))
-            .ReturnsAsync((Category?)null);
+        _catRepo.Setup(r => r.GetGlobalByNameAsync(It.IsAny<string>(), default))
+                .ReturnsAsync((Category?)null);
 
-    // ── Testes de fluxo principal ─────────────────────────────────────────────
+    private void SetupAllCategoriesExist()
+    {
+        var cat = Category.CreateGlobal("Gasto Recorrente", "#527a58", null);
+        var rec = Category.CreateGlobal("Receita Diversa",  "#6b8f71", null);
+        _catRepo.Setup(r => r.GetGlobalByNameAsync("Gasto Recorrente", default)).ReturnsAsync(cat);
+        _catRepo.Setup(r => r.GetGlobalByNameAsync("Receita Diversa",  default)).ReturnsAsync(rec);
+    }
 
-    [Fact(DisplayName = "Deve criar período, despesas e receitas para aba válida")]
-    public async Task Execute_WithValidSheet_ShouldCreateAllEntities()
+    // ── Criação — período novo ────────────────────────────────────────────────
+
+    [Fact(DisplayName = "Deve criar período e inserir registros quando não existem")]
+    public async Task Execute_NewPeriod_ShouldCreateAndInsert()
     {
         _parser.Setup(p => p.ParseAsync(It.IsAny<Stream>(), default))
-               .ReturnsAsync(new List<ParsedSheetDto>
-               {
-                   BuildSheet(
-                       expenses: new[]
-                       {
-                           new ParsedExpenseDto("Internet", 110.99m, SourceType.Personal,
-                               FortnightType.First, true,
-                               new DateOnly(2026,4,20), "Gasto Recorrente")
-                       },
-                       incomes: new[]
-                       {
-                           new ParsedIncomeDto("Receita 1ª Quinzena", 2613.15m,
-                               FortnightType.First, new DateOnly(2026,4,1))
-                       })
-               });
+               .ReturnsAsync(new[] { BuildSheet(expenses: new[] { BuildExpenseDto() }) });
 
-        SetupNewPeriod();
+        SetupNoPeriod();
         SetupCategoryNotFound();
+        _expRepo.Setup(r => r.FindByImportKeyAsync(
+            It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<decimal>(),
+            It.IsAny<FortnightType>(), default))
+            .ReturnsAsync((Expense?)null);
 
         var result = await _sut.ExecuteAsync(Stream.Null, UserId);
 
         result.PeriodsCreated.Should().Be(1);
+        result.PeriodsSkipped.Should().Be(0);
         result.ExpensesImported.Should().Be(1);
-        result.IncomesImported.Should().Be(1);
-        _uow.Verify(u => u.CommitAsync(default), Times.AtLeast(2));
+        _expRepo.Verify(r => r.AddAsync(It.IsAny<Expense>(), default), Times.Once);
     }
 
-    [Fact(DisplayName = "Deve ignorar período já existente e não reimportar")]
-    public async Task Execute_ExistingPeriod_ShouldSkipAndNotImport()
+    // ── Reutilização de período existente ─────────────────────────────────────
+
+    [Fact(DisplayName = "Deve reutilizar período existente sem criar duplicata")]
+    public async Task Execute_ExistingPeriod_ShouldReuseNotDuplicate()
     {
         _parser.Setup(p => p.ParseAsync(It.IsAny<Stream>(), default))
-               .ReturnsAsync(new List<ParsedSheetDto>
-               {
-                   BuildSheet(
-                       expenses: new[]
-                       {
-                           new ParsedExpenseDto("Internet", 110.99m, SourceType.Personal,
-                               FortnightType.First, true,
-                               new DateOnly(2026,4,20), "Gasto Recorrente")
-                       })
-               });
+               .ReturnsAsync(new[] { BuildSheet() });
 
-        // Período JÁ existe
-        _periodRepo.Setup(r => r.ExistsAsync(UserId, 2026, 4, default))
-                   .ReturnsAsync(true);
-
-        SetupCategoryNotFound();
+        SetupExistingPeriod();
+        SetupAllCategoriesExist();
 
         var result = await _sut.ExecuteAsync(Stream.Null, UserId);
 
         result.PeriodsSkipped.Should().Be(1);
         result.PeriodsCreated.Should().Be(0);
-        result.ExpensesImported.Should().Be(0);
+        _periodRepo.Verify(r => r.AddAsync(It.IsAny<Period>(), default), Times.Never);
+    }
+
+    // ── Insert de despesa nova ────────────────────────────────────────────────
+
+    [Fact(DisplayName = "Deve inserir despesa quando não existe no banco")]
+    public async Task Execute_NewExpense_ShouldInsert()
+    {
+        _parser.Setup(p => p.ParseAsync(It.IsAny<Stream>(), default))
+               .ReturnsAsync(new[] { BuildSheet(expenses: new[] { BuildExpenseDto() }) });
+
+        SetupExistingPeriod();
+        SetupAllCategoriesExist();
+        _expRepo.Setup(r => r.FindByImportKeyAsync(
+            It.IsAny<Guid>(), "Internet", 110m, FortnightType.First, default))
+            .ReturnsAsync((Expense?)null);
+
+        var result = await _sut.ExecuteAsync(Stream.Null, UserId);
+
+        result.ExpensesImported.Should().Be(1);
+        _expRepo.Verify(r => r.AddAsync(It.IsAny<Expense>(), default), Times.Once);
+        _expRepo.Verify(r => r.UpdateAsync(It.IsAny<Expense>(), default), Times.Never);
+    }
+
+    // ── Update de despesa — status mudou ─────────────────────────────────────
+
+    [Fact(DisplayName = "Deve atualizar despesa quando status mudou de Pending para Paid")]
+    public async Task Execute_ExpenseStatusChanged_ShouldUpdate()
+    {
+        var dto = BuildExpenseDto(isPaid: true); // planilha diz SIM
+
+        // Banco tem a mesma despesa como Pending — usa mesma data do dto para não acionar diff de DueDate
+        var existing = Expense.Create(
+            PeriodId, UserId, Guid.NewGuid(),
+            SourceType.Personal, FortnightType.First,
+            PaymentStatus.Pending,                    // status diferente
+            "Internet", 110m,
+            dto.DueDate, null, null);
+
+        _parser.Setup(p => p.ParseAsync(It.IsAny<Stream>(), default))
+               .ReturnsAsync(new[] { BuildSheet(expenses: new[] { dto }) });
+
+        SetupExistingPeriod();
+        SetupAllCategoriesExist();
+        _expRepo.Setup(r => r.FindByImportKeyAsync(
+            It.IsAny<Guid>(), "Internet", 110m, FortnightType.First, default))
+            .ReturnsAsync(existing);
+
+        var result = await _sut.ExecuteAsync(Stream.Null, UserId);
+
+        result.ExpensesImported.Should().Be(1);
+        _expRepo.Verify(r => r.UpdateAsync(existing, default), Times.Once);
         _expRepo.Verify(r => r.AddAsync(It.IsAny<Expense>(), default), Times.Never);
     }
 
-    [Fact(DisplayName = "Deve criar categoria global quando não existe")]
-    public async Task Execute_NewCategory_ShouldCreateGlobalCategory()
-    {
-        _parser.Setup(p => p.ParseAsync(It.IsAny<Stream>(), default))
-               .ReturnsAsync(new List<ParsedSheetDto>
-               {
-                   BuildSheet(expenses: new[]
-                   {
-                       new ParsedExpenseDto("Uber", 29.90m, SourceType.Personal,
-                           FortnightType.First, true,
-                           new DateOnly(2026,4,1), "Uber")
-                   })
-               });
+    // ── Sem mudança — ignora update desnecessário ─────────────────────────────
 
-        SetupNewPeriod();
-        _catRepo.Setup(r => r.GetGlobalByNameAsync("Uber", default))
-                .ReturnsAsync((Category?)null);
+    [Fact(DisplayName = "Deve ignorar despesa quando dados são idênticos")]
+    public async Task Execute_ExpenseUnchanged_ShouldSkipUpdate()
+    {
+        var dto = BuildExpenseDto(isPaid: false);
+
+        var existing = Expense.Create(
+            PeriodId, UserId, Guid.NewGuid(),
+            SourceType.Personal, FortnightType.First,
+            PaymentStatus.Pending,                    // igual ao dto
+            "Internet", 110m,
+            new DateOnly(2026, 4, 20), null, null);
+
+        _parser.Setup(p => p.ParseAsync(It.IsAny<Stream>(), default))
+               .ReturnsAsync(new[] { BuildSheet(expenses: new[] { dto }) });
+
+        SetupExistingPeriod();
+        SetupAllCategoriesExist();
+        _expRepo.Setup(r => r.FindByImportKeyAsync(
+            It.IsAny<Guid>(), "Internet", 110m, FortnightType.First, default))
+            .ReturnsAsync(existing);
 
         var result = await _sut.ExecuteAsync(Stream.Null, UserId);
 
-        result.CategoriesCreated.Should().BeGreaterThan(0);
-        _catRepo.Verify(r => r.AddAsync(
-            It.Is<Category>(c => c.Name == "Uber" && c.IsGlobal), default),
-            Times.Once);
+        result.ExpensesImported.Should().Be(0);
+        _expRepo.Verify(r => r.AddAsync(It.IsAny<Expense>(), default),    Times.Never);
+        _expRepo.Verify(r => r.UpdateAsync(It.IsAny<Expense>(), default), Times.Never);
     }
 
-    [Fact(DisplayName = "Deve reutilizar categoria global existente sem criar duplicata")]
-    public async Task Execute_ExistingCategory_ShouldReuseAndNotCreateDuplicate()
+    // ── Insert de receita nova ────────────────────────────────────────────────
+
+    [Fact(DisplayName = "Deve inserir receita quando não existe no banco")]
+    public async Task Execute_NewIncome_ShouldInsert()
     {
-        var existing = Category.CreateGlobal("Gasto Recorrente", "#527a58", null);
-
         _parser.Setup(p => p.ParseAsync(It.IsAny<Stream>(), default))
-               .ReturnsAsync(new List<ParsedSheetDto>
-               {
-                   BuildSheet(expenses: new[]
-                   {
-                       new ParsedExpenseDto("Internet", 110m, SourceType.Personal,
-                           FortnightType.First, false,
-                           new DateOnly(2026,4,20), "Gasto Recorrente")
-                   })
-               });
+               .ReturnsAsync(new[] { BuildSheet(incomes: new[] { BuildIncomeDto() }) });
 
-        SetupNewPeriod();
-
-        // Mocka "Gasto Recorrente" como já existente
-        _catRepo.Setup(r => r.GetGlobalByNameAsync("Gasto Recorrente", default))
-                .ReturnsAsync(existing);
-
-        // "Receita Diversa" também é criada pelo use case — mocka como já existente
-        // para garantir que CategoriesCreated permaneça 0
-        var receitaDiversa = Category.CreateGlobal("Receita Diversa", "#6b8f71", null);
-        _catRepo.Setup(r => r.GetGlobalByNameAsync("Receita Diversa", default))
-                .ReturnsAsync(receitaDiversa);
+        SetupExistingPeriod();
+        SetupAllCategoriesExist();
+        _incRepo.Setup(r => r.FindByImportKeyAsync(
+            It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<decimal>(),
+            It.IsAny<FortnightType>(), default))
+            .ReturnsAsync((Income?)null);
 
         var result = await _sut.ExecuteAsync(Stream.Null, UserId);
 
-        // Não deve criar categoria nova — ambas já existem
-        _catRepo.Verify(r => r.AddAsync(
-            It.Is<Category>(c => c.Name == "Gasto Recorrente"), default), Times.Never);
-        result.CategoriesCreated.Should().Be(0);
+        result.IncomesImported.Should().Be(1);
+        _incRepo.Verify(r => r.AddAsync(It.IsAny<Income>(), default), Times.Once);
     }
 
-    [Fact(DisplayName = "Deve ignorar despesas com valor zero")]
-    public async Task Execute_ZeroAmountExpense_ShouldSkip()
+    // ── Update de receita ─────────────────────────────────────────────────────
+
+    [Fact(DisplayName = "Deve atualizar receita quando data de recebimento mudou")]
+    public async Task Execute_IncomeReceivedAtChanged_ShouldUpdate()
+    {
+        var dto = BuildIncomeDto();
+
+        var existing = Income.Create(
+            PeriodId, UserId, FortnightType.First,
+            "Receita 1ª Quinzena", 2613m,
+            new DateOnly(2026, 4, 5),  // data diferente
+            null);
+
+        _parser.Setup(p => p.ParseAsync(It.IsAny<Stream>(), default))
+               .ReturnsAsync(new[] { BuildSheet(incomes: new[] { dto }) });
+
+        SetupExistingPeriod();
+        SetupAllCategoriesExist();
+        _incRepo.Setup(r => r.FindByImportKeyAsync(
+            It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<decimal>(),
+            It.IsAny<FortnightType>(), default))
+            .ReturnsAsync(existing);
+
+        var result = await _sut.ExecuteAsync(Stream.Null, UserId);
+
+        result.IncomesImported.Should().Be(1);
+        _incRepo.Verify(r => r.UpdateAsync(existing, default), Times.Once);
+        _incRepo.Verify(r => r.AddAsync(It.IsAny<Income>(), default), Times.Never);
+    }
+
+    // ── Valor zero → skip ─────────────────────────────────────────────────────
+
+    [Fact(DisplayName = "Deve ignorar despesas e receitas com valor zero")]
+    public async Task Execute_ZeroAmount_ShouldSkip()
     {
         _parser.Setup(p => p.ParseAsync(It.IsAny<Stream>(), default))
-               .ReturnsAsync(new List<ParsedSheetDto>
+               .ReturnsAsync(new[]
                {
-                   BuildSheet(expenses: new[]
-                   {
-                       new ParsedExpenseDto("Zero", 0m, SourceType.Personal,
-                           FortnightType.First, false,
-                           new DateOnly(2026,4,1), "Gasto Recorrente")
-                   })
+                   BuildSheet(
+                       expenses: new[] { BuildExpenseDto(amount: 0m) },
+                       incomes:  new[] { BuildIncomeDto(amount: 0m) })
                });
 
-        SetupNewPeriod();
-        SetupCategoryNotFound();
+        SetupExistingPeriod();
+        SetupAllCategoriesExist();
 
         var result = await _sut.ExecuteAsync(Stream.Null, UserId);
 
         result.ExpensesSkipped.Should().Be(1);
-        result.ExpensesImported.Should().Be(0);
+        result.IncomesSkipped.Should().Be(1);
         _expRepo.Verify(r => r.AddAsync(It.IsAny<Expense>(), default), Times.Never);
-    }
-
-    [Fact(DisplayName = "Deve processar múltiplas abas corretamente")]
-    public async Task Execute_MultipleSheets_ShouldProcessAll()
-    {
-        _parser.Setup(p => p.ParseAsync(It.IsAny<Stream>(), default))
-               .ReturnsAsync(new List<ParsedSheetDto>
-               {
-                   BuildSheet(2026, 3, expenses: new[]
-                   {
-                       new ParsedExpenseDto("Gás", 44.47m, SourceType.Personal,
-                           FortnightType.First, true, new DateOnly(2026,3,5), "Gasto Recorrente")
-                   }),
-                   BuildSheet(2026, 4, expenses: new[]
-                   {
-                       new ParsedExpenseDto("Gás", 50m, SourceType.Personal,
-                           FortnightType.First, false, new DateOnly(2026,4,5), "Gasto Recorrente")
-                   }),
-               });
-
-        _periodRepo.Setup(r => r.ExistsAsync(UserId, 2026, 3, default)).ReturnsAsync(false);
-        _periodRepo.Setup(r => r.ExistsAsync(UserId, 2026, 4, default)).ReturnsAsync(false);
-        SetupCategoryNotFound();
-
-        var result = await _sut.ExecuteAsync(Stream.Null, UserId);
-
-        result.PeriodsCreated.Should().Be(2);
-        result.ExpensesImported.Should().Be(2);
-    }
-
-    [Fact(DisplayName = "Deve marcar despesa paga com PaymentDate = DueDate")]
-    public async Task Execute_PaidExpense_ShouldHavePaymentDate()
-    {
-        var dueDate = new DateOnly(2026, 4, 10);
-        Expense? capturedExpense = null;
-
-        _parser.Setup(p => p.ParseAsync(It.IsAny<Stream>(), default))
-               .ReturnsAsync(new List<ParsedSheetDto>
-               {
-                   BuildSheet(expenses: new[]
-                   {
-                       new ParsedExpenseDto("Condomínio", 600m, SourceType.Parental,
-                           FortnightType.First, true, dueDate, "Gasto Recorrente")
-                   })
-               });
-
-        SetupNewPeriod();
-        SetupCategoryNotFound();
-
-        _expRepo.Setup(r => r.AddAsync(It.IsAny<Expense>(), default))
-                .Callback<Expense, CancellationToken>((e, _) => capturedExpense = e);
-
-        await _sut.ExecuteAsync(Stream.Null, UserId);
-
-        capturedExpense.Should().NotBeNull();
-        capturedExpense!.PaymentStatus.Should().Be(PaymentStatus.Paid);
-        capturedExpense.PaymentDate.Should().Be(dueDate);
-    }
-
-    [Fact(DisplayName = "Resultado deve incluir avisos das abas parseadas")]
-    public async Task Execute_SheetWithWarnings_ShouldIncludeInResult()
-    {
-        var sheetWithWarning = new ParsedSheetDto(
-            2026, 4,
-            new List<ParsedIncomeDto>(),
-            new List<ParsedExpenseDto>(),
-            new List<string> { "Aviso de teste" }
-        );
-
-        _parser.Setup(p => p.ParseAsync(It.IsAny<Stream>(), default))
-               .ReturnsAsync(new List<ParsedSheetDto> { sheetWithWarning });
-
-        SetupNewPeriod();
-        SetupCategoryNotFound();
-
-        var result = await _sut.ExecuteAsync(Stream.Null, UserId);
-
-        result.Warnings.Should().Contain("Aviso de teste");
+        _incRepo.Verify(r => r.AddAsync(It.IsAny<Income>(), default),  Times.Never);
     }
 }

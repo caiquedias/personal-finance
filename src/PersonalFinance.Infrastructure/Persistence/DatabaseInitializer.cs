@@ -62,42 +62,47 @@ public sealed class DatabaseInitializer : IHostedService
         const string sql = """
             CREATE OR ALTER VIEW [dbo].[vw_PeriodSummary] AS
             SELECT
-                p.[Id]                                                     AS [PeriodId],
+                p.[Id]                                                         AS [PeriodId],
                 p.[UserId],
                 p.[Year],
                 p.[Month],
 
-                -- Receitas
-                COALESCE(SUM(i.[Amount]), 0)                               AS [TotalIncome],
+                -- Receitas em subconsulta separada — evita produto cartesiano com Expense
+                COALESCE(i.[TotalIncome], 0)                                   AS [TotalIncome],
 
                 -- Despesas
-                COALESCE(SUM(e.[Amount]), 0)                               AS [TotalExpense],
-
-                -- Pago (PaymentStatusId = 2)
-                COALESCE(SUM(CASE WHEN e.[PaymentStatusId] = 2
-                                  THEN e.[Amount] ELSE 0 END), 0)          AS [TotalPaid],
-
-                -- Devedor (Pending=1 ou Partial=4)
-                COALESCE(SUM(CASE WHEN e.[PaymentStatusId] IN (1, 4)
-                                  THEN e.[Amount] ELSE 0 END), 0)          AS [TotalOwed],
-
-                -- Por quinzena (FortnightTypeId: First=1, Second=2)
-                COALESCE(SUM(CASE WHEN e.[FortnightTypeId] = 1
-                                  THEN e.[Amount] ELSE 0 END), 0)          AS [TotalFirstFortnight],
-                COALESCE(SUM(CASE WHEN e.[FortnightTypeId] = 2
-                                  THEN e.[Amount] ELSE 0 END), 0)          AS [TotalSecondFortnight],
+                COALESCE(e.[TotalExpense],         0)                          AS [TotalExpense],
+                COALESCE(e.[TotalPaid],            0)                          AS [TotalPaid],
+                COALESCE(e.[TotalOwed],            0)                          AS [TotalOwed],
+                COALESCE(e.[TotalFirstFortnight],  0)                          AS [TotalFirstFortnight],
+                COALESCE(e.[TotalSecondFortnight], 0)                          AS [TotalSecondFortnight],
 
                 -- Saldo
-                COALESCE(SUM(i.[Amount]), 0)
-                    - COALESCE(SUM(e.[Amount]), 0)                         AS [Balance]
+                COALESCE(i.[TotalIncome], 0) - COALESCE(e.[TotalExpense], 0)  AS [Balance]
 
-            FROM      [dbo].[Period]  p
-            LEFT JOIN [dbo].[Income]  i ON i.[PeriodId] = p.[Id]
-                                       AND i.[DeletedAt] IS NULL
-            LEFT JOIN [dbo].[Expense] e ON e.[PeriodId] = p.[Id]
-                                       AND e.[DeletedAt] IS NULL
-            WHERE     p.[DeletedAt] IS NULL
-            GROUP BY  p.[Id], p.[UserId], p.[Year], p.[Month];
+            FROM [dbo].[Period] p
+
+            LEFT JOIN (
+                SELECT [PeriodId], SUM([Amount]) AS [TotalIncome]
+                FROM [dbo].[Income]
+                WHERE [DeletedAt] IS NULL
+                GROUP BY [PeriodId]
+            ) i ON i.[PeriodId] = p.[Id]
+
+            LEFT JOIN (
+                SELECT
+                    [PeriodId],
+                    SUM([Amount])                                                        AS [TotalExpense],
+                    SUM(CASE WHEN [PaymentStatusId] = 2       THEN [Amount] ELSE 0 END) AS [TotalPaid],
+                    SUM(CASE WHEN [PaymentStatusId] IN (1, 4) THEN [Amount] ELSE 0 END) AS [TotalOwed],
+                    SUM(CASE WHEN [FortnightTypeId] = 1       THEN [Amount] ELSE 0 END) AS [TotalFirstFortnight],
+                    SUM(CASE WHEN [FortnightTypeId] = 2       THEN [Amount] ELSE 0 END) AS [TotalSecondFortnight]
+                FROM [dbo].[Expense]
+                WHERE [DeletedAt] IS NULL
+                GROUP BY [PeriodId]
+            ) e ON e.[PeriodId] = p.[Id]
+
+            WHERE p.[DeletedAt] IS NULL;
             """;
 
         await context.Database.ExecuteSqlRawAsync(sql, ct);

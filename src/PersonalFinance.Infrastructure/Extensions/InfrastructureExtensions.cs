@@ -10,6 +10,7 @@ using PersonalFinance.Infrastructure.Persistence.Context;
 using PersonalFinance.Infrastructure.Persistence.Repositories.Auth;
 using PersonalFinance.Infrastructure.Persistence.Repositories.Config;
 using PersonalFinance.Infrastructure.Persistence.Repositories.Financial;
+using PersonalFinance.Infrastructure.Persistence.Repositories.Reports;
 using PersonalFinance.Infrastructure.Services;
 
 namespace PersonalFinance.Infrastructure.Extensions;
