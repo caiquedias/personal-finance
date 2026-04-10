@@ -506,7 +506,7 @@ export class ExpensesComponent implements OnInit {
                   dueDate:       v.dueDate!,
                   sourceType,
                   fortnightType,
-                  notes:         v.notes || undefined }
+                  notes:         v.notes || null }
               : e
             )
           );
