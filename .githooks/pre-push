@@ -1,0 +1,21 @@
+#!/bin/bash
+# Hook: pre-push
+# Bloqueia push direto para branches protegidas e valida nomenclatura de branch
+
+PROTECTED="master release develop"
+CURRENT=$(git symbolic-ref HEAD 2>/dev/null | sed 's|refs/heads/||')
+
+for BRANCH in $PROTECTED; do
+    if [ "$CURRENT" = "$BRANCH" ]; then
+        echo "ERROR: Push direto para '$BRANCH' nao e permitido. Use Pull Request."
+        exit 1
+    fi
+done
+
+if ! echo "$CURRENT" | grep -qE "^(feat|fix|hotfix|claude)/"; then
+    echo "ERROR: Nome de branch invalido: '$CURRENT'"
+    echo "       Prefixos validos: feat/, fix/, hotfix/, claude/"
+    exit 1
+fi
+
+exit 0

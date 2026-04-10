@@ -174,6 +174,9 @@ export interface ResetPasswordRequest { newPassword: string; }
 export interface CreatePaymentStatusRequest { name: string; description: string; }
 export interface CreateSourceTypeRequest    { name: string; }
 export interface CreateFortnightTypeRequest { name: string; }
+export interface UpdatePaymentStatusRequest { name: string; description: string; }
+export interface UpdateSourceTypeRequest    { name: string; }
+export interface UpdateFortnightTypeRequest { name: string; }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 

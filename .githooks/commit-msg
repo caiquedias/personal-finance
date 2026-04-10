@@ -1,0 +1,22 @@
+#!/bin/bash
+# Hook: commit-msg
+# Valida formato Conventional Commits
+
+MSG=$(cat "$1")
+
+# Permite merge commits, reverts e commits automaticos
+if echo "$MSG" | grep -qE "^(Merge|Revert)"; then
+    exit 0
+fi
+
+# Conventional Commits: type(scope): description  ou  type: description
+PATTERN="^(feat|fix|docs|style|refactor|test|chore|perf|ci|build|revert)(\(.+\))?: .{1,}"
+if ! echo "$MSG" | grep -qE "$PATTERN"; then
+    echo "ERROR: Commit message invalida. Use Conventional Commits:"
+    echo "       Formato : type(scope): descricao"
+    echo "       Tipos   : feat, fix, docs, style, refactor, test, chore, perf, ci, build, revert"
+    echo "       Exemplo : feat(expenses): adiciona modal de criacao"
+    exit 1
+fi
+
+exit 0

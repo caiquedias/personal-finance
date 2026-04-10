@@ -7,7 +7,9 @@ import {
   PeriodResponse, CreatePeriodRequest, PeriodSummary,
   ExpenseResponse, CreateExpenseRequest, UpdateExpenseRequest, MarkAsPaidRequest,
   IncomeResponse, CreateIncomeRequest,
-  LookupItem, CreatePaymentStatusRequest, CreateSourceTypeRequest, CreateFortnightTypeRequest,
+  LookupItem,
+  CreatePaymentStatusRequest, CreateSourceTypeRequest, CreateFortnightTypeRequest,
+  UpdatePaymentStatusRequest, UpdateSourceTypeRequest, UpdateFortnightTypeRequest,
   AdminUserResponse, AssignRoleRequest, ResetPasswordRequest,
 } from '../models/models';
 
@@ -128,6 +130,14 @@ export class ApiService {
     return this.http.post<LookupItem>(`${this.base}/config/payment-statuses`, data);
   }
 
+  updatePaymentStatus(id: number, data: UpdatePaymentStatusRequest): Observable<LookupItem> {
+    return this.http.put<LookupItem>(`${this.base}/config/payment-statuses/${id}`, data);
+  }
+
+  deletePaymentStatus(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/config/payment-statuses/${id}`);
+  }
+
   getSourceTypes(): Observable<LookupItem[]> {
     return this.http.get<LookupItem[]>(`${this.base}/config/source-types`);
   }
@@ -136,12 +146,28 @@ export class ApiService {
     return this.http.post<LookupItem>(`${this.base}/config/source-types`, data);
   }
 
+  updateSourceType(id: number, data: UpdateSourceTypeRequest): Observable<LookupItem> {
+    return this.http.put<LookupItem>(`${this.base}/config/source-types/${id}`, data);
+  }
+
+  deleteSourceType(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/config/source-types/${id}`);
+  }
+
   getFortnightTypes(): Observable<LookupItem[]> {
     return this.http.get<LookupItem[]>(`${this.base}/config/fortnight-types`);
   }
 
   createFortnightType(data: CreateFortnightTypeRequest): Observable<LookupItem> {
     return this.http.post<LookupItem>(`${this.base}/config/fortnight-types`, data);
+  }
+
+  updateFortnightType(id: number, data: UpdateFortnightTypeRequest): Observable<LookupItem> {
+    return this.http.put<LookupItem>(`${this.base}/config/fortnight-types/${id}`, data);
+  }
+
+  deleteFortnightType(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/config/fortnight-types/${id}`);
   }
 
   // ── Admin ─────────────────────────────────────────────────────────────────
