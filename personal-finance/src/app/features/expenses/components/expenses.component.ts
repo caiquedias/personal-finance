@@ -1,7 +1,9 @@
 import { Component, inject, signal, OnInit, input, ViewChild, ElementRef } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
+import { trigger, style, animate, transition } from '@angular/animations';
 import { ApiService } from '../../../core/services/api.service';
 import { HeaderComponent } from '../../../shared/components/header/header.component';
+import { SonicModalComponent } from '../../../shared/components/modal/sonic-modal.component';
 import { CurrencyBrlPipe } from '../../../shared/pipes/currency-brl.pipe';
 import {
   ExpenseResponse, PeriodResponse, CategoryResponse,
@@ -12,113 +14,37 @@ import {
 @Component({
   selector: 'app-expenses',
   standalone: true,
-  imports: [HeaderComponent, CurrencyBrlPipe, ReactiveFormsModule],
+  imports: [HeaderComponent, CurrencyBrlPipe, ReactiveFormsModule, SonicModalComponent],
+  animations: [
+    trigger('backdropAnim', [
+      transition(':enter', [
+        style({ opacity: 0 }),
+        animate('200ms ease', style({ opacity: 1 }))
+      ]),
+      transition(':leave', [
+        animate('180ms ease', style({ opacity: 0 }))
+      ])
+    ]),
+    trigger('modalAnim', [
+      transition(':enter', [
+        style({ opacity: 0, transform: 'scale(0.88) translateY(-16px)' }),
+        animate('260ms cubic-bezier(0.34, 1.56, 0.64, 1)',
+          style({ opacity: 1, transform: 'scale(1) translateY(0)' }))
+      ]),
+      transition(':leave', [
+        animate('180ms ease-in',
+          style({ opacity: 0, transform: 'scale(0.93) translateY(10px)' }))
+      ])
+    ])
+  ],
   template: `
     <app-header title="Despesas" subtitle="Gerencie seus lançamentos de despesas">
-      <button class="btn btn-primary btn-sm" (click)="toggleForm()">
-        {{ showForm() ? 'Cancelar' : '+ Nova despesa' }}
+      <button class="btn btn-primary btn-sm" (click)="openCreateModal()">
+        + Nova despesa
       </button>
     </app-header>
 
     <div class="page-content">
-
-      <!-- Formulário -->
-      @if (showForm()) {
-        <div class="card form-card">
-          <h3 class="form-title">Nova despesa</h3>
-          <form [formGroup]="form" (ngSubmit)="onSubmit()">
-            <div class="form-grid">
-              <!-- Período -->
-              <div class="field">
-                <label class="field-label">Período *</label>
-                <select formControlName="periodId" class="input" [class.error]="showError('periodId')">
-                  <option value="">Selecione</option>
-                  @for (p of periods(); track p.id) {
-                    <option [value]="p.id">{{ monthName(p.month) }}/{{ p.year }}</option>
-                  }
-                </select>
-              </div>
-
-              <!-- Categoria -->
-              <div class="field">
-                <label class="field-label">Categoria *</label>
-                <select formControlName="categoryId" class="input" [class.error]="showError('categoryId')">
-                  <option value="">Selecione</option>
-                  @for (c of categories(); track c.id) {
-                    <option [value]="c.id">{{ c.name }}</option>
-                  }
-                </select>
-              </div>
-
-              <!-- Descrição -->
-              <div class="field field-wide">
-                <label class="field-label">Descrição *</label>
-                <input
-                  formControlName="description"
-                  class="input"
-                  [class.error]="showError('description')"
-                  placeholder="Ex: Aluguel, Internet..."
-                />
-              </div>
-
-              <!-- Valor -->
-              <div class="field">
-                <label class="field-label">Valor (R$) *</label>
-                <input
-                  type="number"
-                  formControlName="amount"
-                  class="input"
-                  [class.error]="showError('amount')"
-                  placeholder="0,00"
-                  step="0.01"
-                  min="0.01"
-                />
-              </div>
-
-              <!-- Vencimento -->
-              <div class="field">
-                <label class="field-label">Vencimento *</label>
-                <input type="date" formControlName="dueDate" class="input" [class.error]="showError('dueDate')" />
-              </div>
-
-              <!-- Fonte -->
-              <div class="field">
-                <label class="field-label">Origem *</label>
-                <select formControlName="sourceType" class="input">
-                  <option [value]="1">Parental</option>
-                  <option [value]="2">Própria</option>
-                </select>
-              </div>
-
-              <!-- Quinzena -->
-              <div class="field">
-                <label class="field-label">Quinzena *</label>
-                <select formControlName="fortnightType" class="input">
-                  <option [value]="1">1ª Quinzena</option>
-                  <option [value]="2">2ª Quinzena</option>
-                </select>
-              </div>
-
-              <!-- Observações -->
-              <div class="field field-wide">
-                <label class="field-label">Observações</label>
-                <input formControlName="notes" class="input" placeholder="Opcional..." />
-              </div>
-            </div>
-
-            @if (apiError()) {
-              <div class="form-error">{{ apiError() }}</div>
-            }
-
-            <div class="form-footer">
-              <button type="button" class="btn btn-secondary" (click)="toggleForm()">Cancelar</button>
-              <button type="submit" class="btn btn-primary" [disabled]="loading()">
-                {{ loading() ? 'Salvando...' : 'Salvar despesa' }}
-              </button>
-            </div>
-          </form>
-        </div>
-      }
 
       <!-- Filtro por período -->
       <div class="filter-row">
@@ -180,8 +106,19 @@ import {
                           ✓
                         </button>
                       }
+                      <button class="action-btn action-edit" title="Editar" (click)="openEditModal(expense)">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                        </svg>
+                      </button>
                       <button class="action-btn action-danger" (click)="deleteExpense(expense.id)" title="Excluir">
-                        ✕
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <polyline points="3 6 5 6 21 6"/>
+                          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                          <path d="M10 11v6M14 11v6"/>
+                          <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                        </svg>
                       </button>
                     </div>
                   </td>
@@ -192,41 +129,116 @@ import {
         </div>
       }
     </div>
+
+    <!-- ── Modal inline com @if — Angular controla :enter/:leave ── -->
+    @if (modalOpen()) {
+      <!-- Backdrop -->
+      <div class="modal-overlay" @backdropAnim (click)="closeModal()"></div>
+
+      <!-- Painel centralizado -->
+      <div class="modal-center" @modalAnim>
+        <app-sonic-modal
+          [title]="modalMode() === 'create' ? 'Nova Despesa' : 'Editar Despesa'"
+          (closed)="closeModal()"
+        >
+          <form [formGroup]="form" (ngSubmit)="onSubmit()">
+            <div class="modal-form-grid">
+
+              @if (modalMode() === 'create') {
+                <div class="field">
+                  <label class="field-label">Período *</label>
+                  <select formControlName="periodId" class="input" [class.error]="showError('periodId')">
+                    <option value="">Selecione</option>
+                    @for (p of periods(); track p.id) {
+                      <option [value]="p.id">{{ monthName(p.month) }}/{{ p.year }}</option>
+                    }
+                  </select>
+                  @if (showError('periodId')) { <span class="field-error">Obrigatório</span> }
+                </div>
+              }
+
+              <div class="field">
+                <label class="field-label">Categoria *</label>
+                <select formControlName="categoryId" class="input" [class.error]="showError('categoryId')">
+                  <option value="">Selecione</option>
+                  @for (c of categories(); track c.id) {
+                    <option [value]="c.id">{{ c.name }}</option>
+                  }
+                </select>
+                @if (showError('categoryId')) { <span class="field-error">Obrigatório</span> }
+              </div>
+
+              <div class="field field-full">
+                <label class="field-label">Descrição *</label>
+                <input
+                  formControlName="description"
+                  class="input"
+                  [class.error]="showError('description')"
+                  placeholder="Ex: Aluguel, Internet..."
+                />
+                @if (showError('description')) { <span class="field-error">Obrigatório</span> }
+              </div>
+
+              <div class="field">
+                <label class="field-label">Valor (R$) *</label>
+                <input
+                  type="number"
+                  formControlName="amount"
+                  class="input"
+                  [class.error]="showError('amount')"
+                  placeholder="0,00"
+                  step="0.01"
+                  min="0.01"
+                />
+                @if (showError('amount')) { <span class="field-error">Valor inválido</span> }
+              </div>
+
+              <div class="field">
+                <label class="field-label">Vencimento *</label>
+                <input type="date" formControlName="dueDate" class="input" [class.error]="showError('dueDate')" />
+                @if (showError('dueDate')) { <span class="field-error">Obrigatório</span> }
+              </div>
+
+              <div class="field">
+                <label class="field-label">Origem *</label>
+                <select formControlName="sourceType" class="input">
+                  <option [value]="1">Parental</option>
+                  <option [value]="2">Própria</option>
+                </select>
+              </div>
+
+              <div class="field">
+                <label class="field-label">Quinzena *</label>
+                <select formControlName="fortnightType" class="input">
+                  <option [value]="1">1ª Quinzena</option>
+                  <option [value]="2">2ª Quinzena</option>
+                </select>
+              </div>
+
+              <div class="field field-full">
+                <label class="field-label">Observações</label>
+                <input formControlName="notes" class="input" placeholder="Opcional..." />
+              </div>
+
+            </div>
+
+            @if (apiError()) {
+              <div class="form-error">{{ apiError() }}</div>
+            }
+
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" (click)="closeModal()">Cancelar</button>
+              <button type="submit" class="btn btn-primary" [disabled]="saving()">
+                {{ saving() ? 'Salvando...' : (modalMode() === 'create' ? 'Criar despesa' : 'Salvar') }}
+              </button>
+            </div>
+          </form>
+        </app-sonic-modal>
+      </div>
+    }
   `,
   styles: [`
     .page-content { padding: 28px; display: flex; flex-direction: column; gap: 20px; }
-
-    .form-card { padding: 24px; }
-    .form-title { font-size: 1rem; margin-bottom: 20px; }
-
-    .form-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 16px;
-    }
-
-    @media (max-width: 960px) { .form-grid { grid-template-columns: repeat(2, 1fr); } }
-    @media (max-width: 640px) { .form-grid { grid-template-columns: 1fr; } }
-
-    .field { display: flex; flex-direction: column; gap: 6px; }
-    .field-wide { grid-column: span 2; }
-    .field-label { font-size: 0.875rem; font-weight: 500; color: var(--ink2); }
-
-    .form-error {
-      margin-top: 16px;
-      padding: 10px 14px;
-      background: var(--color-danger-bg);
-      color: var(--color-danger);
-      border-radius: var(--radius);
-      font-size: 0.875rem;
-    }
-
-    .form-footer {
-      display: flex;
-      justify-content: flex-end;
-      gap: 10px;
-      margin-top: 20px;
-    }
 
     .filter-row {
       display: flex;
@@ -254,6 +266,7 @@ import {
     .cell-secondary { font-size: 0.75rem; color: var(--ink3); margin-top: 2px; }
     .category-dot   { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
     .text-sm        { font-size: 0.8125rem; }
+    .text-muted     { color: var(--ink3); }
     .font-semibold  { font-weight: 600; color: var(--ink); }
 
     .row-actions { display: flex; gap: 4px; }
@@ -263,10 +276,11 @@ import {
       background: none; border-radius: var(--radius-sm);
       cursor: pointer; font-size: 12px;
       display: flex; align-items: center; justify-content: center;
-      transition: all var(--transition);
+      transition: all var(--transition); color: var(--ink3);
     }
     .action-success:hover { background: var(--color-success-bg); border-color: var(--sage2); color: var(--sage2); }
-    .action-danger:hover  { background: var(--color-danger-bg);  border-color: var(--rust);  color: var(--rust);  }
+    .action-edit:hover    { background: var(--color-info-bg);    border-color: var(--color-info);  color: var(--color-info);  }
+    .action-danger:hover  { background: var(--color-danger-bg);  border-color: var(--rust);        color: var(--rust);        }
 
     .loading-state, .empty-state {
       display: flex; flex-direction: column;
@@ -282,6 +296,53 @@ import {
     }
 
     @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Modal overlay e painel ── */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(26, 20, 14, 0.55);
+      backdrop-filter: blur(3px);
+      z-index: 900;
+    }
+
+    .modal-center {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 901;
+      pointer-events: none;
+    }
+
+    .modal-center > * {
+      pointer-events: all;
+    }
+
+    /* ── Modal form ── */
+    .modal-form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .field       { display: flex; flex-direction: column; gap: 6px; }
+    .field-full  { grid-column: span 2; }
+    .field-label { font-size: 0.875rem; font-weight: 500; color: var(--ink2); }
+    .field-error { font-size: 0.8125rem; color: var(--color-danger); }
+
+    .form-error {
+      margin-top: 12px; padding: 10px 14px;
+      background: var(--color-danger-bg); color: var(--color-danger);
+      border-radius: var(--radius); font-size: 0.875rem;
+    }
+
+    .modal-footer {
+      display: flex; justify-content: flex-end; gap: 10px;
+      margin-top: 20px; padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
   `]
 })
 export class ExpensesComponent implements OnInit {
@@ -290,14 +351,16 @@ export class ExpensesComponent implements OnInit {
 
   readonly PaymentStatus = PaymentStatus;
 
-  readonly periods    = signal<PeriodResponse[]>([]);
-  readonly categories = signal<CategoryResponse[]>([]);
-  readonly expenses   = signal<ExpenseResponse[]>([]);
-  readonly showForm   = signal(false);
-  readonly loading    = signal(false);
+  readonly periods     = signal<PeriodResponse[]>([]);
+  readonly categories  = signal<CategoryResponse[]>([]);
+  readonly expenses    = signal<ExpenseResponse[]>([]);
   readonly loadingList = signal(false);
-  readonly apiError   = signal<string | null>(null);
+  readonly saving      = signal(false);
+  readonly apiError    = signal<string | null>(null);
+  readonly modalOpen   = signal(false);
+  readonly modalMode   = signal<'create' | 'edit'>('create');
 
+  private editingId: string | null = null;
   private selectedPeriodId: string | null = null;
 
   /** Pré-seleção via query param: /expenses?periodId=xxx */
@@ -335,8 +398,38 @@ export class ExpensesComponent implements OnInit {
     this.api.getCategories().subscribe(c => this.categories.set(c));
   }
 
-  toggleForm(): void {
-    this.showForm.update(v => !v);
+  openCreateModal(): void {
+    this.editingId = null;
+    this.modalMode.set('create');
+    this.apiError.set(null);
+    this.form.reset({
+      periodId:      this.selectedPeriodId ?? '',
+      sourceType:    SourceType.Personal,
+      fortnightType: FortnightType.First,
+    });
+    this.modalOpen.set(true);
+  }
+
+  openEditModal(expense: ExpenseResponse): void {
+    this.editingId = expense.id;
+    this.modalMode.set('edit');
+    this.apiError.set(null);
+    this.form.patchValue({
+      periodId:      expense.periodId,
+      categoryId:    expense.categoryId,
+      description:   expense.description,
+      amount:        expense.amount,
+      dueDate:       expense.dueDate.split('T')[0],
+      sourceType:    expense.sourceType,
+      fortnightType: expense.fortnightType,
+      notes:         expense.notes ?? '',
+    });
+    this.modalOpen.set(true);
+  }
+
+  closeModal(): void {
+    this.modalOpen.set(false);
+    this.editingId = null;
     this.apiError.set(null);
   }
 
@@ -362,33 +455,70 @@ export class ExpensesComponent implements OnInit {
   onSubmit(): void {
     if (this.form.invalid) { this.form.markAllAsTouched(); return; }
 
-    this.loading.set(true);
+    this.saving.set(true);
     this.apiError.set(null);
 
     const v = this.form.getRawValue();
-    this.api.createExpense({
-      periodId:      v.periodId!,
-      categoryId:    v.categoryId!,
-      description:   v.description!,
-      amount:        v.amount!,
-      dueDate:       v.dueDate!,
-      sourceType:    Number(v.sourceType) as SourceType,
-      fortnightType: Number(v.fortnightType) as FortnightType,
-      notes:         v.notes || undefined,
-    }).subscribe({
-      next: e => {
-        if (this.selectedPeriodId === e.periodId) {
-          this.expenses.update(list => [e, ...list]);
+
+    if (this.modalMode() === 'create') {
+      this.api.createExpense({
+        periodId:      v.periodId!,
+        categoryId:    v.categoryId!,
+        description:   v.description!,
+        amount:        v.amount!,
+        dueDate:       v.dueDate!,
+        sourceType:    Number(v.sourceType) as SourceType,
+        fortnightType: Number(v.fortnightType) as FortnightType,
+        notes:         v.notes || undefined,
+      }).subscribe({
+        next: e => {
+          if (this.selectedPeriodId === e.periodId)
+            this.expenses.update(list => [e, ...list]);
+          this.closeModal();
+          this.saving.set(false);
+        },
+        error: err => {
+          this.apiError.set(err.error?.message ?? 'Erro ao salvar despesa.');
+          this.saving.set(false);
         }
-        this.form.reset({ sourceType: SourceType.Personal, fortnightType: FortnightType.First });
-        this.showForm.set(false);
-        this.loading.set(false);
-      },
-      error: err => {
-        this.apiError.set(err.error?.message ?? 'Erro ao salvar despesa.');
-        this.loading.set(false);
-      }
-    });
+      });
+    } else {
+      const id = this.editingId!;
+      const sourceType    = Number(v.sourceType)    as SourceType;
+      const fortnightType = Number(v.fortnightType) as FortnightType;
+
+      this.api.updateExpense(id, {
+        categoryId:    v.categoryId!,
+        description:   v.description!,
+        amount:        v.amount!,
+        dueDate:       v.dueDate!,
+        sourceType,
+        fortnightType,
+        notes:         v.notes || undefined,
+      }).subscribe({
+        next: () => {
+          this.expenses.update(list =>
+            list.map(e => e.id === id
+              ? { ...e,
+                  categoryId:    v.categoryId!,
+                  description:   v.description!,
+                  amount:        v.amount!,
+                  dueDate:       v.dueDate!,
+                  sourceType,
+                  fortnightType,
+                  notes:         v.notes || undefined }
+              : e
+            )
+          );
+          this.closeModal();
+          this.saving.set(false);
+        },
+        error: err => {
+          this.apiError.set(err.error?.message ?? 'Erro ao editar despesa.');
+          this.saving.set(false);
+        }
+      });
+    }
   }
 
   markAsPaid(expense: ExpenseResponse): void {
