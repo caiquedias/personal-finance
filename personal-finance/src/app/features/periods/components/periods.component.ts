@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { ApiService } from '../../../core/services/api.service';
@@ -71,6 +71,61 @@ import { PeriodResponse, MONTH_NAMES } from '../../../core/models/models';
         </div>
       }
 
+      <!-- Barra de filtros -->
+      @if (!loadingList() && periods().length > 0) {
+        <div class="filter-bar card">
+          <div class="filter-controls">
+            <div class="filter-field">
+              <label class="filter-label">Ano</label>
+              <select class="input input-sm" [value]="selectedYear() ?? ''" (change)="setYear($any($event.target).value)">
+                <option value="">Todos</option>
+                @for (y of availableYears(); track y) {
+                  <option [value]="y">{{ y }}</option>
+                }
+              </select>
+            </div>
+
+            <div class="filter-field">
+              <label class="filter-label">De</label>
+              <select class="input input-sm" [value]="monthFrom() ?? ''" (change)="setMonthFrom($any($event.target).value)">
+                <option value="">--</option>
+                @for (m of monthsShort; track m.value) {
+                  <option [value]="m.value">{{ m.label }}</option>
+                }
+              </select>
+            </div>
+
+            <div class="filter-field">
+              <label class="filter-label">Até</label>
+              <select class="input input-sm" [value]="monthTo() ?? ''" (change)="setMonthTo($any($event.target).value)">
+                <option value="">--</option>
+                @for (m of monthsShort; track m.value) {
+                  <option [value]="m.value">{{ m.label }}</option>
+                }
+              </select>
+            </div>
+
+            <div class="filter-field">
+              <label class="filter-label">Status</label>
+              <select class="input input-sm" [value]="filterStatus()" (change)="setStatus($any($event.target).value)">
+                <option value="all">Todos</option>
+                <option value="active">Ativo</option>
+                <option value="inactive">Inativo</option>
+              </select>
+            </div>
+
+            <button class="btn btn-ghost btn-sm filter-clear" (click)="clearFilters()">Limpar</button>
+          </div>
+
+          <p class="filter-count">
+            {{ filteredPeriods().length }} período(s) encontrado(s)
+            @if (totalPages() > 1) {
+              <span class="filter-page">— página {{ currentPage() }} de {{ totalPages() }}</span>
+            }
+          </p>
+        </div>
+      }
+
       <!-- Lista de períodos -->
       @if (loadingList()) {
         <div class="loading-state">
@@ -83,9 +138,14 @@ import { PeriodResponse, MONTH_NAMES } from '../../../core/models/models';
             Criar primeiro período
           </button>
         </div>
+      } @else if (filteredPeriods().length === 0) {
+        <div class="empty-state">
+          <p>Nenhum período corresponde aos filtros selecionados.</p>
+          <button class="btn btn-ghost btn-sm" (click)="clearFilters()">Limpar filtros</button>
+        </div>
       } @else {
         <div class="periods-grid">
-          @for (period of periods(); track period.id) {
+          @for (period of paginatedPeriods(); track period.id) {
             <div class="period-card card" [class.inactive]="!period.isActive">
 
               <!-- Cabeçalho do card -->
@@ -151,6 +211,31 @@ import { PeriodResponse, MONTH_NAMES } from '../../../core/models/models';
             </div>
           }
         </div>
+
+        <!-- Paginação -->
+        @if (totalPages() > 1) {
+          <div class="pagination">
+            <button
+              class="page-btn"
+              [disabled]="currentPage() === 1"
+              (click)="currentPage.update(p => p - 1)"
+            >←</button>
+
+            @for (p of pageNumbers(); track p) {
+              <button
+                class="page-btn"
+                [class.active]="p === currentPage()"
+                (click)="currentPage.set(p)"
+              >{{ p }}</button>
+            }
+
+            <button
+              class="page-btn"
+              [disabled]="currentPage() === totalPages()"
+              (click)="currentPage.update(p => p + 1)"
+            >→</button>
+          </div>
+        }
       }
 
       <!-- Feedback de erro de ação -->
@@ -201,6 +286,55 @@ import { PeriodResponse, MONTH_NAMES } from '../../../core/models/models';
       font-size: 0.875rem;
     }
 
+    /* ── Barra de filtros ── */
+    .filter-bar {
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .filter-controls {
+      display: flex;
+      align-items: flex-end;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .filter-field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .filter-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--ink3);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .input-sm {
+      padding: 6px 10px;
+      font-size: 0.875rem;
+      min-width: 100px;
+    }
+
+    .filter-clear {
+      align-self: flex-end;
+    }
+
+    .filter-count {
+      font-size: 0.8125rem;
+      color: var(--ink3);
+      margin: 0;
+    }
+
+    .filter-page {
+      color: var(--ink3);
+    }
+
     /* ── Grid de períodos ── */
     .periods-grid {
       display: grid;
@@ -240,6 +374,48 @@ import { PeriodResponse, MONTH_NAMES } from '../../../core/models/models';
       display: flex;
       justify-content: space-between;
       align-items: center;
+    }
+
+    /* ── Paginação ── */
+    .pagination {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .page-btn {
+      min-width: 34px;
+      height: 34px;
+      padding: 0 8px;
+      border: 1px solid var(--border);
+      background: var(--surface-raised);
+      border-radius: var(--radius);
+      cursor: pointer;
+      font-size: 0.875rem;
+      color: var(--ink2);
+      transition: all var(--transition);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .page-btn:hover:not(:disabled) {
+      background: var(--bg3);
+      border-color: var(--sage2);
+      color: var(--sage2);
+    }
+
+    .page-btn.active {
+      background: var(--sage2);
+      border-color: var(--sage2);
+      color: #fff;
+      font-weight: 600;
+    }
+
+    .page-btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
     }
 
     /* ── Ações do card ── */
@@ -337,6 +513,7 @@ export class PeriodsComponent implements OnInit {
   private readonly api = inject(ApiService);
   private readonly fb  = inject(FormBuilder);
 
+  // ── Dados brutos ──────────────────────────────────────────────────────────
   readonly periods       = signal<PeriodResponse[]>([]);
   readonly showForm      = signal(false);
   readonly loading       = signal(false);
@@ -345,17 +522,80 @@ export class PeriodsComponent implements OnInit {
   readonly actionLoading = signal<string | null>(null);
   readonly actionError   = signal<string | null>(null);
 
-  readonly monthNames = MONTH_NAMES;
+  // ── Filtros ───────────────────────────────────────────────────────────────
+  readonly selectedYear = signal<number | null>(new Date().getFullYear());
+  readonly monthFrom    = signal<number | null>(null);
+  readonly monthTo      = signal<number | null>(null);
+  readonly filterStatus = signal<'all' | 'active' | 'inactive'>('all');
+
+  // ── Paginação ─────────────────────────────────────────────────────────────
+  readonly currentPage = signal(1);
+  readonly pageSize    = 12;
+
+  // ── Computed ──────────────────────────────────────────────────────────────
+  readonly availableYears = computed(() =>
+    [...new Set(this.periods().map(p => p.year))].sort((a, b) => b - a)
+  );
+
+  readonly filteredPeriods = computed(() => {
+    let result = this.periods();
+    const year = this.selectedYear();
+    const from = this.monthFrom();
+    const to   = this.monthTo();
+    const st   = this.filterStatus();
+
+    if (year !== null)     result = result.filter(p => p.year === year);
+    if (from !== null)     result = result.filter(p => p.month >= from);
+    if (to   !== null)     result = result.filter(p => p.month <= to);
+    if (st === 'active')   result = result.filter(p => p.isActive);
+    if (st === 'inactive') result = result.filter(p => !p.isActive);
+
+    return result;
+  });
+
+  readonly totalPages = computed(() =>
+    Math.max(1, Math.ceil(this.filteredPeriods().length / this.pageSize))
+  );
+
+  readonly paginatedPeriods = computed(() => {
+    const page  = Math.min(this.currentPage(), this.totalPages());
+    const start = (page - 1) * this.pageSize;
+    return this.filteredPeriods().slice(start, start + this.pageSize);
+  });
+
+  readonly pageNumbers = computed(() =>
+    Array.from({ length: this.totalPages() }, (_, i) => i + 1)
+  );
+
+  // ── Constantes ────────────────────────────────────────────────────────────
+  readonly monthNames  = MONTH_NAMES;
+  readonly monthsShort = MONTH_NAMES.map((label, i) => ({ value: i + 1, label }));
 
   readonly form = this.fb.group({
     month: [new Date().getMonth() + 1, Validators.required],
     year:  [new Date().getFullYear(), [Validators.required, Validators.min(2000), Validators.max(2099)]],
   });
 
+  // ── Lifecycle ─────────────────────────────────────────────────────────────
   ngOnInit(): void {
     this.loadPeriods();
   }
 
+  // ── Setters de filtro (reset automático de página) ────────────────────────
+  setYear(v: string): void     { this.selectedYear.set(v ? +v : null); this.currentPage.set(1); }
+  setMonthFrom(v: string): void { this.monthFrom.set(v ? +v : null);   this.currentPage.set(1); }
+  setMonthTo(v: string): void   { this.monthTo.set(v ? +v : null);     this.currentPage.set(1); }
+  setStatus(v: string): void    { this.filterStatus.set(v as 'all' | 'active' | 'inactive'); this.currentPage.set(1); }
+
+  clearFilters(): void {
+    this.selectedYear.set(new Date().getFullYear());
+    this.monthFrom.set(null);
+    this.monthTo.set(null);
+    this.filterStatus.set('all');
+    this.currentPage.set(1);
+  }
+
+  // ── Dados ─────────────────────────────────────────────────────────────────
   loadPeriods(): void {
     this.loadingList.set(true);
     this.api.getPeriods().subscribe({
