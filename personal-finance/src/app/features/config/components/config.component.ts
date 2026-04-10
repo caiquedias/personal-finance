@@ -419,7 +419,7 @@ import { CategoryResponse, LookupItem } from '../../../core/models/models';
     .lookup-name { font-size: 0.875rem; font-weight: 500; color: var(--ink); }
     .lookup-desc { font-size: 0.8125rem; color: var(--ink3); }
 
-    .card-actions { display: flex; gap: 6px; align-items: center; }
+    .card-actions { display: flex; gap: 6px; align-items: center; padding-bottom: 63px;}
 
     .action-btn {
       width: 28px; height: 28px; border: 1px solid var(--border);
