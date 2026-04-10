@@ -305,4 +305,36 @@ animations: [
 
 ---
 
+## Otimização de tokens — regras obrigatórias
+
+### Respostas
+- Curtas e diretas — sem introduções, conclusões ou explicações não solicitadas
+- Nunca repetir código ou texto já fornecido anteriormente
+- Formato padrão: código direto ou trecho pontual de alteração
+
+### Geração de código
+- Gerar apenas o estritamente necessário para a tarefa
+- **Nunca reescrever arquivos completos** se apenas partes precisam mudar — usar `str_replace` cirúrgico
+- Ao continuar tarefas, gerar apenas o delta incremental
+
+### Planning Mode
+- Usar apenas para tarefas complexas
+- Máximo 5 passos, 1 linha por passo, sem explicações detalhadas
+
+### Escopo
+- Responder exatamente o que foi pedido — nada além
+- Não antecipar próximas etapas nem expandir escopo por conta própria
+- Debug: focar só no erro informado, retornar só a correção, priorizar a solução mais provável
+
+### Contexto
+- Considerar contexto anterior como conhecido — não repetir
+- Inputs grandes: usar apenas as partes relevantes para a tarefa atual
+
+### Regras críticas
+- NUNCA gerar código além do solicitado
+- NUNCA incluir explicações não solicitadas
+- SEMPRE priorizar menor quantidade de tokens possível
+
+---
+
 *CLAUDE.md — Personal Finance System — MonkeyBomb — Abril 2026*
