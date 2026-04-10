@@ -15,6 +15,8 @@ public interface IPaymentStatusRepository
     Task<bool> ExistsByNameAsync(string name, CancellationToken ct = default);
     Task<int> GetNextIdAsync(CancellationToken ct = default);
     Task AddAsync(PaymentStatus status, CancellationToken ct = default);
+    Task UpdateAsync(PaymentStatus status, CancellationToken ct = default);
+    Task DeleteAsync(int id, CancellationToken ct = default);
     Task<bool> IsSystemSeedAsync(int id, CancellationToken ct = default);
 }
 
@@ -25,6 +27,8 @@ public interface ISourceTypeRepository
     Task<bool> ExistsByNameAsync(string name, CancellationToken ct = default);
     Task<int> GetNextIdAsync(CancellationToken ct = default);
     Task AddAsync(SourceType sourceType, CancellationToken ct = default);
+    Task UpdateAsync(SourceType sourceType, CancellationToken ct = default);
+    Task DeleteAsync(int id, CancellationToken ct = default);
     Task<bool> IsSystemSeedAsync(int id, CancellationToken ct = default);
 }
 
@@ -35,6 +39,8 @@ public interface IFortnightTypeRepository
     Task<bool> ExistsByNameAsync(string name, CancellationToken ct = default);
     Task<int> GetNextIdAsync(CancellationToken ct = default);
     Task AddAsync(FortnightType fortnightType, CancellationToken ct = default);
+    Task UpdateAsync(FortnightType fortnightType, CancellationToken ct = default);
+    Task DeleteAsync(int id, CancellationToken ct = default);
     Task<bool> IsSystemSeedAsync(int id, CancellationToken ct = default);
 }
 
