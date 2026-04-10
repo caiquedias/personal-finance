@@ -1,6 +1,6 @@
 import {
   Component, inject, signal, OnInit,
-  TemplateRef, ViewChild
+  TemplateRef, ViewChild, ElementRef, input
 } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { trigger, style, animate, transition } from '@angular/animations';
@@ -55,6 +55,7 @@ import {
       <div class="filter-row">
         <label class="field-label">Filtrar por período</label>
         <select
+          #periodFilterSelect
           class="input"
           style="width:auto; min-width:180px"
           (change)="onPeriodFilter($event)"
@@ -333,6 +334,10 @@ export class IncomesComponent implements OnInit {
   private editingId: string | null = null;
   private selectedPeriodId: string | null = null;
 
+  /** Pré-seleção via query param: /incomes?periodId=xxx */
+  readonly periodId = input<string>();
+  @ViewChild('periodFilterSelect') periodFilterSelect!: ElementRef<HTMLSelectElement>;
+
   readonly total = () => this.incomes().reduce((s, i) => s + i.amount, 0);
 
   readonly form = this.fb.group({
@@ -345,7 +350,22 @@ export class IncomesComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    this.api.getPeriods().subscribe(p => this.periods.set(p));
+    const preId = this.periodId();
+    this.api.getPeriods().subscribe(p => {
+      this.periods.set(p);
+      if (preId) {
+        this.selectedPeriodId = preId;
+        this.loadingList.set(true);
+        this.api.getIncomesByPeriod(preId).subscribe({
+          next: i => { this.incomes.set(i); this.loadingList.set(false); },
+          error: () => this.loadingList.set(false)
+        });
+        setTimeout(() => {
+          if (this.periodFilterSelect?.nativeElement)
+            this.periodFilterSelect.nativeElement.value = preId;
+        }, 0);
+      }
+    });
   }
 
   openCreateModal(): void {
