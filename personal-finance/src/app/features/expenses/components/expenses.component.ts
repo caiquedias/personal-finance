@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, OnInit, input, ViewChild, ElementRef } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { ApiService } from '../../../core/services/api.service';
 import { HeaderComponent } from '../../../shared/components/header/header.component';
@@ -123,7 +123,7 @@ import {
       <!-- Filtro por período -->
       <div class="filter-row">
         <label class="field-label">Filtrar por período</label>
-        <select class="input" style="width:auto; min-width:180px" (change)="onPeriodFilter($event)">
+        <select #periodFilterSelect class="input" style="width:auto; min-width:180px" (change)="onPeriodFilter($event)">
           <option value="">Todos</option>
           @for (p of periods(); track p.id) {
             <option [value]="p.id">{{ monthName(p.month) }}/{{ p.year }}</option>
@@ -300,6 +300,10 @@ export class ExpensesComponent implements OnInit {
 
   private selectedPeriodId: string | null = null;
 
+  /** Pré-seleção via query param: /expenses?periodId=xxx */
+  readonly periodId = input<string>();
+  @ViewChild('periodFilterSelect') periodFilterSelect!: ElementRef<HTMLSelectElement>;
+
   readonly form = this.fb.group({
     periodId:      ['', Validators.required],
     categoryId:    ['', Validators.required],
@@ -312,7 +316,22 @@ export class ExpensesComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    this.api.getPeriods().subscribe(p => this.periods.set(p));
+    const preId = this.periodId();
+    this.api.getPeriods().subscribe(p => {
+      this.periods.set(p);
+      if (preId) {
+        this.selectedPeriodId = preId;
+        this.loadingList.set(true);
+        this.api.getExpensesByPeriod(preId).subscribe({
+          next: e => { this.expenses.set(e); this.loadingList.set(false); },
+          error: () => this.loadingList.set(false)
+        });
+        setTimeout(() => {
+          if (this.periodFilterSelect?.nativeElement)
+            this.periodFilterSelect.nativeElement.value = preId;
+        }, 0);
+      }
+    });
     this.api.getCategories().subscribe(c => this.categories.set(c));
   }
 

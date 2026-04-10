@@ -18,6 +18,11 @@ import {
       [title]="headerTitle()"
       subtitle="Detalhes do período"
     >
+      <!-- Indicador somente-leitura -->
+      <span class="readonly-indicator" tabindex="0">
+        <img class="pswitch-icon" src="icons/readonly-indicator.png" width="22" height="22" alt="Somente leitura" />
+        <span class="readonly-tooltip">Tela apenas para consulta/visualização</span>
+      </span>
       <a routerLink="/periods" class="btn btn-secondary btn-sm">← Períodos</a>
       <a routerLink="/expenses" class="btn btn-primary btn-sm">+ Despesa</a>
       <a routerLink="/incomes" class="btn btn-ghost btn-sm">+ Receita</a>
@@ -72,6 +77,11 @@ import {
 
         <!-- Despesas -->
         @if (activeTab() === 'expenses') {
+          <div class="tab-shortcut">
+            <a routerLink="/expenses" [queryParams]="{ periodId: id() }" class="btn btn-purple btn-sm">
+              Ir para Despesas →
+            </a>
+          </div>
           @if (expenses().length === 0) {
             <div class="empty-state">
               <p>Nenhuma despesa neste período.</p>
@@ -122,6 +132,11 @@ import {
 
         <!-- Receitas -->
         @if (activeTab() === 'incomes') {
+          <div class="tab-shortcut">
+            <a routerLink="/incomes" [queryParams]="{ periodId: id() }" class="btn btn-purple btn-sm">
+              Ir para Receitas →
+            </a>
+          </div>
           @if (incomes().length === 0) {
             <div class="empty-state">
               <p>Nenhuma receita neste período.</p>
@@ -294,6 +309,91 @@ import {
     }
 
     @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── P-Switch readonly indicator ── */
+    .readonly-indicator {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      cursor: default;
+      outline: none;
+    }
+
+    .pswitch-icon {
+      display: block;
+      image-rendering: pixelated;
+      animation: pswitch-bob 1.4s ease-in-out infinite;
+    }
+
+    @keyframes pswitch-bob {
+      0%   { transform: scale(1)    translateY(0);    opacity: 1;    }
+      30%  { transform: scale(1.08) translateY(-3px); opacity: 0.85; }
+      60%  { transform: scale(1)    translateY(0);    opacity: 1;    }
+      80%  { transform: scale(0.97) translateY(2px);  opacity: 0.9;  }
+      100% { transform: scale(1)    translateY(0);    opacity: 1;    }
+    }
+
+    .readonly-tooltip {
+      visibility: hidden;
+      opacity: 0;
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      background: var(--ink);
+      color: var(--bg);
+      font-size: 0.75rem;
+      font-weight: 500;
+      white-space: nowrap;
+      padding: 5px 10px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-modal);
+      pointer-events: none;
+      transition: opacity 150ms ease, visibility 150ms ease;
+      z-index: 100;
+    }
+
+    .readonly-tooltip::before {
+      content: '';
+      position: absolute;
+      bottom: 100%;
+      right: 8px;
+      border: 5px solid transparent;
+      border-bottom-color: var(--ink);
+    }
+
+    .readonly-indicator:hover .readonly-tooltip,
+    .readonly-indicator:focus .readonly-tooltip {
+      visibility: visible;
+      opacity: 1;
+    }
+
+    /* ── Botão roxo pastel ── */
+    .btn-purple {
+      background: #c4b5e8;
+      color: #4a2d8a;
+      border: 1px solid #b0a0d8;
+    }
+    .btn-purple:hover:not(:disabled) {
+      background: #b3a2dc;
+      border-color: #9e8dcc;
+      color: #3a2070;
+    }
+    :host-context(.dark) .btn-purple {
+      background: #7c5cc4;
+      color: #f0ebff;
+      border-color: #6a4db0;
+    }
+    :host-context(.dark) .btn-purple:hover:not(:disabled) {
+      background: #8d6ed4;
+      border-color: #7a5dc0;
+      color: #ffffff;
+    }
+
+    /* ── Linha de atalho acima da tabela ── */
+    .tab-shortcut {
+      display: flex;
+      justify-content: flex-end;
+    }
   `]
 })
 export class PeriodDetailComponent implements OnInit {
