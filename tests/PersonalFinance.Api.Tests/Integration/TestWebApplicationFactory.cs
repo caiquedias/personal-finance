@@ -2,7 +2,9 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using PersonalFinance.Application.Interfaces;
+using PersonalFinance.Domain.Entities.Auth;
 using PersonalFinance.Domain.Entities.Lookup;
+using PersonalFinance.Domain.Interfaces.Services;
 using PersonalFinance.Infrastructure.Persistence.Context;
 
 
@@ -59,9 +61,24 @@ public sealed class TestWebApplicationFactory : WebApplicationFactory<Program>
             var sp = services.BuildServiceProvider();
             using var scope = sp.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var hasher  = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
             context.Database.EnsureCreated();
             SeedLookupData(context);
+            SeedAdminUser(context, hasher);
         });
+    }
+
+    private static void SeedAdminUser(AppDbContext context, IPasswordHasher hasher)
+    {
+        const string adminEmail = "caique_dias@outlook.com";
+        if (context.Users.Any(u => u.Email == adminEmail)) return;
+
+        var admin = User.Create("Admin Test", adminEmail, hasher.Hash("Arkham@01"));
+        context.Users.Add(admin);
+        context.SaveChanges();
+
+        context.UserRoles.Add(new UserRole { UserId = admin.Id, RoleId = 1 });
+        context.SaveChanges();
     }
 
     private static void SeedLookupData(AppDbContext context)

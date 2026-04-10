@@ -52,11 +52,14 @@ namespace PersonalFinance.Api.Tests.Integration
             var createdUser = await Client.PostAsJsonAsync("/api/v1/auth/register",
                 new { name = "Test User", email, password });
 
-            var createdUserResponse= await createdUser.Content.ReadFromJsonAsync<JsonElement>();
-            var createdUserId = createdUserResponse.GetProperty("id").GetString()!;
-
-            await Client.PostAsJsonAsync($"/api/v1/admin/users/{createdUserId}/role",
-                new { UserId = createdUserId, RoleId = 1 });
+            // Tenta obter o ID do usuário recém criado; se e-mail já existia, ignora (idempotente)
+            if (createdUser.IsSuccessStatusCode)
+            {
+                var createdUserResponse = await createdUser.Content.ReadFromJsonAsync<JsonElement>();
+                var createdUserId = createdUserResponse.GetProperty("id").GetString()!;
+                await Client.PostAsJsonAsync($"/api/v1/admin/users/{createdUserId}/roles",
+                    new { UserId = createdUserId, RoleId = 1 });
+            }
 
             var loginResponse = await Client.PostAsJsonAsync("/api/v1/auth/login",
                 new { email, password });

@@ -27,10 +27,16 @@ public static class ApplicationExtensions
         // ── Config — Lookup tables ────────────────────────────────────────────
         services.AddScoped<GetPaymentStatusesUseCase>();
         services.AddScoped<CreatePaymentStatusUseCase>();
+        services.AddScoped<UpdatePaymentStatusUseCase>();
+        services.AddScoped<DeletePaymentStatusUseCase>();
         services.AddScoped<GetSourceTypesUseCase>();
         services.AddScoped<CreateSourceTypeUseCase>();
+        services.AddScoped<UpdateSourceTypeUseCase>();
+        services.AddScoped<DeleteSourceTypeUseCase>();
         services.AddScoped<GetFortnightTypesUseCase>();
         services.AddScoped<CreateFortnightTypeUseCase>();
+        services.AddScoped<UpdateFortnightTypeUseCase>();
+        services.AddScoped<DeleteFortnightTypeUseCase>();
 
         // ── Admin — User management ───────────────────────────────────────────
         services.AddScoped<GetUsersUseCase>();

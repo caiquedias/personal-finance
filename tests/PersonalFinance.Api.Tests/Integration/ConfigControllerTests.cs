@@ -128,4 +128,132 @@ public class ConfigControllerTests : ApiIntegrationTestBase
         seeds.Should().AllSatisfy(x =>
             x.GetProperty("isSystemSeed").GetBoolean().Should().BeTrue());
     }
+
+    // ── PUT — não-admin deve receber 403 ─────────────────────────────────────
+
+    [Fact(DisplayName = "PUT /config/payment-statuses por usuário comum deve retornar 403")]
+    public async Task UpdatePaymentStatus_NonAdmin_ShouldReturn403()
+    {
+        var (client, _) = await GetAuthenticatedClientAsync();
+
+        var r = await client.PutAsJsonAsync("/api/v1/config/payment-statuses/5",
+            new { name = "Parcelado", description = "Desc" });
+
+        r.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact(DisplayName = "PUT /config/source-types por usuário comum deve retornar 403")]
+    public async Task UpdateSourceType_NonAdmin_ShouldReturn403()
+    {
+        var (client, _) = await GetAuthenticatedClientAsync();
+
+        var r = await client.PutAsJsonAsync("/api/v1/config/source-types/3",
+            new { name = "Empresarial" });
+
+        r.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact(DisplayName = "PUT /config/fortnight-types por usuário comum deve retornar 403")]
+    public async Task UpdateFortnightType_NonAdmin_ShouldReturn403()
+    {
+        var (client, _) = await GetAuthenticatedClientAsync();
+
+        var r = await client.PutAsJsonAsync("/api/v1/config/fortnight-types/3",
+            new { name = "Third" });
+
+        r.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    // ── PUT seed — admin deve receber 400 ────────────────────────────────────
+
+    [Fact(DisplayName = "PUT /config/payment-statuses/1 (seed) por admin deve retornar 400")]
+    public async Task UpdatePaymentStatus_SeedById_ShouldReturn400()
+    {
+        var (client, _) = await GetAdminAuthenticatedClientAsync();
+
+        var r = await client.PutAsJsonAsync("/api/v1/config/payment-statuses/1",
+            new { name = "Alterado", description = "Desc" });
+
+        r.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    // ── PUT custom — admin deve retornar 200 ─────────────────────────────────
+
+    [Fact(DisplayName = "PUT /config/payment-statuses (item customizado) por admin deve retornar 200")]
+    public async Task UpdatePaymentStatus_Custom_ShouldReturn200()
+    {
+        var (client, _) = await GetAdminAuthenticatedClientAsync();
+
+        // Cria item custom
+        var created = await client.PostAsJsonAsync("/api/v1/config/payment-statuses",
+            new { name = $"Custom_{Guid.NewGuid():N}", description = "Desc" });
+        var createdBody = await created.Content.ReadFromJsonAsync<JsonElement>();
+        var id = createdBody.GetProperty("id").GetInt32();
+
+        var r = await client.PutAsJsonAsync($"/api/v1/config/payment-statuses/{id}",
+            new { name = $"Atualizado_{Guid.NewGuid():N}", description = "Nova Desc" });
+
+        r.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    // ── DELETE — não-admin deve receber 403 ──────────────────────────────────
+
+    [Fact(DisplayName = "DELETE /config/payment-statuses por usuário comum deve retornar 403")]
+    public async Task DeletePaymentStatus_NonAdmin_ShouldReturn403()
+    {
+        var (client, _) = await GetAuthenticatedClientAsync();
+
+        var r = await client.DeleteAsync("/api/v1/config/payment-statuses/5");
+
+        r.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact(DisplayName = "DELETE /config/source-types por usuário comum deve retornar 403")]
+    public async Task DeleteSourceType_NonAdmin_ShouldReturn403()
+    {
+        var (client, _) = await GetAuthenticatedClientAsync();
+
+        var r = await client.DeleteAsync("/api/v1/config/source-types/3");
+
+        r.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact(DisplayName = "DELETE /config/fortnight-types por usuário comum deve retornar 403")]
+    public async Task DeleteFortnightType_NonAdmin_ShouldReturn403()
+    {
+        var (client, _) = await GetAuthenticatedClientAsync();
+
+        var r = await client.DeleteAsync("/api/v1/config/fortnight-types/3");
+
+        r.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    // ── DELETE seed — admin deve receber 400 ─────────────────────────────────
+
+    [Fact(DisplayName = "DELETE /config/payment-statuses/1 (seed) por admin deve retornar 400")]
+    public async Task DeletePaymentStatus_Seed_ShouldReturn400()
+    {
+        var (client, _) = await GetAdminAuthenticatedClientAsync();
+
+        var r = await client.DeleteAsync("/api/v1/config/payment-statuses/1");
+
+        r.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    // ── DELETE custom — admin deve retornar 204 ───────────────────────────────
+
+    [Fact(DisplayName = "DELETE /config/payment-statuses (item customizado) por admin deve retornar 204")]
+    public async Task DeletePaymentStatus_Custom_ShouldReturn204()
+    {
+        var (client, _) = await GetAdminAuthenticatedClientAsync();
+
+        var created = await client.PostAsJsonAsync("/api/v1/config/payment-statuses",
+            new { name = $"Custom_{Guid.NewGuid():N}", description = "Desc" });
+        var createdBody = await created.Content.ReadFromJsonAsync<JsonElement>();
+        var id = createdBody.GetProperty("id").GetInt32();
+
+        var r = await client.DeleteAsync($"/api/v1/config/payment-statuses/{id}");
+
+        r.StatusCode.Should().Be(HttpStatusCode.NoContent);
+    }
 }
