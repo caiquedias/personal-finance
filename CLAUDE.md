@@ -51,6 +51,82 @@ npm run lint     # TypeScript linting
 
 ---
 
+## Versionamento
+
+### Branches permanentes
+
+| Branch | Propósito |
+|--------|-----------|
+| `master` | Produção — código aprovado e publicado |
+| `release` | Homologação — QA, testes de integração |
+| `develop` | Base para novos desenvolvimentos — espelho de `master` |
+
+### Regras
+
+- Nenhum push direto para `master`, `release` ou `develop` — apenas via Pull Request
+- `develop` nunca recebe commits diretos — serve exclusivamente como base para criar branches
+- Prefixos obrigatórios: `feat/` para novas features, `fix/` para correções planejadas, `hotfix/` para correções urgentes em produção
+- Branches de worktree Claude usam prefixo `claude/` (gerenciado automaticamente)
+
+### Fluxo Feature / Fix
+
+1. Criar `feat/xxx` ou `fix/xxx` a partir de `develop`
+2. Claude trabalha em worktree (`claude/worktree-branch`) criado a partir da branch de feature/fix
+3. PR: `claude/worktree` → `feat/xxx` (sem aprovadores)
+4. PR: `feat/xxx` → `release` (QA + testes de integração)
+   - Bug encontrado em QA: fix aplicado na `feat/xxx`, novo PR para `release`
+5. PR: `feat/xxx` → `master` (requer aprovação do grupo)
+6. Merge em `master` dispara GitHub Action → sync automático: `develop` ← `master` e `release` ← `master`
+
+### Fluxo Hotfix
+
+1. Criar `hotfix/xxx` a **partir de `master`** (não de `develop`) — garante estado exato de produção
+2. PR: `hotfix/xxx` → `master` (requer aprovação do grupo)
+3. Merge em `master` dispara GitHub Action → sync automático: `develop` ← `master` e `release` ← `master`
+
+> A branch `feat/fix/hotfix` permanece viva durante todo o ciclo até a publicação em `master`.
+
+### Fluxograma
+
+```mermaid
+flowchart TD
+    subgraph perm["Branches Permanentes"]
+        MASTER["master\n(Produção)"]
+        RELEASE["release\n(Homologação / QA)"]
+        DEVELOP["develop\n(Base para novos desenvolvimentos)"]
+    end
+
+    subgraph feat_flow["Feature / Fix Flow"]
+        FEAT["feat/xxx ou fix/xxx"]
+        WORKTREE["claude/worktree"]
+    end
+
+    subgraph hotfix_flow["Hotfix Flow"]
+        HOTFIX["hotfix/xxx"]
+    end
+
+    DEVELOP -->|"1. Criar branch"| FEAT
+    FEAT -->|"2. Claude cria worktree"| WORKTREE
+    WORKTREE -->|"3. PR: worktree → feat"| FEAT
+    FEAT -->|"4. PR: feat → release\n(QA / Integração)"| RELEASE
+    FEAT -->|"5. PR: feat → master\n(aprovadores)"| MASTER
+    MASTER -->|"GitHub Action\nauto-sync"| DEVELOP
+    MASTER -->|"GitHub Action\nauto-sync"| RELEASE
+
+    MASTER -->|"1. Criar hotfix/"| HOTFIX
+    HOTFIX -->|"2. PR: hotfix → master\n(aprovadores)"| MASTER
+```
+
+### Setup dos git hooks
+
+Após clonar o repositório, configurar o caminho dos hooks:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+---
+
 ## Arquitetura
 
 ### Backend — Clean Architecture
