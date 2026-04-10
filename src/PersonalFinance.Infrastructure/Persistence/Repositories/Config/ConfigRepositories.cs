@@ -37,6 +37,18 @@ public sealed class PaymentStatusRepository : IPaymentStatusRepository
     public async Task AddAsync(PaymentStatus status, CancellationToken ct = default)
         => await _context.PaymentStatuses.AddAsync(status, ct);
 
+    public Task UpdateAsync(PaymentStatus status, CancellationToken ct = default)
+    {
+        _context.PaymentStatuses.Update(status);
+        return Task.CompletedTask;
+    }
+
+    public async Task DeleteAsync(int id, CancellationToken ct = default)
+    {
+        var entity = await _context.PaymentStatuses.FindAsync(new object[] { id }, ct);
+        if (entity is not null) _context.PaymentStatuses.Remove(entity);
+    }
+
     public Task<bool> IsSystemSeedAsync(int id, CancellationToken ct = default)
         => Task.FromResult(ProtectedIds.PaymentStatus.Contains(id));
 }
@@ -64,6 +76,18 @@ public sealed class SourceTypeRepository : ISourceTypeRepository
     public async Task AddAsync(SourceType sourceType, CancellationToken ct = default)
         => await _context.SourceTypes.AddAsync(sourceType, ct);
 
+    public Task UpdateAsync(SourceType sourceType, CancellationToken ct = default)
+    {
+        _context.SourceTypes.Update(sourceType);
+        return Task.CompletedTask;
+    }
+
+    public async Task DeleteAsync(int id, CancellationToken ct = default)
+    {
+        var entity = await _context.SourceTypes.FindAsync(new object[] { id }, ct);
+        if (entity is not null) _context.SourceTypes.Remove(entity);
+    }
+
     public Task<bool> IsSystemSeedAsync(int id, CancellationToken ct = default)
         => Task.FromResult(ProtectedIds.SourceType.Contains(id));
 }
@@ -90,6 +114,18 @@ public sealed class FortnightTypeRepository : IFortnightTypeRepository
 
     public async Task AddAsync(FortnightType fortnightType, CancellationToken ct = default)
         => await _context.FortnightTypes.AddAsync(fortnightType, ct);
+
+    public Task UpdateAsync(FortnightType fortnightType, CancellationToken ct = default)
+    {
+        _context.FortnightTypes.Update(fortnightType);
+        return Task.CompletedTask;
+    }
+
+    public async Task DeleteAsync(int id, CancellationToken ct = default)
+    {
+        var entity = await _context.FortnightTypes.FindAsync(new object[] { id }, ct);
+        if (entity is not null) _context.FortnightTypes.Remove(entity);
+    }
 
     public Task<bool> IsSystemSeedAsync(int id, CancellationToken ct = default)
         => Task.FromResult(ProtectedIds.FortnightType.Contains(id));

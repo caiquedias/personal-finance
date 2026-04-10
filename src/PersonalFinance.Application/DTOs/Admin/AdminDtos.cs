@@ -49,6 +49,15 @@ public sealed record CreateFortnightTypeDto(
     string Name
 );
 
+/// <summary>Atualização de status de pagamento personalizado.</summary>
+public sealed record UpdatePaymentStatusDto(int Id, string Name, string Description);
+
+/// <summary>Atualização de tipo de fonte personalizado.</summary>
+public sealed record UpdateSourceTypeDto(int Id, string Name);
+
+/// <summary>Atualização de tipo de quinzena personalizado.</summary>
+public sealed record UpdateFortnightTypeDto(int Id, string Name);
+
 /// <summary>Retorno genérico para lookup com int PK.</summary>
 public sealed record LookupResponseDto(
     int    Id,

@@ -69,6 +69,68 @@ public sealed class CreatePaymentStatusUseCase
     }
 }
 
+public sealed class UpdatePaymentStatusUseCase
+{
+    private readonly IPaymentStatusRepository _repository;
+    private readonly IUnitOfWork              _uow;
+
+    public UpdatePaymentStatusUseCase(IPaymentStatusRepository repository, IUnitOfWork uow)
+    {
+        _repository = repository;
+        _uow        = uow;
+    }
+
+    public async Task<LookupResponseDto> ExecuteAsync(
+        UpdatePaymentStatusDto dto, CancellationToken ct = default)
+    {
+        if (SeedIds.PaymentStatus.Contains(dto.Id))
+            throw new DomainException("Itens de sistema não podem ser alterados.");
+
+        if (string.IsNullOrWhiteSpace(dto.Name))
+            throw new DomainException("O nome do status de pagamento é obrigatório.");
+
+        var entity = await _repository.GetByIdAsync(dto.Id, ct)
+            ?? throw new DomainException("Status de pagamento não encontrado.");
+
+        // Verifica unicidade apenas se o nome mudou
+        if (!string.Equals(entity.Name, dto.Name.Trim(), StringComparison.OrdinalIgnoreCase)
+            && await _repository.ExistsByNameAsync(dto.Name.Trim(), ct))
+            throw new DomainException($"Já existe um status de pagamento com o nome '{dto.Name}'.");
+
+        entity.Name        = dto.Name.Trim();
+        entity.Description = dto.Description?.Trim() ?? string.Empty;
+
+        await _repository.UpdateAsync(entity, ct);
+        await _uow.CommitAsync(ct);
+
+        return new LookupResponseDto(entity.Id, entity.Name, entity.Description, IsSystemSeed: false);
+    }
+}
+
+public sealed class DeletePaymentStatusUseCase
+{
+    private readonly IPaymentStatusRepository _repository;
+    private readonly IUnitOfWork              _uow;
+
+    public DeletePaymentStatusUseCase(IPaymentStatusRepository repository, IUnitOfWork uow)
+    {
+        _repository = repository;
+        _uow        = uow;
+    }
+
+    public async Task ExecuteAsync(int id, CancellationToken ct = default)
+    {
+        if (SeedIds.PaymentStatus.Contains(id))
+            throw new DomainException("Itens de sistema não podem ser excluídos.");
+
+        var entity = await _repository.GetByIdAsync(id, ct)
+            ?? throw new DomainException("Status de pagamento não encontrado.");
+
+        await _repository.DeleteAsync(entity.Id, ct);
+        await _uow.CommitAsync(ct);
+    }
+}
+
 // ══════════════════════════════════════════════════════════════════════════════
 // SOURCE TYPE
 // ══════════════════════════════════════════════════════════════════════════════
@@ -117,6 +179,66 @@ public sealed class CreateSourceTypeUseCase
     }
 }
 
+public sealed class UpdateSourceTypeUseCase
+{
+    private readonly ISourceTypeRepository _repository;
+    private readonly IUnitOfWork           _uow;
+
+    public UpdateSourceTypeUseCase(ISourceTypeRepository repository, IUnitOfWork uow)
+    {
+        _repository = repository;
+        _uow        = uow;
+    }
+
+    public async Task<LookupResponseDto> ExecuteAsync(
+        UpdateSourceTypeDto dto, CancellationToken ct = default)
+    {
+        if (SeedIds.SourceType.Contains(dto.Id))
+            throw new DomainException("Itens de sistema não podem ser alterados.");
+
+        if (string.IsNullOrWhiteSpace(dto.Name))
+            throw new DomainException("O nome do tipo de fonte é obrigatório.");
+
+        var entity = await _repository.GetByIdAsync(dto.Id, ct)
+            ?? throw new DomainException("Tipo de fonte não encontrado.");
+
+        if (!string.Equals(entity.Name, dto.Name.Trim(), StringComparison.OrdinalIgnoreCase)
+            && await _repository.ExistsByNameAsync(dto.Name.Trim(), ct))
+            throw new DomainException($"Já existe um tipo de fonte com o nome '{dto.Name}'.");
+
+        entity.Name = dto.Name.Trim();
+
+        await _repository.UpdateAsync(entity, ct);
+        await _uow.CommitAsync(ct);
+
+        return new LookupResponseDto(entity.Id, entity.Name, null, IsSystemSeed: false);
+    }
+}
+
+public sealed class DeleteSourceTypeUseCase
+{
+    private readonly ISourceTypeRepository _repository;
+    private readonly IUnitOfWork           _uow;
+
+    public DeleteSourceTypeUseCase(ISourceTypeRepository repository, IUnitOfWork uow)
+    {
+        _repository = repository;
+        _uow        = uow;
+    }
+
+    public async Task ExecuteAsync(int id, CancellationToken ct = default)
+    {
+        if (SeedIds.SourceType.Contains(id))
+            throw new DomainException("Itens de sistema não podem ser excluídos.");
+
+        var entity = await _repository.GetByIdAsync(id, ct)
+            ?? throw new DomainException("Tipo de fonte não encontrado.");
+
+        await _repository.DeleteAsync(entity.Id, ct);
+        await _uow.CommitAsync(ct);
+    }
+}
+
 // ══════════════════════════════════════════════════════════════════════════════
 // FORTNIGHT TYPE
 // ══════════════════════════════════════════════════════════════════════════════
@@ -162,5 +284,65 @@ public sealed class CreateFortnightTypeUseCase
         await _uow.CommitAsync(ct);
 
         return new LookupResponseDto(entity.Id, entity.Name, null, IsSystemSeed: false);
+    }
+}
+
+public sealed class UpdateFortnightTypeUseCase
+{
+    private readonly IFortnightTypeRepository _repository;
+    private readonly IUnitOfWork              _uow;
+
+    public UpdateFortnightTypeUseCase(IFortnightTypeRepository repository, IUnitOfWork uow)
+    {
+        _repository = repository;
+        _uow        = uow;
+    }
+
+    public async Task<LookupResponseDto> ExecuteAsync(
+        UpdateFortnightTypeDto dto, CancellationToken ct = default)
+    {
+        if (SeedIds.FortnightType.Contains(dto.Id))
+            throw new DomainException("Itens de sistema não podem ser alterados.");
+
+        if (string.IsNullOrWhiteSpace(dto.Name))
+            throw new DomainException("O nome do tipo de quinzena é obrigatório.");
+
+        var entity = await _repository.GetByIdAsync(dto.Id, ct)
+            ?? throw new DomainException("Tipo de quinzena não encontrado.");
+
+        if (!string.Equals(entity.Name, dto.Name.Trim(), StringComparison.OrdinalIgnoreCase)
+            && await _repository.ExistsByNameAsync(dto.Name.Trim(), ct))
+            throw new DomainException($"Já existe um tipo de quinzena com o nome '{dto.Name}'.");
+
+        entity.Name = dto.Name.Trim();
+
+        await _repository.UpdateAsync(entity, ct);
+        await _uow.CommitAsync(ct);
+
+        return new LookupResponseDto(entity.Id, entity.Name, null, IsSystemSeed: false);
+    }
+}
+
+public sealed class DeleteFortnightTypeUseCase
+{
+    private readonly IFortnightTypeRepository _repository;
+    private readonly IUnitOfWork              _uow;
+
+    public DeleteFortnightTypeUseCase(IFortnightTypeRepository repository, IUnitOfWork uow)
+    {
+        _repository = repository;
+        _uow        = uow;
+    }
+
+    public async Task ExecuteAsync(int id, CancellationToken ct = default)
+    {
+        if (SeedIds.FortnightType.Contains(id))
+            throw new DomainException("Itens de sistema não podem ser excluídos.");
+
+        var entity = await _repository.GetByIdAsync(id, ct)
+            ?? throw new DomainException("Tipo de quinzena não encontrado.");
+
+        await _repository.DeleteAsync(entity.Id, ct);
+        await _uow.CommitAsync(ct);
     }
 }
