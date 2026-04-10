@@ -90,7 +90,14 @@ import { CategoryResponse, LookupItem } from '../../../core/models/models';
         <div class="categories-grid">
           @for (cat of categories(); track cat.id) {
             <div class="category-card card">
-              <div class="category-color" [style.background]="cat.color"></div>
+              <div class="category-color" [style.background]="cat.color">
+                @if(cat.icon)
+                {
+                  <div class="category-icon-container">
+                    <img [src]="getIcon(cat)" />
+                  </div>
+                }
+              </div>
               <div class="category-info">
                 <span class="category-name">{{ cat.name }}</span>
                 @if (cat.isGlobal) {
@@ -393,8 +400,22 @@ import { CategoryResponse, LookupItem } from '../../../core/models/models';
     }
 
     .category-color {
-      width: 16px; height: 16px;
+      width: 32px; height: 32px;
       border-radius: 4px; flex-shrink: 0;
+    }
+
+    .category-icon-container {
+      width: 32px;
+      height: 32px;
+      display: inline-flex;
+      padding-left: 5px;
+      padding-top: 5px;
+
+      img {
+        width: 80%;
+        height: 80%;
+        object-fit: contain;
+      }
     }
 
     .category-info {
@@ -511,7 +532,7 @@ export class ConfigComponent implements OnInit {
   readonly editCatForm = this.fb.group({
     name:  ['', Validators.required],
     color: ['#6b8f71', Validators.required],
-    icon:  [''],
+    icon:  ['data:image/png;base64,'],
   });
 
   readonly editLookupForm = this.fb.group({
@@ -534,6 +555,10 @@ export class ConfigComponent implements OnInit {
     this.api.getPaymentStatuses().subscribe(p => this.paymentStatuses.set(p));
     this.api.getSourceTypes().subscribe(s => this.sourceTypes.set(s));
     this.api.getFortnightTypes().subscribe(f => this.fortnightTypes.set(f));
+  }
+
+  getIcon(cat: any): string {
+    return `data:image/png;base64,${cat.icon}`;
   }
 
   // ── Criação ──────────────────────────────────────────────────────────────────

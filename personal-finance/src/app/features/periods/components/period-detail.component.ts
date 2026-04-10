@@ -1,18 +1,39 @@
 import { Component, inject, signal, computed, OnInit, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { animate, style, transition, trigger } from '@angular/animations';
 import { ApiService } from '../../../core/services/api.service';
 import { HeaderComponent } from '../../../shared/components/header/header.component';
 import { CurrencyBrlPipe } from '../../../shared/pipes/currency-brl.pipe';
+import { MarioModalComponent } from '../../../shared/components/modal/mario-modal.component';
 import {
   PeriodSummary, ExpenseResponse, IncomeResponse, CategoryResponse,
   MONTH_NAMES, PAYMENT_STATUS_LABELS, SOURCE_TYPE_LABELS,
   FORTNIGHT_TYPE_LABELS, PaymentStatus, FortnightType
 } from '../../../core/models/models';
 
+type MarioTarget = 'receitas' | 'despesas' | 'pago' | 'apagar' | 'saldo';
+
 @Component({
   selector: 'app-period-detail',
   standalone: true,
-  imports: [HeaderComponent, CurrencyBrlPipe, RouterLink],
+  imports: [HeaderComponent, CurrencyBrlPipe, RouterLink, MarioModalComponent],
+  animations: [
+    trigger('backdropAnim', [
+      transition(':enter', [style({ opacity: 0 }), animate('200ms ease', style({ opacity: 1 }))]),
+      transition(':leave', [animate('180ms ease', style({ opacity: 0 }))])
+    ]),
+    trigger('modalAnim', [
+      transition(':enter', [
+        style({ opacity: 0, transform: 'scale(0.88) translateY(-16px)' }),
+        animate('260ms cubic-bezier(0.34,1.56,0.64,1)',
+          style({ opacity: 1, transform: 'scale(1) translateY(0)' }))
+      ]),
+      transition(':leave', [
+        animate('180ms ease-in',
+          style({ opacity: 0, transform: 'scale(0.93) translateY(10px)' }))
+      ])
+    ])
+  ],
   template: `
     <app-header
       [title]="headerTitle()"
@@ -37,27 +58,42 @@ import {
         @if (summary()) {
           <div class="summary-bar card">
             <div class="summary-item">
-              <span class="summary-label">Receitas</span>
+              <span class="summary-label">
+                Receitas
+                <button class="mario-q" (click)="openMario('receitas')" title="Detalhes de Receitas">?</button>
+              </span>
               <span class="summary-value success">{{ summary()!.totalIncome | currencyBrl }}</span>
             </div>
             <div class="summary-divider"></div>
             <div class="summary-item">
-              <span class="summary-label">Despesas</span>
+              <span class="summary-label">
+                Despesas
+                <button class="mario-q" (click)="openMario('despesas')" title="Detalhes de Despesas">?</button>
+              </span>
               <span class="summary-value danger">{{ summary()!.totalExpense | currencyBrl }}</span>
             </div>
             <div class="summary-divider"></div>
             <div class="summary-item">
-              <span class="summary-label">Pago</span>
+              <span class="summary-label">
+                Pago
+                <button class="mario-q" (click)="openMario('pago')" title="Detalhes de Pago">?</button>
+              </span>
               <span class="summary-value">{{ summary()!.totalPaid | currencyBrl }}</span>
             </div>
             <div class="summary-divider"></div>
             <div class="summary-item">
-              <span class="summary-label">A pagar</span>
+              <span class="summary-label">
+                A pagar
+                <button class="mario-q" (click)="openMario('apagar')" title="Detalhes de A pagar">?</button>
+              </span>
               <span class="summary-value warning">{{ summary()!.totalOwed | currencyBrl }}</span>
             </div>
             <div class="summary-divider"></div>
             <div class="summary-item">
-              <span class="summary-label">Saldo</span>
+              <span class="summary-label">
+                Saldo
+                <button class="mario-q" (click)="openMario('saldo')" title="Detalhes do Saldo">?</button>
+              </span>
               <span class="summary-value" [class]="summary()!.balance >= 0 ? 'success' : 'danger'">
                 {{ summary()!.balance | currencyBrl: true }}
               </span>
@@ -168,6 +204,18 @@ import {
           }
         }
 
+        <!-- Modal Mario -->
+        @if (marioOpen()) {
+          <div class="mario-overlay" @backdropAnim (click)="marioOpen.set(false)"></div>
+          <div class="mario-center" @modalAnim>
+            <app-mario-modal
+              [title]="marioTitle()"
+              [content]="marioContent()"
+              (closed)="marioOpen.set(false)"
+            />
+          </div>
+        }
+
       }
     </div>
   `,
@@ -201,6 +249,9 @@ import {
       text-transform: uppercase;
       letter-spacing: 0.04em;
       color: var(--ink3);
+      display: flex;
+      align-items: center;
+      gap: 4px;
     }
 
     .summary-value {
@@ -218,6 +269,59 @@ import {
       height: 32px;
       background: var(--border);
       margin: 0 8px;
+    }
+
+    /* Botão ? estilo bloco Mario */
+    .mario-q {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+      background: #f5c518;
+      color: #5c3800;
+      font-size: 0.65rem;
+      font-weight: 900;
+      border: 2px solid #8a5400;
+      border-radius: 3px;
+      cursor: pointer;
+      box-shadow: 0 2px 0 #8a5400;
+      transition: transform 80ms ease, box-shadow 80ms ease;
+      line-height: 1;
+      padding: 0;
+      flex-shrink: 0;
+    }
+
+    .mario-q:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 0 #8a5400;
+    }
+
+    .mario-q:active {
+      transform: translateY(1px);
+      box-shadow: 0 1px 0 #8a5400;
+    }
+
+    /* Overlay Mario */
+    .mario-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.72);
+      z-index: 900;
+    }
+
+    .mario-center {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 901;
+      pointer-events: none;
+    }
+
+    .mario-center > * {
+      pointer-events: all;
     }
 
     /* Tabs */
@@ -409,6 +513,11 @@ export class PeriodDetailComponent implements OnInit {
   readonly incomes    = signal<IncomeResponse[]>([]);
   readonly categories = signal<CategoryResponse[]>([]);
 
+  // Mario modal
+  readonly marioOpen    = signal(false);
+  readonly marioTitle   = signal('');
+  readonly marioContent = signal('');
+
   readonly headerTitle = computed(() => {
     const s = this.summary();
     if (!s) return 'Período';
@@ -430,6 +539,86 @@ export class PeriodDetailComponent implements OnInit {
       this.categories.set(categories ?? []);
       this.loading.set(false);
     }).catch(() => this.loading.set(false));
+  }
+
+  openMario(target: MarioTarget): void {
+    const s = this.summary()!;
+    const exps = this.expenses();
+    const incs = this.incomes();
+    let title = '';
+    let lines: string[] = [];
+
+    switch (target) {
+      case 'receitas': {
+        title = 'RECEITAS DO PERIODO';
+        if (incs.length === 0) {
+          lines = ['Nenhuma receita\nregistrada neste periodo.'];
+        } else {
+          lines = incs.map(i => `• ${i.description}\n  ${this.fmt(i.amount)}`);
+          lines.push('', `TOTAL: ${this.fmt(s.totalIncome)}`);
+        }
+        break;
+      }
+      case 'despesas': {
+        title = 'DESPESAS DO PERIODO';
+        if (exps.length === 0) {
+          lines = ['Nenhuma despesa\nregistrada neste periodo.'];
+        } else {
+          lines = exps.map(e => `• ${e.description}\n  ${this.fmt(e.amount)}`);
+          lines.push('', `TOTAL: ${this.fmt(s.totalExpense)}`);
+        }
+        break;
+      }
+      case 'pago': {
+        title = 'DESPESAS PAGAS';
+        const pagas = exps.filter(e => e.paymentStatus === PaymentStatus.Paid);
+        if (pagas.length === 0) {
+          lines = ['Nenhuma despesa\npaga neste periodo.'];
+        } else {
+          lines = pagas.map(e => `• ${e.description}\n  ${this.fmt(e.amount)}`);
+          lines.push('', `TOTAL PAGO: ${this.fmt(s.totalPaid)}`);
+        }
+        break;
+      }
+      case 'apagar': {
+        title = 'DESPESAS A PAGAR';
+        const pendentes = exps.filter(
+          e => e.paymentStatus === PaymentStatus.Pending || e.paymentStatus === PaymentStatus.Partial
+        );
+        if (pendentes.length === 0) {
+          lines = ['Nenhuma despesa\npendente neste periodo.'];
+        } else {
+          lines = pendentes.map(e => {
+            const sufixo = e.paymentStatus === PaymentStatus.Partial ? ' (parcial)' : '';
+            return `• ${e.description}${sufixo}\n  ${this.fmt(e.amount)}`;
+          });
+          lines.push('', `TOTAL A PAGAR: ${this.fmt(s.totalOwed)}`);
+        }
+        break;
+      }
+      case 'saldo': {
+        title = 'CALCULO DO SALDO';
+        lines = [
+          `Receitas:`,
+          `  ${this.fmt(s.totalIncome)}`,
+          '',
+          `(-) Despesas:`,
+          `  ${this.fmt(s.totalExpense)}`,
+          '',
+          `(=) Saldo:`,
+          `  ${this.fmt(s.balance)}`,
+        ];
+        break;
+      }
+    }
+
+    this.marioTitle.set(title);
+    this.marioContent.set(lines.join('\n'));
+    this.marioOpen.set(true);
+  }
+
+  private fmt(value: number): string {
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
   }
 
   categoryName(categoryId: string): string {
