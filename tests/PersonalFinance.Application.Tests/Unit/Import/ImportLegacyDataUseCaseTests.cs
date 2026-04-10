@@ -186,7 +186,7 @@ public class ImportLegacyDataUseCaseTests
             SourceType.Personal, FortnightType.First,
             PaymentStatus.Pending,                    // igual ao dto
             "Internet", 110m,
-            new DateOnly(2026, 4, 20), null, null);
+            dto.DueDate, null, null);
 
         _parser.Setup(p => p.ParseAsync(It.IsAny<Stream>(), default))
                .ReturnsAsync(new[] { BuildSheet(expenses: new[] { dto }) });
