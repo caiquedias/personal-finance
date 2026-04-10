@@ -36,7 +36,7 @@ public sealed class CategoryConfiguration : IEntityTypeConfiguration<Category>
 
         builder.Property(c => c.Icon)
                .HasColumnName("Icon")
-               .HasColumnType("nvarchar(50)")
+               .HasColumnType("nvarchar(MAX)")
                .IsRequired(false);
 
         builder.Property(c => c.IsGlobal)
