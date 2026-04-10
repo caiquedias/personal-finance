@@ -7,7 +7,7 @@ on:
 
 jobs:
   sync:
-    name: Fast-forward develop and release
+    name: Sync develop and release from master
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -19,14 +19,19 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
       - name: Sync develop ← master
         run: |
           git checkout develop
-          git merge --ff-only origin/master
+          git merge --ff-only origin/master || git merge -m "chore(ci): sync develop ← master [skip ci]" origin/master
           git push origin develop
 
       - name: Sync release ← master
         run: |
           git checkout release
-          git merge --ff-only origin/master
+          git merge --ff-only origin/master || git merge -m "chore(ci): sync release ← master [skip ci]" origin/master
           git push origin release
