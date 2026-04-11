@@ -35,6 +35,9 @@ import { Component, computed, input, OnDestroy, OnInit, output, signal } from '@
       min-width: 480px;
       max-width: 660px;
       width: 90vw;
+      height: 360px;
+      display: flex;
+      flex-direction: column;
       border: 4px solid #fff;
       box-shadow:
         0 0 0 2px #000,
@@ -54,7 +57,9 @@ import { Component, computed, input, OnDestroy, OnInit, output, signal } from '@
 
     .mario-content {
       white-space: pre-wrap;
-      min-height: 80px;
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
       word-break: break-word;
     }
 
