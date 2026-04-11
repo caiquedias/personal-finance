@@ -1,9 +1,10 @@
-import { Component, inject, signal, OnInit, input, ViewChild, ElementRef } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, input, ViewChild, ElementRef } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { trigger, style, animate, transition } from '@angular/animations';
 import { ApiService } from '../../../core/services/api.service';
 import { HeaderComponent } from '../../../shared/components/header/header.component';
 import { SonicModalComponent } from '../../../shared/components/modal/sonic-modal.component';
+import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { CurrencyBrlPipe } from '../../../shared/pipes/currency-brl.pipe';
 import {
   ExpenseResponse, PeriodResponse, CategoryResponse,
@@ -11,10 +12,12 @@ import {
   PaymentStatus, SourceType, FortnightType
 } from '../../../core/models/models';
 
+type SortCol = 'description' | 'category' | 'fortnightType' | 'dueDate' | 'amount' | 'paymentStatus';
+
 @Component({
   selector: 'app-expenses',
   standalone: true,
-  imports: [HeaderComponent, CurrencyBrlPipe, ReactiveFormsModule, SonicModalComponent],
+  imports: [HeaderComponent, CurrencyBrlPipe, ReactiveFormsModule, SonicModalComponent, PaginationComponent],
   animations: [
     trigger('backdropAnim', [
       transition(':enter', [
@@ -50,17 +53,72 @@ import {
       <div class="filter-row">
         <label class="field-label">Filtrar por período</label>
         <select #periodFilterSelect class="input" style="width:auto; min-width:180px" (change)="onPeriodFilter($event)">
-          <option value="">Todos</option>
+          <option value="">Selecione um período</option>
           @for (p of periods(); track p.id) {
             <option [value]="p.id">{{ monthName(p.month) }}/{{ p.year }}</option>
           }
         </select>
       </div>
 
+      <!-- Filtros externos (server-side) — visíveis apenas quando há período selecionado -->
+      @if (selectedPeriodId) {
+        <div class="external-filters card">
+          <div class="filters-grid">
+            <div class="filter-field">
+              <label class="field-label">Descrição</label>
+              <input
+                class="input input-sm"
+                placeholder="Buscar..."
+                [value]="filterDescription()"
+                (input)="onFilterDescriptionChange($event)"
+              />
+            </div>
+
+            <div class="filter-field">
+              <label class="field-label">Categoria</label>
+              <select class="input input-sm" (change)="onFilterCategoryChange($event)">
+                <option value="">Todas</option>
+                @for (c of categories(); track c.id) {
+                  <option [value]="c.id">{{ c.name }}</option>
+                }
+              </select>
+            </div>
+
+            <div class="filter-field">
+              <label class="field-label">Status</label>
+              <select class="input input-sm" (change)="onFilterStatusChange($event)">
+                <option value="">Todos</option>
+                <option [value]="PaymentStatus.Pending">Pendente</option>
+                <option [value]="PaymentStatus.Paid">Pago</option>
+                <option [value]="PaymentStatus.Partial">Parcial</option>
+                <option [value]="PaymentStatus.Cancelled">Cancelado</option>
+              </select>
+            </div>
+
+            <div class="filter-field">
+              <label class="field-label">Quinzena</label>
+              <select class="input input-sm" (change)="onFilterFortnightChange($event)">
+                <option value="">Ambas</option>
+                <option [value]="FortnightType.First">1ª Quinzena</option>
+                <option [value]="FortnightType.Second">2ª Quinzena</option>
+              </select>
+            </div>
+          </div>
+
+          @if (hasActiveFilters()) {
+            <button class="btn-clear-filters" (click)="clearFilters()">Limpar filtros</button>
+          }
+        </div>
+      }
+
       <!-- Lista -->
       @if (loadingList()) {
         <div class="loading-state"><span class="spinner-lg"></span></div>
-      } @else if (expenses().length === 0) {
+      } @else if (!selectedPeriodId) {
+        <div class="empty-state">
+          <p>Selecione um período para ver as despesas.</p>
+        </div>
+      } @else if (totalCount() === 0) {
         <div class="empty-state">
           <p>Nenhuma despesa encontrada.</p>
         </div>
@@ -69,17 +127,29 @@ import {
           <table class="table">
             <thead>
               <tr>
-                <th>Descrição</th>
-                <th>Categoria</th>
-                <th>Quinzena</th>
-                <th>Vencimento</th>
-                <th>Valor</th>
-                <th>Status</th>
+                <th class="sortable" (click)="toggleSort('description')">
+                  Descrição {{ sortIcon('description') }}
+                </th>
+                <th class="sortable" (click)="toggleSort('category')">
+                  Categoria {{ sortIcon('category') }}
+                </th>
+                <th class="sortable" (click)="toggleSort('fortnightType')">
+                  Quinzena {{ sortIcon('fortnightType') }}
+                </th>
+                <th class="sortable" (click)="toggleSort('dueDate')">
+                  Vencimento {{ sortIcon('dueDate') }}
+                </th>
+                <th class="sortable" (click)="toggleSort('amount')">
+                  Valor {{ sortIcon('amount') }}
+                </th>
+                <th class="sortable" (click)="toggleSort('paymentStatus')">
+                  Status {{ sortIcon('paymentStatus') }}
+                </th>
                 <th>Ações</th>
               </tr>
             </thead>
             <tbody>
-              @for (expense of expenses(); track expense.id) {
+              @for (expense of displayedExpenses(); track expense.id) {
                 <tr>
                   <td>
                     <div class="cell-primary">{{ expense.description }}</div>
@@ -126,6 +196,15 @@ import {
               }
             </tbody>
           </table>
+
+          <!-- Paginação -->
+          <app-pagination
+            [totalCount]="totalCount()"
+            [pageSize]="pageSize()"
+            [currentPage]="currentPage()"
+            (pageChange)="onPageChange($event)"
+            (pageSizeChange)="onPageSizeChange($event)"
+          />
         </div>
       }
     </div>
@@ -246,6 +325,46 @@ import {
       gap: 12px;
     }
 
+    /* ── Filtros externos ── */
+    .external-filters {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .filters-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+    }
+
+    .filter-field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .input-sm {
+      height: 32px;
+      padding: 0 10px;
+      font-size: 0.8125rem;
+    }
+
+    .btn-clear-filters {
+      align-self: flex-start;
+      background: none;
+      border: none;
+      color: var(--color-info);
+      font-size: 0.8125rem;
+      cursor: pointer;
+      padding: 0;
+      text-decoration: underline;
+    }
+
+    .btn-clear-filters:hover { color: var(--rust); }
+
+    /* ── Tabela ── */
     .table-wrap { overflow-x: auto; }
     .table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
     .table th {
@@ -261,6 +380,13 @@ import {
     }
     .table tr:last-child td { border-bottom: none; }
     .table tbody tr:hover { background: var(--surface-overlay); }
+
+    .sortable {
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+    }
+    .sortable:hover { color: var(--ink); }
 
     .cell-primary   { color: var(--ink); font-weight: 500; }
     .cell-secondary { font-size: 0.75rem; color: var(--ink3); margin-top: 2px; }
@@ -350,10 +476,27 @@ export class ExpensesComponent implements OnInit {
   private readonly fb  = inject(FormBuilder);
 
   readonly PaymentStatus = PaymentStatus;
+  readonly FortnightType = FortnightType;
 
-  readonly periods     = signal<PeriodResponse[]>([]);
-  readonly categories  = signal<CategoryResponse[]>([]);
+  readonly periods    = signal<PeriodResponse[]>([]);
+  readonly categories = signal<CategoryResponse[]>([]);
+
+  // Dados vindos da API (página atual)
   readonly expenses    = signal<ExpenseResponse[]>([]);
+  readonly totalCount  = signal(0);
+  readonly currentPage = signal(1);
+  readonly pageSize    = signal(20);
+
+  // Filtros externos (server-side)
+  readonly filterDescription   = signal('');
+  readonly filterCategoryId    = signal('');
+  readonly filterStatus        = signal<PaymentStatus | null>(null);
+  readonly filterFortnightType = signal<FortnightType | null>(null);
+
+  // Ordenação client-side (página atual)
+  readonly sortCol = signal<SortCol | null>(null);
+  readonly sortDir = signal<'asc' | 'desc'>('asc');
+
   readonly loadingList = signal(false);
   readonly saving      = signal(false);
   readonly apiError    = signal<string | null>(null);
@@ -361,11 +504,47 @@ export class ExpensesComponent implements OnInit {
   readonly modalMode   = signal<'create' | 'edit'>('create');
 
   private editingId: string | null = null;
-  private selectedPeriodId: string | null = null;
+  selectedPeriodId: string | null = null;
+
+  // Debounce para busca por descrição
+  private descriptionDebounce: ReturnType<typeof setTimeout> | null = null;
 
   /** Pré-seleção via query param: /expenses?periodId=xxx */
   readonly periodId = input<string>();
   @ViewChild('periodFilterSelect') periodFilterSelect!: ElementRef<HTMLSelectElement>;
+
+  /** Verifica se há algum filtro ativo */
+  readonly hasActiveFilters = computed(() =>
+    !!this.filterDescription() || !!this.filterCategoryId() ||
+    this.filterStatus() != null || this.filterFortnightType() != null);
+
+  /** Aplica ordenação client-side sobre os itens da página atual */
+  readonly displayedExpenses = computed<ExpenseResponse[]>(() => {
+    const col = this.sortCol();
+    const dir = this.sortDir();
+    const list = [...this.expenses()];
+
+    if (!col) return list;
+
+    return list.sort((a, b) => {
+      let va: string | number;
+      let vb: string | number;
+
+      switch (col) {
+        case 'description':   va = a.description.toLowerCase();   vb = b.description.toLowerCase();   break;
+        case 'category':      va = this.categoryName(a.categoryId); vb = this.categoryName(b.categoryId); break;
+        case 'fortnightType': va = a.fortnightType;               vb = b.fortnightType;               break;
+        case 'dueDate':       va = a.dueDate;                     vb = b.dueDate;                     break;
+        case 'amount':        va = a.amount;                      vb = b.amount;                      break;
+        case 'paymentStatus': va = a.paymentStatus;               vb = b.paymentStatus;               break;
+        default:              return 0;
+      }
+
+      if (va < vb) return dir === 'asc' ? -1 : 1;
+      if (va > vb) return dir === 'asc' ?  1 : -1;
+      return 0;
+    });
+  });
 
   readonly form = this.fb.group({
     periodId:      ['', Validators.required],
@@ -384,11 +563,7 @@ export class ExpensesComponent implements OnInit {
       this.periods.set(p);
       if (preId) {
         this.selectedPeriodId = preId;
-        this.loadingList.set(true);
-        this.api.getExpensesByPeriod(preId).subscribe({
-          next: e => { this.expenses.set(e); this.loadingList.set(false); },
-          error: () => this.loadingList.set(false)
-        });
+        this.loadPage();
         setTimeout(() => {
           if (this.periodFilterSelect?.nativeElement)
             this.periodFilterSelect.nativeElement.value = preId;
@@ -396,6 +571,26 @@ export class ExpensesComponent implements OnInit {
       }
     });
     this.api.getCategories().subscribe(c => this.categories.set(c));
+  }
+
+  private loadPage(): void {
+    if (!this.selectedPeriodId) return;
+    this.loadingList.set(true);
+    this.api.getExpensesByPeriod(this.selectedPeriodId, {
+      pageNumber:    this.currentPage(),
+      pageSize:      this.pageSize(),
+      description:   this.filterDescription() || undefined,
+      categoryId:    this.filterCategoryId()  || undefined,
+      paymentStatus: this.filterStatus()      ?? undefined,
+      fortnightType: this.filterFortnightType() ?? undefined,
+    }).subscribe({
+      next: result => {
+        this.expenses.set(result.items);
+        this.totalCount.set(result.totalCount);
+        this.loadingList.set(false);
+      },
+      error: () => this.loadingList.set(false)
+    });
   }
 
   openCreateModal(): void {
@@ -441,16 +636,83 @@ export class ExpensesComponent implements OnInit {
   onPeriodFilter(event: Event): void {
     const periodId = (event.target as HTMLSelectElement).value;
     this.selectedPeriodId = periodId || null;
-    if (periodId) {
-      this.loadingList.set(true);
-      this.api.getExpensesByPeriod(periodId).subscribe({
-        next: e => { this.expenses.set(e); this.loadingList.set(false); },
-        error: () => this.loadingList.set(false)
-      });
+    this.currentPage.set(1);
+    this.expenses.set([]);
+    this.totalCount.set(0);
+    if (periodId) this.loadPage();
+  }
+
+  // ── Filtros externos ──────────────────────────────────────────────────────
+
+  onFilterDescriptionChange(event: Event): void {
+    const val = (event.target as HTMLInputElement).value;
+    this.filterDescription.set(val);
+    if (this.descriptionDebounce) clearTimeout(this.descriptionDebounce);
+    this.descriptionDebounce = setTimeout(() => {
+      this.currentPage.set(1);
+      this.loadPage();
+    }, 350);
+  }
+
+  onFilterCategoryChange(event: Event): void {
+    this.filterCategoryId.set((event.target as HTMLSelectElement).value);
+    this.currentPage.set(1);
+    this.loadPage();
+  }
+
+  onFilterStatusChange(event: Event): void {
+    const val = (event.target as HTMLSelectElement).value;
+    this.filterStatus.set(val ? Number(val) as PaymentStatus : null);
+    this.currentPage.set(1);
+    this.loadPage();
+  }
+
+  onFilterFortnightChange(event: Event): void {
+    const val = (event.target as HTMLSelectElement).value;
+    this.filterFortnightType.set(val ? Number(val) as FortnightType : null);
+    this.currentPage.set(1);
+    this.loadPage();
+  }
+
+  clearFilters(): void {
+    this.filterDescription.set('');
+    this.filterCategoryId.set('');
+    this.filterStatus.set(null);
+    this.filterFortnightType.set(null);
+    this.currentPage.set(1);
+    this.loadPage();
+  }
+
+  // ── Paginação ─────────────────────────────────────────────────────────────
+
+  onPageChange(page: number): void {
+    this.currentPage.set(page);
+    this.loadPage();
+  }
+
+  onPageSizeChange(size: number): void {
+    this.pageSize.set(size);
+    this.currentPage.set(1);
+    this.loadPage();
+  }
+
+  // ── Ordenação client-side ─────────────────────────────────────────────────
+
+  toggleSort(col: SortCol): void {
+    if (this.sortCol() === col) {
+      this.sortDir.update(d => d === 'asc' ? 'desc' : 'asc');
     } else {
-      this.expenses.set([]);
+      this.sortCol.set(col);
+      this.sortDir.set('asc');
     }
   }
+
+  sortIcon(col: SortCol): string {
+    if (this.sortCol() !== col) return '↕';
+    return this.sortDir() === 'asc' ? '↑' : '↓';
+  }
+
+  // ── CRUD ──────────────────────────────────────────────────────────────────
 
   onSubmit(): void {
     if (this.form.invalid) { this.form.markAllAsTouched(); return; }
@@ -471,11 +733,11 @@ export class ExpensesComponent implements OnInit {
         fortnightType: Number(v.fortnightType) as FortnightType,
         notes:         v.notes || undefined,
       }).subscribe({
-        next: e => {
-          if (this.selectedPeriodId === e.periodId)
-            this.expenses.update(list => [e, ...list]);
+        next: () => {
           this.closeModal();
           this.saving.set(false);
+          // Recarrega a página atual para refletir o novo registro
+          this.loadPage();
         },
         error: err => {
           this.apiError.set(err.error?.message ?? 'Erro ao salvar despesa.');
@@ -538,9 +800,14 @@ export class ExpensesComponent implements OnInit {
   deleteExpense(id: string): void {
     if (!confirm('Confirma a exclusão desta despesa?')) return;
     this.api.deleteExpense(id).subscribe({
-      next: () => this.expenses.update(list => list.filter(e => e.id !== id))
+      next: () => {
+        this.expenses.update(list => list.filter(e => e.id !== id));
+        this.totalCount.update(n => n - 1);
+      }
     });
   }
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
 
   categoryName(categoryId: string): string {
     return this.categories().find(c => c.id === categoryId)?.name ?? '—';

@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using PersonalFinance.Application.DTOs;
 using PersonalFinance.Application.DTOs.Financial;
 using PersonalFinance.Application.UseCases.Financial.Expenses;
 using PersonalFinance.Domain.Interfaces.Repositories;
@@ -27,17 +28,19 @@ public sealed class ExpensesController(
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
 
     /// <summary>
-    /// Lista todas as despesas de um período.
+    /// Lista despesas de um período com paginação e filtros opcionais.
     /// Requer query param: ?periodId={guid}
+    /// Filtros opcionais: pageNumber, pageSize, description, categoryId, paymentStatus, fortnightType
     /// </summary>
     [HttpGet]
-    [ProducesResponseType(typeof(IEnumerable<ExpenseResponseDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PagedResult<ExpenseResponseDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetByPeriod(
         [FromQuery] Guid periodId,
+        [FromQuery] ExpenseFilterDto filter,
         CancellationToken ct)
     {
-        var result = await _getByPeriodUseCase.ExecuteAsync(periodId, CurrentUserId, ct);
+        var result = await _getByPeriodUseCase.ExecuteAsync(periodId, CurrentUserId, filter, ct);
         return Ok(result);
     }
 

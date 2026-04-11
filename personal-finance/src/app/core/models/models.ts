@@ -134,6 +134,24 @@ export interface MarkAsPaidRequest {
   paymentDate: string;
 }
 
+// ── Pagination ────────────────────────────────────────────────────────────────
+
+export interface PagedResult<T> {
+  items:      T[];
+  totalCount: number;
+  pageNumber: number;
+  pageSize:   number;
+}
+
+export interface ExpenseFilterParams {
+  pageNumber?:    number;
+  pageSize?:      number;
+  description?:   string;
+  categoryId?:    string;
+  paymentStatus?: PaymentStatus;
+  fortnightType?: FortnightType;
+}
+
 // ── Income ────────────────────────────────────────────────────────────────────
 
 export interface IncomeResponse {

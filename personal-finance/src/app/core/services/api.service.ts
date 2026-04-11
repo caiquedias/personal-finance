@@ -6,6 +6,7 @@ import {
   CategoryResponse, CreateCategoryRequest, UpdateCategoryRequest,
   PeriodResponse, CreatePeriodRequest, PeriodSummary,
   ExpenseResponse, CreateExpenseRequest, UpdateExpenseRequest, MarkAsPaidRequest,
+  PagedResult, ExpenseFilterParams,
   IncomeResponse, CreateIncomeRequest,
   LookupItem,
   CreatePaymentStatusRequest, CreateSourceTypeRequest, CreateFortnightTypeRequest,
@@ -68,9 +69,15 @@ export class ApiService {
 
   // ── Expenses ──────────────────────────────────────────────────────────────
 
-  getExpensesByPeriod(periodId: string): Observable<ExpenseResponse[]> {
-    const params = new HttpParams().set('periodId', periodId);
-    return this.http.get<ExpenseResponse[]>(`${this.base}/expenses`, { params });
+  getExpensesByPeriod(periodId: string, filters?: ExpenseFilterParams): Observable<PagedResult<ExpenseResponse>> {
+    let params = new HttpParams().set('periodId', periodId);
+    if (filters?.pageNumber != null)    params = params.set('pageNumber',    filters.pageNumber);
+    if (filters?.pageSize != null)      params = params.set('pageSize',      filters.pageSize);
+    if (filters?.description)           params = params.set('description',   filters.description);
+    if (filters?.categoryId)            params = params.set('categoryId',    filters.categoryId);
+    if (filters?.paymentStatus != null) params = params.set('paymentStatus', filters.paymentStatus);
+    if (filters?.fortnightType != null) params = params.set('fortnightType', filters.fortnightType);
+    return this.http.get<PagedResult<ExpenseResponse>>(`${this.base}/expenses`, { params });
   }
 
   getExpenseById(id: string): Observable<ExpenseResponse> {
