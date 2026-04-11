@@ -532,9 +532,9 @@ export class PeriodDetailComponent implements OnInit {
       this.api.getExpensesByPeriod(periodId).toPromise(),
       this.api.getIncomesByPeriod(periodId).toPromise(),
       this.api.getCategories().toPromise(),
-    ]).then(([summary, expenses, incomes, categories]) => {
+    ]).then(([summary, expensesResult, incomes, categories]) => {
       this.summary.set(summary ?? null);
-      this.expenses.set(expenses ?? []);
+      this.expenses.set(expensesResult?.items ?? []);
       this.incomes.set(incomes ?? []);
       this.categories.set(categories ?? []);
       this.loading.set(false);

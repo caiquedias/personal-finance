@@ -1,4 +1,5 @@
-﻿using PersonalFinance.Application.DTOs.Financial;
+using PersonalFinance.Application.DTOs;
+using PersonalFinance.Application.DTOs.Financial;
 using PersonalFinance.Domain.Entities.Financial;
 using PersonalFinance.Domain.Exceptions;
 using PersonalFinance.Domain.Interfaces.Repositories;
@@ -6,8 +7,7 @@ using PersonalFinance.Domain.Interfaces.Repositories;
 namespace PersonalFinance.Application.UseCases.Financial.Expenses
 {
     /// <summary>
-    /// Retorna todas as despesas de um período específico do usuário,
-    /// ordenadas por data de vencimento.
+    /// Retorna as despesas de um período de forma paginada com filtros opcionais.
     /// </summary>
     public sealed class GetExpensesByPeriodUseCase
     {
@@ -22,16 +22,26 @@ namespace PersonalFinance.Application.UseCases.Financial.Expenses
             _periodRepository = periodRepository;
         }
 
-        public async Task<IEnumerable<ExpenseResponseDto>> ExecuteAsync(
-            Guid periodId, Guid userId, CancellationToken ct = default)
+        public async Task<PagedResult<ExpenseResponseDto>> ExecuteAsync(
+            Guid periodId, Guid userId, ExpenseFilterDto filter, CancellationToken ct = default)
         {
             // Garante que o período pertence ao usuário antes de retornar as despesas
             var periodExists = await _periodRepository.ExistsByIdAndUserAsync(periodId, userId, ct);
             if (!periodExists)
                 throw new DomainException("Período não encontrado ou sem permissão de acesso.");
 
-            var expenses = await _expenseRepository.GetByPeriodAsync(periodId, userId, ct);
-            return expenses.Select(ToDto);
+            var (items, totalCount) = await _expenseRepository.GetPagedByPeriodAsync(
+                periodId, userId,
+                filter.PageNumber, filter.PageSize,
+                filter.Description, filter.CategoryId,
+                filter.PaymentStatus, filter.FortnightType,
+                ct);
+
+            return new PagedResult<ExpenseResponseDto>(
+                items.Select(ToDto),
+                totalCount,
+                filter.PageNumber,
+                filter.PageSize);
         }
 
         private static ExpenseResponseDto ToDto(Expense e) =>

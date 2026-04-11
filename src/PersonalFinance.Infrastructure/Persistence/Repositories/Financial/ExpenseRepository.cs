@@ -55,6 +55,44 @@ public sealed class ExpenseRepository : IExpenseRepository
         return Task.CompletedTask;
     }
 
+    public async Task<(IEnumerable<Expense> Items, int TotalCount)> GetPagedByPeriodAsync(
+        Guid          periodId,
+        Guid          userId,
+        int           pageNumber,
+        int           pageSize,
+        string?       description,
+        Guid?         categoryId,
+        PaymentStatus? paymentStatus,
+        FortnightType? fortnightType,
+        CancellationToken ct = default)
+    {
+        var query = _context.Expenses
+            .Where(e => e.PeriodId == periodId && e.UserId == userId);
+
+        if (!string.IsNullOrWhiteSpace(description))
+            query = query.Where(e => e.Description.Contains(description));
+
+        if (categoryId.HasValue)
+            query = query.Where(e => e.CategoryId == categoryId.Value);
+
+        if (paymentStatus.HasValue)
+            query = query.Where(e => e.PaymentStatus == paymentStatus.Value);
+
+        if (fortnightType.HasValue)
+            query = query.Where(e => e.FortnightType == fortnightType.Value);
+
+        var totalCount = await query.CountAsync(ct);
+
+        var items = await query
+            .OrderBy(e => e.FortnightType)
+            .ThenBy(e => e.DueDate)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(ct);
+
+        return (items, totalCount);
+    }
+
     public async Task<bool> HasExpensesByCategoryAsync(
     Guid categoryId, CancellationToken ct = default)
     => await _context.Expenses
