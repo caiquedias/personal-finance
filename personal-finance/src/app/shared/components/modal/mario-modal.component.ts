@@ -1,4 +1,4 @@
-import { Component, computed, input, OnDestroy, OnInit, output, signal } from '@angular/core';
+import { Component, computed, ElementRef, input, OnDestroy, OnInit, output, signal, ViewChild } from '@angular/core';
 
 @Component({
   selector: 'app-mario-modal',
@@ -8,7 +8,7 @@ import { Component, computed, input, OnDestroy, OnInit, output, signal } from '@
       @if (title()) {
         <div class="mario-title">{{ title() }}</div>
       }
-      <div class="mario-content">{{ displayedText() }}</div>
+      <div class="mario-content" #contentEl>{{ displayedText() }}</div>
       <div class="mario-footer">
         @if (!animDone()) {
           <button class="skip-btn" (click)="skipAnimation()" title="Pular animação">▼</button>
@@ -35,6 +35,9 @@ import { Component, computed, input, OnDestroy, OnInit, output, signal } from '@
       min-width: 480px;
       max-width: 660px;
       width: 90vw;
+      height: 360px;
+      display: flex;
+      flex-direction: column;
       border: 4px solid #fff;
       box-shadow:
         0 0 0 2px #000,
@@ -54,7 +57,9 @@ import { Component, computed, input, OnDestroy, OnInit, output, signal } from '@
 
     .mario-content {
       white-space: pre-wrap;
-      min-height: 80px;
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
       word-break: break-word;
     }
 
@@ -107,6 +112,8 @@ import { Component, computed, input, OnDestroy, OnInit, output, signal } from '@
   `]
 })
 export class MarioModalComponent implements OnInit, OnDestroy {
+  @ViewChild('contentEl') contentEl!: ElementRef<HTMLDivElement>;
+
   readonly title   = input<string>('');
   readonly content = input.required<string>();
   readonly closed  = output<void>();
@@ -118,8 +125,8 @@ export class MarioModalComponent implements OnInit, OnDestroy {
 
   private intervalId: ReturnType<typeof setInterval> | null = null;
 
-  // Velocidade: ~3 caracteres por tick de 16ms (~60fps)
-  private readonly CHARS_PER_TICK = 3;
+  // Velocidade: 1 caractere por tick de 30ms
+  private readonly CHARS_PER_TICK = 1;
 
   ngOnInit(): void {
     const full = this.content();
@@ -131,11 +138,12 @@ export class MarioModalComponent implements OnInit, OnDestroy {
     this.intervalId = setInterval(() => {
       const next = Math.min(this.charIndex() + this.CHARS_PER_TICK, full.length);
       this.charIndex.set(next);
+      this.scrollToBottom();
       if (next >= full.length) {
         this.clearInterval();
         this.animDone.set(true);
       }
-    }, 16);
+    }, 30);
   }
 
   ngOnDestroy(): void {
@@ -146,10 +154,16 @@ export class MarioModalComponent implements OnInit, OnDestroy {
     this.clearInterval();
     this.charIndex.set(this.content().length);
     this.animDone.set(true);
+    this.scrollToBottom();
   }
 
   closeModal(): void {
     this.closed.emit();
+  }
+
+  private scrollToBottom(): void {
+    const el = this.contentEl?.nativeElement;
+    if (el) el.scrollTop = el.scrollHeight;
   }
 
   private clearInterval(): void {
