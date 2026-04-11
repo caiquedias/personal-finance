@@ -9,6 +9,17 @@ public interface IExpenseRepository
     Task<Expense?> GetByIdAndUserAsync(Guid id, Guid userId, CancellationToken ct = default);
     Task<IEnumerable<Expense>> GetByPeriodAsync(Guid periodId, Guid userId, CancellationToken ct = default);
 
+    Task<(IEnumerable<Expense> Items, int TotalCount)> GetPagedByPeriodAsync(
+        Guid          periodId,
+        Guid          userId,
+        int           pageNumber,
+        int           pageSize,
+        string?       description,
+        Guid?         categoryId,
+        PaymentStatus? paymentStatus,
+        FortnightType? fortnightType,
+        CancellationToken ct = default);
+
     /// <summary>
     /// Busca uma despesa pela chave de idempotência de importação:
     /// PeriodId + Descrição (case-insensitive) + Valor + Quinzena.
