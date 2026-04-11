@@ -1,4 +1,4 @@
-import { Component, computed, input, OnDestroy, OnInit, output, signal } from '@angular/core';
+import { Component, computed, ElementRef, input, OnDestroy, OnInit, output, signal, ViewChild } from '@angular/core';
 
 @Component({
   selector: 'app-mario-modal',
@@ -8,7 +8,7 @@ import { Component, computed, input, OnDestroy, OnInit, output, signal } from '@
       @if (title()) {
         <div class="mario-title">{{ title() }}</div>
       }
-      <div class="mario-content">{{ displayedText() }}</div>
+      <div class="mario-content" #contentEl>{{ displayedText() }}</div>
       <div class="mario-footer">
         @if (!animDone()) {
           <button class="skip-btn" (click)="skipAnimation()" title="Pular animação">▼</button>
@@ -112,6 +112,8 @@ import { Component, computed, input, OnDestroy, OnInit, output, signal } from '@
   `]
 })
 export class MarioModalComponent implements OnInit, OnDestroy {
+  @ViewChild('contentEl') contentEl!: ElementRef<HTMLDivElement>;
+
   readonly title   = input<string>('');
   readonly content = input.required<string>();
   readonly closed  = output<void>();
@@ -136,6 +138,7 @@ export class MarioModalComponent implements OnInit, OnDestroy {
     this.intervalId = setInterval(() => {
       const next = Math.min(this.charIndex() + this.CHARS_PER_TICK, full.length);
       this.charIndex.set(next);
+      this.scrollToBottom();
       if (next >= full.length) {
         this.clearInterval();
         this.animDone.set(true);
@@ -151,10 +154,16 @@ export class MarioModalComponent implements OnInit, OnDestroy {
     this.clearInterval();
     this.charIndex.set(this.content().length);
     this.animDone.set(true);
+    this.scrollToBottom();
   }
 
   closeModal(): void {
     this.closed.emit();
+  }
+
+  private scrollToBottom(): void {
+    const el = this.contentEl?.nativeElement;
+    if (el) el.scrollTop = el.scrollHeight;
   }
 
   private clearInterval(): void {
