@@ -125,8 +125,8 @@ export class MarioModalComponent implements OnInit, OnDestroy {
 
   private intervalId: ReturnType<typeof setInterval> | null = null;
 
-  // Velocidade: ~3 caracteres por tick de 16ms (~60fps)
-  private readonly CHARS_PER_TICK = 3;
+  // Velocidade: 1 caractere por tick de 30ms
+  private readonly CHARS_PER_TICK = 1;
 
   ngOnInit(): void {
     const full = this.content();
@@ -143,7 +143,7 @@ export class MarioModalComponent implements OnInit, OnDestroy {
         this.clearInterval();
         this.animDone.set(true);
       }
-    }, 16);
+    }, 30);
   }
 
   ngOnDestroy(): void {
