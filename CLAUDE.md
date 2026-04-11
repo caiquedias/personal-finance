@@ -51,6 +51,85 @@ npm run lint     # TypeScript linting
 
 ---
 
+## Sprint Planning — Início de Sprint
+
+### Pré-requisito
+```bash
+gh auth refresh -h github.com -s project
+```
+Necessário apenas se o token não tiver o escopo `project` (`gh auth status` para verificar).
+
+### Passo a passo
+
+1. **Listar issues abertas no board (coluna Backlog)**
+   ```bash
+   gh issue list --state open --limit 50 --json number,title,body,labels --repo caiquedias/personal-finance
+   ```
+
+2. **Explorar o codebase** — para cada issue, identificar o que já existe e o que falta implementar (controllers, use cases, componentes Angular, padrões reutilizáveis)
+
+3. **Para cada issue, definir:**
+   - **Estimativa** em horas (inteiro) — baseada no esforço real de implementação
+   - **Prioridade** — ordem de desenvolvimento considerando dependências entre issues e valor de negócio
+   - **Size** — `XS` / `S` / `M` / `L` / `XL` conforme criticidade + risco + esforço
+   - **Planejamento** — backend e frontend, arquivos afetados, dependências entre issues
+
+4. **Postar comentário de planejamento em cada issue**
+   ```bash
+   gh issue comment <N> --repo caiquedias/personal-finance --body "..."
+   ```
+   Formato do comentário:
+   ```
+   ## 📋 Sprint Planning
+   **Estimativa:** Xh | **Prioridade:** N | **Size:** S/M/L/XL | **Risco:** Baixo/Médio/Alto
+   ---
+   ### Planejamento
+   **Backend** — o que criar/alterar
+   **Frontend** — o que criar/alterar
+   ### Arquivos afetados
+   - lista de arquivos
+   ```
+
+5. **Obter IDs do projeto e campos**
+   ```bash
+   gh project list --owner caiquedias --format json
+   gh project field-list <PROJECT_NUMBER> --owner caiquedias --format json
+   gh project item-list <PROJECT_NUMBER> --owner caiquedias --format json --limit 50
+   ```
+
+6. **Atualizar campos no board para cada issue** (Status → Ready, Size, Priority, Estimate)
+   ```bash
+   gh project item-edit --project-id <PROJECT_ID> --id <ITEM_ID> --field-id <FIELD_ID> --single-select-option-id <OPTION_ID>
+   gh project item-edit --project-id <PROJECT_ID> --id <ITEM_ID> --field-id <ESTIMATE_FIELD_ID> --number <HORAS>
+   ```
+
+### IDs fixos do projeto Personal Finance (Project #2)
+
+| Campo | Field ID | Opções |
+|-------|----------|--------|
+| Status | `PVTSSF_lAHOAOhFlc4BUMJ_zhBWAHQ` | Backlog `f75ad846` · Ready `61e4505c` · In progress `47fc9ee4` · In review `df73e18b` · Done `98236657` |
+| Priority | `PVTSSF_lAHOAOhFlc4BUMJ_zhBWAPM` | P0 `79628723` · P1 `0a877460` · P2 `da944a9c` |
+| Size | `PVTSSF_lAHOAOhFlc4BUMJ_zhBWAPQ` | XS `6c6483d2` · S `f784b110` · M `7515a9f1` · L `817d0097` · XL `db339eb2` |
+| Estimate | `PVTF_lAHOAOhFlc4BUMJ_zhBWAPU` | número (horas) |
+
+**Project ID:** `PVT_kwHOAOhFlc4BUMJ_`
+
+### Ciclo de vida da issue durante o desenvolvimento
+
+| Evento | Ação no board |
+|--------|--------------|
+| Análise concluída (Sprint Planning) | Mover para **Ready** |
+| Início da implementação | Mover para **In Progress** |
+| PR worktree → feat criado | Mover para **In Review** |
+| PR feat aprovado | Vincular branch `feat/` à issue |
+
+### Regras obrigatórias de rastreabilidade
+
+- **Toda PR criada no contexto de uma issue deve ser vinculada à própria issue** — garante rastreabilidade completa de todas as implementações
+- **Quando a primeira PR for aprovada (worktree → feat)**, vincular a branch `feat/` à issue no GitHub
+
+---
+
 ## Versionamento
 
 ### Branches permanentes
