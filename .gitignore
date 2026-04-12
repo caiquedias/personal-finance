@@ -27,3 +27,6 @@ Thumbs.db
 
 /personal-finance/.angular/cache/
 /personal-finance/node_modules/
+
+# Claude Code
+.claude/settings.local.json
