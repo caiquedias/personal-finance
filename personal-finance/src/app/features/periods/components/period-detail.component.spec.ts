@@ -72,7 +72,7 @@ describe('PeriodDetailComponent', () => {
       'getPeriodSummary', 'getExpensesByPeriod', 'getIncomesByPeriod', 'getCategories'
     ]);
     apiSpy.getPeriodSummary.and.returnValue(of(SUMMARY));
-    apiSpy.getExpensesByPeriod.and.returnValue(of([EXPENSE]));
+    apiSpy.getExpensesByPeriod.and.returnValue(of({ items: [EXPENSE], totalCount: 1, pageNumber: 1, pageSize: 20 }));
     apiSpy.getIncomesByPeriod.and.returnValue(of([INCOME]));
     apiSpy.getCategories.and.returnValue(of([CATEGORY]));
 
