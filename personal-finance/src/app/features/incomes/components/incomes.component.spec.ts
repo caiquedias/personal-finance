@@ -124,6 +124,7 @@ describe('IncomesComponent', () => {
 
     it('faz delete e create, fecha modal e recarrega a lista', fakeAsync(() => {
       const updated: IncomeResponse = { ...INCOME, description: 'Salário Atualizado', amount: 3500 };
+      (component as any).selectedPeriodId = 'p-1';
       apiSpy.deleteIncome.and.returnValue(of(undefined));
       apiSpy.createIncome.and.returnValue(of(updated));
       apiSpy.getIncomesByPeriod.and.returnValue(of({ items: [updated], totalCount: 1, pageNumber: 1, pageSize: 20 }));
@@ -154,6 +155,7 @@ describe('IncomesComponent', () => {
     });
 
     it('remove receita da lista', fakeAsync(() => {
+      (component as any).selectedPeriodId = 'p-1';
       apiSpy.getIncomesByPeriod.and.returnValue(of({ items: [], totalCount: 0, pageNumber: 1, pageSize: 20 }));
       component.deleteIncome('i-1');
       tick();
