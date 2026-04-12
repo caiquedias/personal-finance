@@ -31,7 +31,7 @@ describe('ExpensesComponent', () => {
     ]);
     apiSpy.getPeriods.and.returnValue(of([PERIOD]));
     apiSpy.getCategories.and.returnValue(of([CATEGORY]));
-    apiSpy.getExpensesByPeriod.and.returnValue(of([EXPENSE]));
+    apiSpy.getExpensesByPeriod.and.returnValue(of({ items: [EXPENSE], totalCount: 1, pageNumber: 1, pageSize: 20 }));
 
     await TestBed.configureTestingModule({
       imports: [ExpensesComponent, RouterModule.forRoot([])],

@@ -128,6 +128,7 @@ export interface UpdateExpenseRequest {
   amount:        number;
   dueDate:       string;
   notes?:        string;
+  status:        PaymentStatus;
 }
 
 export interface MarkAsPaidRequest {

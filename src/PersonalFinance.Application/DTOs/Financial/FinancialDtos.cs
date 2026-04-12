@@ -41,7 +41,8 @@ public sealed record UpdateExpenseDto(
     string        Description,
     decimal       Amount,
     DateOnly      DueDate,
-    string?       Notes
+    string?       Notes,
+    PaymentStatus Status
 );
 
 public sealed record ExpenseResponseDto(

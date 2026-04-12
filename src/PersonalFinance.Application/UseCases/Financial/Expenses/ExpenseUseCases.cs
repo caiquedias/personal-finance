@@ -85,8 +85,7 @@ public sealed class CreateExpenseUseCase
 // ══════════════════════════════════════════════════════════════════════════════
 
 /// <summary>
-/// Atualiza os dados editáveis de uma despesa existente.
-/// Não altera status de pagamento — use MarkAsPaid/MarkAsCancelled no domain.
+/// Atualiza os dados editáveis de uma despesa existente, incluindo status de pagamento.
 /// </summary>
 public sealed class UpdateExpenseUseCase
 {
@@ -135,6 +134,25 @@ public sealed class UpdateExpenseUseCase
             dueDate:       dto.DueDate,
             notes:         dto.Notes
         );
+
+        if (dto.Status != expense.PaymentStatus)
+        {
+            switch (dto.Status)
+            {
+                case PaymentStatus.Paid:
+                    expense.MarkAsPaid(DateOnly.FromDateTime(DateTime.UtcNow));
+                    break;
+                case PaymentStatus.Cancelled:
+                    expense.MarkAsCancelled();
+                    break;
+                case PaymentStatus.Partial:
+                    expense.MarkAsPartial();
+                    break;
+                case PaymentStatus.Pending:
+                    expense.MarkAsPending();
+                    break;
+            }
+        }
 
         await _expenseRepository.UpdateAsync(expense, ct);
         await _unitOfWork.CommitAsync(ct);

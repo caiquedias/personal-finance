@@ -122,6 +122,14 @@ public sealed class Expense : EntityBase
         SetUpdatedAt();
     }
 
+    /// <summary>Marca a despesa como pendente.</summary>
+    public void MarkAsPending()
+    {
+        PaymentStatus = PaymentStatus.Pending;
+        PaymentDate   = null;
+        SetUpdatedAt();
+    }
+
     // ── Atualização ───────────────────────────────────────────────────────────
 
     /// <summary>Atualiza os dados editáveis da despesa.</summary>
