@@ -24,8 +24,8 @@ namespace PersonalFinance.Api.Tests.Integration
             var (client, pid) = await SetupAsync();
             var r = await client.GetAsync($"/api/v1/incomes?periodId={pid}");
             r.StatusCode.Should().Be(HttpStatusCode.OK);
-            var arr = await r.Content.ReadFromJsonAsync<JsonElement>();
-            arr.GetArrayLength().Should().Be(0);
+            var paged = await r.Content.ReadFromJsonAsync<JsonElement>();
+            paged.GetProperty("items").GetArrayLength().Should().Be(0);
         }
 
         [Fact(DisplayName = "POST e GET /incomes deve persistir e retornar a receita")]
@@ -54,8 +54,8 @@ namespace PersonalFinance.Api.Tests.Integration
 
             // GET lista
             var list = await client.GetAsync($"/api/v1/incomes?periodId={pid}");
-            var arr = await list.Content.ReadFromJsonAsync<JsonElement>();
-            arr.GetArrayLength().Should().Be(1);
+            var paged = await list.Content.ReadFromJsonAsync<JsonElement>();
+            paged.GetProperty("items").GetArrayLength().Should().Be(1);
         }
 
         [Fact(DisplayName = "POST /incomes deve retornar 400 para amount negativo")]
