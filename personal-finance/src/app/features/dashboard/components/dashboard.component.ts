@@ -28,9 +28,22 @@ import { PeriodResponse, PeriodSummary, MONTH_NAMES, PaymentStatus } from '../..
 
       <!-- Seletor de período -->
       <div class="period-selector">
-        <span class="section-title">Período</span>
+        <div class="period-selector-header">
+          <span class="section-title">Período</span>
+          @if (availableYears().length > 1) {
+            <div class="year-selector">
+              @for (year of availableYears(); track year) {
+                <button
+                  class="year-tab"
+                  [class.active]="selectedYear() === year"
+                  (click)="selectYear(year)"
+                >{{ year }}</button>
+              }
+            </div>
+          }
+        </div>
         <div class="period-tabs">
-          @for (period of periods(); track period.id) {
+          @for (period of filteredPeriods(); track period.id) {
             <button
               class="period-tab"
               [class.active]="selectedPeriodId() === period.id"
@@ -39,7 +52,7 @@ import { PeriodResponse, PeriodSummary, MONTH_NAMES, PaymentStatus } from '../..
               {{ monthName(period.month) }}/{{ period.year }}
             </button>
           }
-          @if (periods().length === 0 && !loadingPeriods()) {
+          @if (filteredPeriods().length === 0 && !loadingPeriods()) {
             <span class="text-muted" style="font-size: 0.875rem">
               Nenhum período cadastrado.
               <a routerLink="/periods">Criar período</a>
@@ -154,7 +167,7 @@ import { PeriodResponse, PeriodSummary, MONTH_NAMES, PaymentStatus } from '../..
             </div>
           </div>
         </div>
-      } @else if (!loadingPeriods() && periods().length > 0) {
+      } @else if (!loadingPeriods() && filteredPeriods().length > 0) {
         <div class="empty-state">
           <span>Selecione um período para ver o resumo</span>
         </div>
@@ -176,6 +189,37 @@ import { PeriodResponse, PeriodSummary, MONTH_NAMES, PaymentStatus } from '../..
       display: flex;
       flex-direction: column;
       gap: 10px;
+    }
+
+    .period-selector-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .year-selector {
+      display: flex;
+      gap: 4px;
+    }
+
+    .year-tab {
+      padding: 3px 12px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background: var(--surface-raised);
+      color: var(--ink2);
+      font-size: 0.8125rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .year-tab:hover { background: var(--bg2); }
+
+    .year-tab.active {
+      background: var(--ink3);
+      border-color: var(--ink3);
+      color: #fff;
     }
 
     .period-tabs {
@@ -336,11 +380,20 @@ export class DashboardComponent implements OnInit {
   private readonly api  = inject(ApiService);
   private readonly auth = inject(AuthService);
 
-  readonly periods        = signal<PeriodResponse[]>([]);
+  readonly periods          = signal<PeriodResponse[]>([]);
+  readonly selectedYear     = signal<number>(new Date().getFullYear());
   readonly selectedPeriodId = signal<string | null>(null);
-  readonly summary        = signal<PeriodSummary | null>(null);
-  readonly loadingPeriods = signal(true);
-  readonly loadingSummary = signal(false);
+  readonly summary          = signal<PeriodSummary | null>(null);
+  readonly loadingPeriods   = signal(true);
+  readonly loadingSummary   = signal(false);
+
+  readonly availableYears = computed(() =>
+    [...new Set(this.periods().map(p => p.year))].sort((a, b) => b - a)
+  );
+
+  readonly filteredPeriods = computed(() =>
+    this.periods().filter(p => p.year === this.selectedYear())
+  );
 
   readonly headerSubtitle = computed(() => {
     const period = this.periods().find(p => p.id === this.selectedPeriodId());
@@ -371,6 +424,11 @@ export class DashboardComponent implements OnInit {
         this.periods.set(periods);
         this.loadingPeriods.set(false);
         if (periods.length > 0) {
+          // Garante que o ano selecionado existe nos períodos carregados
+          const years = [...new Set(periods.map(p => p.year))].sort((a, b) => b - a);
+          if (!years.includes(this.selectedYear())) {
+            this.selectedYear.set(years[0]);
+          }
           // Seleciona o período mais recente por padrão
           this.selectPeriod(periods[0].id);
         }
@@ -391,6 +449,12 @@ export class DashboardComponent implements OnInit {
       },
       error: () => this.loadingSummary.set(false)
     });
+  }
+
+  selectYear(year: number): void {
+    this.selectedYear.set(year);
+    this.selectedPeriodId.set(null);
+    this.summary.set(null);
   }
 
   monthName(month: number): string {
