@@ -73,7 +73,7 @@ describe('PeriodDetailComponent', () => {
     ]);
     apiSpy.getPeriodSummary.and.returnValue(of(SUMMARY));
     apiSpy.getExpensesByPeriod.and.returnValue(of({ items: [EXPENSE], totalCount: 1, pageNumber: 1, pageSize: 20 }));
-    apiSpy.getIncomesByPeriod.and.returnValue(of([INCOME]));
+    apiSpy.getIncomesByPeriod.and.returnValue(of({ items: [INCOME], totalCount: 1, pageNumber: 1, pageSize: 20 }));
     apiSpy.getCategories.and.returnValue(of([CATEGORY]));
 
     await TestBed.configureTestingModule({
