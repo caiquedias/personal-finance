@@ -871,36 +871,57 @@ export class PeriodDetailComponent implements OnInit {
 
   openMario(target: MarioTarget): void {
     const s = this.summary()!;
+    const exps = this.expenses();
+    const incs = this.incomes();
     let title = '';
     let lines: string[] = [];
 
     switch (target) {
       case 'receitas': {
         title = 'RECEITAS DO PERIODO';
-        lines = [
-          `Total: ${this.fmt(s.totalIncome)}`,
-          '',
-          '(Veja a aba Receitas para o detalhamento)',
-        ];
+        if (incs.length === 0) {
+          lines = ['Nenhuma receita\nregistrada neste periodo.'];
+        } else {
+          lines = incs.map(i => `• ${i.description}\n  ${this.fmt(i.amount)}`);
+          lines.push('', `TOTAL: ${this.fmt(s.totalIncome)}`);
+        }
         break;
       }
       case 'despesas': {
         title = 'DESPESAS DO PERIODO';
-        lines = [
-          `Total: ${this.fmt(s.totalExpense)}`,
-          '',
-          '(Veja a aba Despesas para o detalhamento)',
-        ];
+        if (exps.length === 0) {
+          lines = ['Nenhuma despesa\nregistrada neste periodo.'];
+        } else {
+          lines = exps.map(e => `• ${e.description}\n  ${this.fmt(e.amount)}`);
+          lines.push('', `TOTAL: ${this.fmt(s.totalExpense)}`);
+        }
         break;
       }
       case 'pago': {
         title = 'DESPESAS PAGAS';
-        lines = [`Total pago: ${this.fmt(s.totalPaid)}`];
+        const pagas = exps.filter(e => e.paymentStatus === PaymentStatus.Paid);
+        if (pagas.length === 0) {
+          lines = ['Nenhuma despesa\npaga neste periodo.'];
+        } else {
+          lines = pagas.map(e => `• ${e.description}\n  ${this.fmt(e.amount)}`);
+          lines.push('', `TOTAL PAGO: ${this.fmt(s.totalPaid)}`);
+        }
         break;
       }
       case 'apagar': {
         title = 'DESPESAS A PAGAR';
-        lines = [`Total a pagar: ${this.fmt(s.totalOwed)}`];
+        const pendentes = exps.filter(
+          e => e.paymentStatus === PaymentStatus.Pending || e.paymentStatus === PaymentStatus.Partial
+        );
+        if (pendentes.length === 0) {
+          lines = ['Nenhuma despesa\npendente neste periodo.'];
+        } else {
+          lines = pendentes.map(e => {
+            const sufixo = e.paymentStatus === PaymentStatus.Partial ? ' (parcial)' : '';
+            return `• ${e.description}${sufixo}\n  ${this.fmt(e.amount)}`;
+          });
+          lines.push('', `TOTAL A PAGAR: ${this.fmt(s.totalOwed)}`);
+        }
         break;
       }
       case 'saldo': {
