@@ -1,17 +1,44 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
+import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../core/services/api.service';
 import { HeaderComponent } from '../../../shared/components/header/header.component';
+import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { AdminUserResponse } from '../../../core/models/models';
 
 @Component({
   selector: 'app-admin-users',
   standalone: true,
-  imports: [HeaderComponent, ReactiveFormsModule],
+  imports: [HeaderComponent, ReactiveFormsModule, FormsModule, PaginationComponent],
   template: `
     <app-header title="Usuários" subtitle="Gerenciamento de usuários do sistema" />
 
     <div class="page-content">
+      <!-- Filtros externos -->
+      <div class="filters-bar card">
+        <div class="filters-row">
+          <input
+            class="input filter-input"
+            type="text"
+            placeholder="Nome"
+            [(ngModel)]="nameFilter"
+          />
+          <input
+            class="input filter-input"
+            type="text"
+            placeholder="E-mail"
+            [(ngModel)]="emailFilter"
+          />
+          <select class="input filter-select" [(ngModel)]="statusFilter">
+            <option value="">Todos</option>
+            <option value="true">Ativo</option>
+            <option value="false">Inativo</option>
+          </select>
+          <button class="btn btn-primary" (click)="applyFilters()">Filtrar</button>
+          <button class="btn btn-secondary" (click)="clearFilters()">Limpar</button>
+        </div>
+      </div>
+
       @if (loading()) {
         <div class="loading-state"><span class="spinner-lg"></span></div>
       } @else {
@@ -68,6 +95,14 @@ import { AdminUserResponse } from '../../../core/models/models';
               }
             </tbody>
           </table>
+
+          <app-pagination
+            [totalCount]="totalCount()"
+            [pageSize]="pageSize()"
+            [currentPage]="currentPage()"
+            (pageChange)="onPageChange($event)"
+            (pageSizeChange)="onPageSizeChange($event)"
+          />
         </div>
 
         <!-- Modal reset senha -->
@@ -103,6 +138,12 @@ import { AdminUserResponse } from '../../../core/models/models';
   `,
   styles: [`
     .page-content { padding: 28px; display: flex; flex-direction: column; gap: 20px; }
+
+    /* Filtros */
+    .filters-bar { padding: 16px; }
+    .filters-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .filter-input  { width: 200px; }
+    .filter-select { width: 140px; }
 
     .table-wrap { overflow-x: auto; }
     .table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
@@ -191,16 +232,65 @@ export class AdminUsersComponent implements OnInit {
   readonly showResetModal = signal(false);
   readonly selectedUser  = signal<AdminUserResponse | null>(null);
   readonly resetError    = signal<string | null>(null);
+  readonly totalCount    = signal(0);
+  readonly currentPage   = signal(1);
+  readonly pageSize      = signal(20);
+
+  nameFilter   = '';
+  emailFilter  = '';
+  statusFilter = '';
 
   readonly resetForm = this.fb.group({
     newPassword: ['', [Validators.required, Validators.minLength(8)]]
   });
 
   ngOnInit(): void {
-    this.api.getAdminUsers().subscribe({
-      next: u => { this.users.set(u); this.loading.set(false); },
+    this.load();
+  }
+
+  private load(): void {
+    this.loading.set(true);
+    const isActive = this.statusFilter === '' ? undefined
+      : this.statusFilter === 'true';
+
+    this.api.getAdminUsers({
+      pageNumber: this.currentPage(),
+      pageSize:   this.pageSize(),
+      name:       this.nameFilter  || undefined,
+      email:      this.emailFilter || undefined,
+      isActive,
+    }).subscribe({
+      next: result => {
+        this.users.set(result.items);
+        this.totalCount.set(result.totalCount);
+        this.loading.set(false);
+      },
       error: () => this.loading.set(false)
     });
+  }
+
+  applyFilters(): void {
+    this.currentPage.set(1);
+    this.load();
+  }
+
+  clearFilters(): void {
+    this.nameFilter   = '';
+    this.emailFilter  = '';
+    this.statusFilter = '';
+    this.currentPage.set(1);
+    this.load();
+  }
+
+  onPageChange(page: number): void {
+    this.currentPage.set(page);
+    this.load();
+  }
+
+  onPageSizeChange(size: number): void {
+    this.pageSize.set(size);
+    this.currentPage.set(1);
+    this.load();
   }
 
   toggleActive(user: AdminUserResponse): void {

@@ -11,7 +11,7 @@ import {
   LookupItem,
   CreatePaymentStatusRequest, CreateSourceTypeRequest, CreateFortnightTypeRequest,
   UpdatePaymentStatusRequest, UpdateSourceTypeRequest, UpdateFortnightTypeRequest,
-  AdminUserResponse, AssignRoleRequest, ResetPasswordRequest,
+  AdminUserResponse, AdminUserFilterParams, AssignRoleRequest, ResetPasswordRequest,
 } from '../models/models';
 
 @Injectable({ providedIn: 'root' })
@@ -183,8 +183,14 @@ export class ApiService {
 
   // ── Admin ─────────────────────────────────────────────────────────────────
 
-  getAdminUsers(): Observable<AdminUserResponse[]> {
-    return this.http.get<AdminUserResponse[]>(`${this.base}/admin/users`);
+  getAdminUsers(filters?: AdminUserFilterParams): Observable<PagedResult<AdminUserResponse>> {
+    let params = new HttpParams();
+    if (filters?.pageNumber != null) params = params.set('pageNumber', filters.pageNumber);
+    if (filters?.pageSize != null)   params = params.set('pageSize',   filters.pageSize);
+    if (filters?.name)               params = params.set('name',       filters.name);
+    if (filters?.email)              params = params.set('email',      filters.email);
+    if (filters?.isActive != null)   params = params.set('isActive',   filters.isActive);
+    return this.http.get<PagedResult<AdminUserResponse>>(`${this.base}/admin/users`, { params });
   }
 
   toggleUserActive(userId: string): Observable<void> {

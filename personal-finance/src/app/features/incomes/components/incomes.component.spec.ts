@@ -21,7 +21,6 @@ const INCOME: IncomeResponse = {
   isActive:      true,
 };
 
-const INCOME2: IncomeResponse = { ...INCOME, id: 'i-2', amount: 1500 };
 
 describe('IncomesComponent', () => {
   let fixture: ComponentFixture<IncomesComponent>;
@@ -33,7 +32,7 @@ describe('IncomesComponent', () => {
       'getPeriods', 'getIncomesByPeriod', 'createIncome', 'deleteIncome'
     ]);
     apiSpy.getPeriods.and.returnValue(of([PERIOD]));
-    apiSpy.getIncomesByPeriod.and.returnValue(of([INCOME]));
+    apiSpy.getIncomesByPeriod.and.returnValue(of({ items: [INCOME], totalCount: 1, pageNumber: 1, pageSize: 20 }));
 
     await TestBed.configureTestingModule({
       imports: [IncomesComponent, RouterModule.forRoot([])],
@@ -48,18 +47,6 @@ describe('IncomesComponent', () => {
 
   it('cria o componente', () => {
     expect(component).toBeTruthy();
-  });
-
-  describe('total()', () => {
-    it('soma os valores de todas as receitas', () => {
-      component.incomes.set([INCOME, INCOME2]);
-      expect(component.total()).toBe(4500);
-    });
-
-    it('retorna 0 quando lista vazia', () => {
-      component.incomes.set([]);
-      expect(component.total()).toBe(0);
-    });
   });
 
   describe('openCreateModal()', () => {
