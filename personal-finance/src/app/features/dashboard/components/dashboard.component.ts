@@ -31,15 +31,15 @@ import { PeriodResponse, PeriodSummary, MONTH_NAMES, PaymentStatus } from '../..
         <div class="period-selector-header">
           <span class="section-title">Período</span>
           @if (availableYears().length > 1) {
-            <div class="year-selector">
+            <select
+              class="year-dropdown"
+              [value]="selectedYear()"
+              (change)="selectYear(+$any($event.target).value)"
+            >
               @for (year of availableYears(); track year) {
-                <button
-                  class="year-tab"
-                  [class.active]="selectedYear() === year"
-                  (click)="selectYear(year)"
-                >{{ year }}</button>
+                <option [value]="year">{{ year }}</option>
               }
-            </div>
+            </select>
           }
         </div>
         <div class="period-tabs">
@@ -197,13 +197,8 @@ import { PeriodResponse, PeriodSummary, MONTH_NAMES, PaymentStatus } from '../..
       gap: 16px;
     }
 
-    .year-selector {
-      display: flex;
-      gap: 4px;
-    }
-
-    .year-tab {
-      padding: 3px 12px;
+    .year-dropdown {
+      padding: 4px 10px;
       border-radius: 20px;
       border: 1px solid var(--border);
       background: var(--surface-raised);
@@ -211,16 +206,11 @@ import { PeriodResponse, PeriodSummary, MONTH_NAMES, PaymentStatus } from '../..
       font-size: 0.8125rem;
       font-weight: 500;
       cursor: pointer;
-      transition: all var(--transition);
+      outline: none;
+      transition: border-color var(--transition);
     }
 
-    .year-tab:hover { background: var(--bg2); }
-
-    .year-tab.active {
-      background: var(--ink3);
-      border-color: var(--ink3);
-      color: #fff;
-    }
+    .year-dropdown:focus { border-color: var(--sage2); }
 
     .period-tabs {
       display: flex;
