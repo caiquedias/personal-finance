@@ -188,7 +188,7 @@ public class UpdateExpenseUseCaseTests
         var dto = new UpdateExpenseDto(
             ExpenseId, UserId, CategoryId,
             SourceType.Parental, FortnightType.Second,
-            "Internet", 150m, new DateOnly(2026, 4, 20), "Obs");
+            "Internet", 150m, new DateOnly(2026, 4, 20), "Obs", PaymentStatus.Pending);
 
         await _sut.ExecuteAsync(dto);
 
@@ -206,7 +206,7 @@ public class UpdateExpenseUseCaseTests
         var act = () => _sut.ExecuteAsync(new UpdateExpenseDto(
             ExpenseId, UserId, CategoryId,
             SourceType.Personal, FortnightType.First,
-            "Teste", 100m, new DateOnly(2026, 4, 10), null));
+            "Teste", 100m, new DateOnly(2026, 4, 10), null, PaymentStatus.Pending));
 
         await act.Should().ThrowAsync<DomainException>()
                  .WithMessage("*despesa*");
