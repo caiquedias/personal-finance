@@ -5,6 +5,7 @@ import { ApiService } from '../../../core/services/api.service';
 import { HeaderComponent } from '../../../shared/components/header/header.component';
 import { CurrencyBrlPipe } from '../../../shared/pipes/currency-brl.pipe';
 import { MarioModalComponent } from '../../../shared/components/modal/mario-modal.component';
+import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import {
   PeriodSummary, ExpenseResponse, IncomeResponse, CategoryResponse,
   MONTH_NAMES, PAYMENT_STATUS_LABELS, SOURCE_TYPE_LABELS,
@@ -12,11 +13,13 @@ import {
 } from '../../../core/models/models';
 
 type MarioTarget = 'receitas' | 'despesas' | 'pago' | 'apagar' | 'saldo';
+type ExpSortCol = 'description' | 'category' | 'fortnightType' | 'dueDate' | 'amount' | 'paymentStatus';
+type IncSortCol = 'description' | 'fortnightType' | 'receivedAt' | 'amount';
 
 @Component({
   selector: 'app-period-detail',
   standalone: true,
-  imports: [HeaderComponent, CurrencyBrlPipe, RouterLink, MarioModalComponent],
+  imports: [HeaderComponent, CurrencyBrlPipe, RouterLink, MarioModalComponent, PaginationComponent],
   animations: [
     trigger('backdropAnim', [
       transition(':enter', [style({ opacity: 0 }), animate('200ms ease', style({ opacity: 1 }))]),
@@ -104,23 +107,71 @@ type MarioTarget = 'receitas' | 'despesas' | 'pago' | 'apagar' | 'saldo';
         <!-- Abas -->
         <div class="tabs">
           <button class="tab" [class.active]="activeTab() === 'expenses'" (click)="activeTab.set('expenses')">
-            Despesas ({{ expenses().length }})
+            Despesas ({{ expTotal() }})
           </button>
           <button class="tab" [class.active]="activeTab() === 'incomes'" (click)="activeTab.set('incomes')">
-            Receitas ({{ incomes().length }})
+            Receitas ({{ incTotal() }})
           </button>
         </div>
 
-        <!-- Despesas -->
+        <!-- ── Despesas ── -->
         @if (activeTab() === 'expenses') {
           <div class="tab-shortcut">
             <a routerLink="/expenses" [queryParams]="{ periodId: id() }" class="btn btn-purple btn-sm">
               Ir para Despesas →
             </a>
           </div>
-          @if (expenses().length === 0) {
+
+          <!-- Filtros externos -->
+          <div class="external-filters card">
+            <div class="filters-grid">
+              <div class="filter-field">
+                <label class="field-label">Descrição</label>
+                <input
+                  class="input input-sm"
+                  placeholder="Buscar..."
+                  [value]="expDesc()"
+                  (input)="onExpDescChange($event)"
+                />
+              </div>
+              <div class="filter-field">
+                <label class="field-label">Categoria</label>
+                <select class="input input-sm" (change)="onExpCategoryChange($event)">
+                  <option value="">Todas</option>
+                  @for (c of categories(); track c.id) {
+                    <option [value]="c.id">{{ c.name }}</option>
+                  }
+                </select>
+              </div>
+              <div class="filter-field">
+                <label class="field-label">Status</label>
+                <select class="input input-sm" (change)="onExpStatusChange($event)">
+                  <option value="">Todos</option>
+                  <option [value]="PaymentStatus.Pending">Pendente</option>
+                  <option [value]="PaymentStatus.Paid">Pago</option>
+                  <option [value]="PaymentStatus.Partial">Parcial</option>
+                  <option [value]="PaymentStatus.Cancelled">Cancelado</option>
+                </select>
+              </div>
+              <div class="filter-field">
+                <label class="field-label">Quinzena</label>
+                <select class="input input-sm" (change)="onExpFortnightChange($event)">
+                  <option value="">Ambas</option>
+                  <option [value]="FortnightType.First">1ª Quinzena</option>
+                  <option [value]="FortnightType.Second">2ª Quinzena</option>
+                </select>
+              </div>
+            </div>
+            @if (expHasFilters()) {
+              <button class="btn-clear-filters" (click)="clearExpFilters()">Limpar filtros</button>
+            }
+          </div>
+
+          @if (expLoadingList()) {
+            <div class="loading-state"><span class="spinner-lg"></span></div>
+          } @else if (expTotal() === 0) {
             <div class="empty-state">
-              <p>Nenhuma despesa neste período.</p>
+              <p>Nenhuma despesa encontrada.</p>
               <a routerLink="/expenses" class="btn btn-primary btn-sm">Adicionar despesa</a>
             </div>
           } @else {
@@ -128,26 +179,23 @@ type MarioTarget = 'receitas' | 'despesas' | 'pago' | 'apagar' | 'saldo';
               <table class="table">
                 <thead>
                   <tr>
-                    <th>Descrição</th>
-                    <th>Categoria</th>
-                    <th>Quinzena</th>
-                    <th>Vencimento</th>
-                    <th>Valor</th>
-                    <th>Status</th>
+                    <th class="sortable" (click)="toggleExpSort('description')">Descrição {{ expSortIcon('description') }}</th>
+                    <th class="sortable" (click)="toggleExpSort('category')">Categoria {{ expSortIcon('category') }}</th>
+                    <th class="sortable" (click)="toggleExpSort('fortnightType')">Quinzena {{ expSortIcon('fortnightType') }}</th>
+                    <th class="sortable" (click)="toggleExpSort('dueDate')">Vencimento {{ expSortIcon('dueDate') }}</th>
+                    <th class="sortable" (click)="toggleExpSort('amount')">Valor {{ expSortIcon('amount') }}</th>
+                    <th class="sortable" (click)="toggleExpSort('paymentStatus')">Status {{ expSortIcon('paymentStatus') }}</th>
                   </tr>
                 </thead>
                 <tbody>
-                  @for (expense of expenses(); track expense.id) {
+                  @for (expense of displayedExpenses(); track expense.id) {
                     <tr>
                       <td>
                         <div class="cell-primary">{{ expense.description }}</div>
                         <div class="cell-secondary">{{ sourceLabel(expense.sourceType) }}</div>
                       </td>
                       <td>
-                        <span
-                          class="category-dot"
-                          [style.background]="categoryColor(expense.categoryId)"
-                        ></span>
+                        <span class="category-dot" [style.background]="categoryColor(expense.categoryId)"></span>
                         {{ categoryName(expense.categoryId) }}
                       </td>
                       <td class="text-muted text-sm">{{ fortnightLabel(expense.fortnightType) }}</td>
@@ -163,19 +211,55 @@ type MarioTarget = 'receitas' | 'despesas' | 'pago' | 'apagar' | 'saldo';
                 </tbody>
               </table>
             </div>
+            <app-pagination
+              [totalCount]="expTotal()"
+              [pageSize]="expPageSize()"
+              [currentPage]="expPage()"
+              (pageChange)="onExpPageChange($event)"
+              (pageSizeChange)="onExpPageSizeChange($event)"
+            />
           }
         }
 
-        <!-- Receitas -->
+        <!-- ── Receitas ── -->
         @if (activeTab() === 'incomes') {
           <div class="tab-shortcut">
             <a routerLink="/incomes" [queryParams]="{ periodId: id() }" class="btn btn-purple btn-sm">
               Ir para Receitas →
             </a>
           </div>
-          @if (incomes().length === 0) {
+
+          <!-- Filtros externos -->
+          <div class="external-filters card">
+            <div class="filters-grid">
+              <div class="filter-field">
+                <label class="field-label">Descrição</label>
+                <input
+                  class="input input-sm"
+                  placeholder="Buscar..."
+                  [value]="incDesc()"
+                  (input)="onIncDescChange($event)"
+                />
+              </div>
+              <div class="filter-field">
+                <label class="field-label">Quinzena</label>
+                <select class="input input-sm" (change)="onIncFortnightChange($event)">
+                  <option value="">Ambas</option>
+                  <option [value]="FortnightType.First">1ª Quinzena</option>
+                  <option [value]="FortnightType.Second">2ª Quinzena</option>
+                </select>
+              </div>
+            </div>
+            @if (incHasFilters()) {
+              <button class="btn-clear-filters" (click)="clearIncFilters()">Limpar filtros</button>
+            }
+          </div>
+
+          @if (incLoadingList()) {
+            <div class="loading-state"><span class="spinner-lg"></span></div>
+          } @else if (incTotal() === 0) {
             <div class="empty-state">
-              <p>Nenhuma receita neste período.</p>
+              <p>Nenhuma receita encontrada.</p>
               <a routerLink="/incomes" class="btn btn-primary btn-sm">Adicionar receita</a>
             </div>
           } @else {
@@ -183,14 +267,14 @@ type MarioTarget = 'receitas' | 'despesas' | 'pago' | 'apagar' | 'saldo';
               <table class="table">
                 <thead>
                   <tr>
-                    <th>Descrição</th>
-                    <th>Quinzena</th>
-                    <th>Recebido em</th>
-                    <th>Valor</th>
+                    <th class="sortable" (click)="toggleIncSort('description')">Descrição {{ incSortIcon('description') }}</th>
+                    <th class="sortable" (click)="toggleIncSort('fortnightType')">Quinzena {{ incSortIcon('fortnightType') }}</th>
+                    <th class="sortable" (click)="toggleIncSort('receivedAt')">Recebido em {{ incSortIcon('receivedAt') }}</th>
+                    <th class="sortable" (click)="toggleIncSort('amount')">Valor {{ incSortIcon('amount') }}</th>
                   </tr>
                 </thead>
                 <tbody>
-                  @for (income of incomes(); track income.id) {
+                  @for (income of displayedIncomes(); track income.id) {
                     <tr>
                       <td class="cell-primary">{{ income.description }}</td>
                       <td class="text-muted text-sm">{{ fortnightLabel(income.fortnightType) }}</td>
@@ -201,6 +285,13 @@ type MarioTarget = 'receitas' | 'despesas' | 'pago' | 'apagar' | 'saldo';
                 </tbody>
               </table>
             </div>
+            <app-pagination
+              [totalCount]="incTotal()"
+              [pageSize]="incPageSize()"
+              [currentPage]="incPage()"
+              (pageChange)="onIncPageChange($event)"
+              (pageSizeChange)="onIncPageSizeChange($event)"
+            />
           }
         }
 
@@ -347,6 +438,37 @@ type MarioTarget = 'receitas' | 'despesas' | 'pago' | 'apagar' | 'saldo';
     .tab:hover  { color: var(--ink); }
     .tab.active { color: var(--sage2); border-bottom-color: var(--sage2); }
 
+    /* External filters */
+    .external-filters {
+      padding: 16px;
+    }
+
+    .filters-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .filter-field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 160px;
+    }
+
+    .btn-clear-filters {
+      margin-top: 12px;
+      background: none;
+      border: none;
+      color: var(--ink3);
+      font-size: 0.8125rem;
+      cursor: pointer;
+      padding: 0;
+      text-decoration: underline;
+    }
+
+    .btn-clear-filters:hover { color: var(--rust); }
+
     /* Table */
     .table-wrap { overflow-x: auto; }
 
@@ -367,6 +489,13 @@ type MarioTarget = 'receitas' | 'despesas' | 'pago' | 'apagar' | 'saldo';
       border-bottom: 1px solid var(--border);
       white-space: nowrap;
     }
+
+    .table th.sortable {
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .table th.sortable:hover { color: var(--ink); }
 
     .table td {
       padding: 12px 16px;
@@ -503,14 +632,11 @@ type MarioTarget = 'receitas' | 'despesas' | 'pago' | 'apagar' | 'saldo';
 export class PeriodDetailComponent implements OnInit {
   private readonly api = inject(ApiService);
 
-  // Input via rota (/periods/:id) — Angular 21 com withComponentInputBinding
   readonly id = input.required<string>();
 
   readonly loading    = signal(true);
   readonly activeTab  = signal<'expenses' | 'incomes'>('expenses');
   readonly summary    = signal<PeriodSummary | null>(null);
-  readonly expenses   = signal<ExpenseResponse[]>([]);
-  readonly incomes    = signal<IncomeResponse[]>([]);
   readonly categories = signal<CategoryResponse[]>([]);
 
   // Mario modal
@@ -518,82 +644,263 @@ export class PeriodDetailComponent implements OnInit {
   readonly marioTitle   = signal('');
   readonly marioContent = signal('');
 
+  // ── Despesas: paginação, filtros e ordenação ──────────────────────────────
+  readonly expenses        = signal<ExpenseResponse[]>([]);
+  readonly expPage         = signal(1);
+  readonly expPageSize     = signal(20);
+  readonly expTotal        = signal(0);
+  readonly expLoadingList  = signal(false);
+  readonly expDesc         = signal('');
+  readonly expCategoryId   = signal('');
+  readonly expStatus       = signal<PaymentStatus | null>(null);
+  readonly expFortnight    = signal<FortnightType | null>(null);
+  readonly expSortCol      = signal<ExpSortCol | null>(null);
+  readonly expSortDir      = signal<'asc' | 'desc'>('asc');
+  private expDescDebounce: ReturnType<typeof setTimeout> | null = null;
+
+  readonly expHasFilters = computed(() =>
+    !!this.expDesc() || !!this.expCategoryId() ||
+    this.expStatus() != null || this.expFortnight() != null);
+
+  readonly displayedExpenses = computed<ExpenseResponse[]>(() => {
+    const col = this.expSortCol();
+    const dir = this.expSortDir();
+    const list = [...this.expenses()];
+    if (!col) return list;
+    return list.sort((a, b) => {
+      let va: string | number;
+      let vb: string | number;
+      switch (col) {
+        case 'description':   va = a.description.toLowerCase();     vb = b.description.toLowerCase();     break;
+        case 'category':      va = this.categoryName(a.categoryId); vb = this.categoryName(b.categoryId); break;
+        case 'fortnightType': va = a.fortnightType;                 vb = b.fortnightType;                 break;
+        case 'dueDate':       va = a.dueDate;                       vb = b.dueDate;                       break;
+        case 'amount':        va = a.amount;                        vb = b.amount;                        break;
+        case 'paymentStatus': va = a.paymentStatus;                 vb = b.paymentStatus;                 break;
+        default:              return 0;
+      }
+      if (va < vb) return dir === 'asc' ? -1 : 1;
+      if (va > vb) return dir === 'asc' ?  1 : -1;
+      return 0;
+    });
+  });
+
+  // ── Receitas: paginação, filtros e ordenação ──────────────────────────────
+  readonly incomes        = signal<IncomeResponse[]>([]);
+  readonly incPage        = signal(1);
+  readonly incPageSize    = signal(20);
+  readonly incTotal       = signal(0);
+  readonly incLoadingList = signal(false);
+  readonly incDesc        = signal('');
+  readonly incFortnight   = signal<FortnightType | null>(null);
+  readonly incSortCol     = signal<IncSortCol | null>(null);
+  readonly incSortDir     = signal<'asc' | 'desc'>('asc');
+  private incDescDebounce: ReturnType<typeof setTimeout> | null = null;
+
+  readonly incHasFilters = computed(() =>
+    !!this.incDesc() || this.incFortnight() != null);
+
+  readonly displayedIncomes = computed<IncomeResponse[]>(() => {
+    const col = this.incSortCol();
+    const dir = this.incSortDir();
+    const list = [...this.incomes()];
+    if (!col) return list;
+    return list.sort((a, b) => {
+      let va: string | number;
+      let vb: string | number;
+      switch (col) {
+        case 'description':   va = a.description.toLowerCase(); vb = b.description.toLowerCase(); break;
+        case 'fortnightType': va = a.fortnightType;             vb = b.fortnightType;             break;
+        case 'receivedAt':    va = a.receivedAt;                vb = b.receivedAt;                break;
+        case 'amount':        va = a.amount;                    vb = b.amount;                    break;
+        default:              return 0;
+      }
+      if (va < vb) return dir === 'asc' ? -1 : 1;
+      if (va > vb) return dir === 'asc' ?  1 : -1;
+      return 0;
+    });
+  });
+
   readonly headerTitle = computed(() => {
     const s = this.summary();
     if (!s) return 'Período';
     return `${MONTH_NAMES[s.month - 1]} ${s.year}`;
   });
 
+  // Exposição de enums para o template
+  readonly PaymentStatus  = PaymentStatus;
+  readonly FortnightType  = FortnightType;
+
   ngOnInit(): void {
     const periodId = this.id();
-
     Promise.all([
       this.api.getPeriodSummary(periodId).toPromise(),
-      this.api.getExpensesByPeriod(periodId).toPromise(),
-      this.api.getIncomesByPeriod(periodId).toPromise(),
       this.api.getCategories().toPromise(),
-    ]).then(([summary, expensesResult, incomes, categories]) => {
+    ]).then(([summary, categories]) => {
       this.summary.set(summary ?? null);
-      this.expenses.set(expensesResult?.items ?? []);
-      this.incomes.set(incomes?.items ?? []);
       this.categories.set(categories ?? []);
       this.loading.set(false);
     }).catch(() => this.loading.set(false));
+
+    this.loadExpenses();
+    this.loadIncomes();
   }
+
+  // ── Despesas ─────────────────────────────────────────────────────────────
+
+  private loadExpenses(): void {
+    this.expLoadingList.set(true);
+    this.api.getExpensesByPeriod(this.id(), {
+      pageNumber:    this.expPage(),
+      pageSize:      this.expPageSize(),
+      description:   this.expDesc()       || undefined,
+      categoryId:    this.expCategoryId() || undefined,
+      paymentStatus: this.expStatus()     ?? undefined,
+      fortnightType: this.expFortnight()  ?? undefined,
+    }).subscribe({
+      next: result => {
+        this.expenses.set(result.items);
+        this.expTotal.set(result.totalCount);
+        this.expLoadingList.set(false);
+      },
+      error: () => this.expLoadingList.set(false),
+    });
+  }
+
+  onExpDescChange(event: Event): void {
+    this.expDesc.set((event.target as HTMLInputElement).value);
+    if (this.expDescDebounce) clearTimeout(this.expDescDebounce);
+    this.expDescDebounce = setTimeout(() => { this.expPage.set(1); this.loadExpenses(); }, 350);
+  }
+
+  onExpCategoryChange(event: Event): void {
+    this.expCategoryId.set((event.target as HTMLSelectElement).value);
+    this.expPage.set(1);
+    this.loadExpenses();
+  }
+
+  onExpStatusChange(event: Event): void {
+    const val = (event.target as HTMLSelectElement).value;
+    this.expStatus.set(val ? Number(val) as PaymentStatus : null);
+    this.expPage.set(1);
+    this.loadExpenses();
+  }
+
+  onExpFortnightChange(event: Event): void {
+    const val = (event.target as HTMLSelectElement).value;
+    this.expFortnight.set(val ? Number(val) as FortnightType : null);
+    this.expPage.set(1);
+    this.loadExpenses();
+  }
+
+  clearExpFilters(): void {
+    this.expDesc.set('');
+    this.expCategoryId.set('');
+    this.expStatus.set(null);
+    this.expFortnight.set(null);
+    this.expPage.set(1);
+    this.loadExpenses();
+  }
+
+  onExpPageChange(page: number): void { this.expPage.set(page); this.loadExpenses(); }
+  onExpPageSizeChange(size: number): void { this.expPageSize.set(size); this.expPage.set(1); this.loadExpenses(); }
+
+  toggleExpSort(col: ExpSortCol): void {
+    if (this.expSortCol() === col) { this.expSortDir.update(d => d === 'asc' ? 'desc' : 'asc'); }
+    else { this.expSortCol.set(col); this.expSortDir.set('asc'); }
+  }
+
+  expSortIcon(col: ExpSortCol): string {
+    if (this.expSortCol() !== col) return '↕';
+    return this.expSortDir() === 'asc' ? '↑' : '↓';
+  }
+
+  // ── Receitas ──────────────────────────────────────────────────────────────
+
+  private loadIncomes(): void {
+    this.incLoadingList.set(true);
+    this.api.getIncomesByPeriod(this.id(), {
+      pageNumber:    this.incPage(),
+      pageSize:      this.incPageSize(),
+      description:   this.incDesc()      || undefined,
+      fortnightType: this.incFortnight() ?? undefined,
+    }).subscribe({
+      next: result => {
+        this.incomes.set(result.items);
+        this.incTotal.set(result.totalCount);
+        this.incLoadingList.set(false);
+      },
+      error: () => this.incLoadingList.set(false),
+    });
+  }
+
+  onIncDescChange(event: Event): void {
+    this.incDesc.set((event.target as HTMLInputElement).value);
+    if (this.incDescDebounce) clearTimeout(this.incDescDebounce);
+    this.incDescDebounce = setTimeout(() => { this.incPage.set(1); this.loadIncomes(); }, 350);
+  }
+
+  onIncFortnightChange(event: Event): void {
+    const val = (event.target as HTMLSelectElement).value;
+    this.incFortnight.set(val ? Number(val) as FortnightType : null);
+    this.incPage.set(1);
+    this.loadIncomes();
+  }
+
+  clearIncFilters(): void {
+    this.incDesc.set('');
+    this.incFortnight.set(null);
+    this.incPage.set(1);
+    this.loadIncomes();
+  }
+
+  onIncPageChange(page: number): void { this.incPage.set(page); this.loadIncomes(); }
+  onIncPageSizeChange(size: number): void { this.incPageSize.set(size); this.incPage.set(1); this.loadIncomes(); }
+
+  toggleIncSort(col: IncSortCol): void {
+    if (this.incSortCol() === col) { this.incSortDir.update(d => d === 'asc' ? 'desc' : 'asc'); }
+    else { this.incSortCol.set(col); this.incSortDir.set('asc'); }
+  }
+
+  incSortIcon(col: IncSortCol): string {
+    if (this.incSortCol() !== col) return '↕';
+    return this.incSortDir() === 'asc' ? '↑' : '↓';
+  }
+
+  // ── Mario modal ───────────────────────────────────────────────────────────
 
   openMario(target: MarioTarget): void {
     const s = this.summary()!;
-    const exps = this.expenses();
-    const incs = this.incomes();
     let title = '';
     let lines: string[] = [];
 
     switch (target) {
       case 'receitas': {
         title = 'RECEITAS DO PERIODO';
-        if (incs.length === 0) {
-          lines = ['Nenhuma receita\nregistrada neste periodo.'];
-        } else {
-          lines = incs.map(i => `• ${i.description}\n  ${this.fmt(i.amount)}`);
-          lines.push('', `TOTAL: ${this.fmt(s.totalIncome)}`);
-        }
+        lines = [
+          `Total: ${this.fmt(s.totalIncome)}`,
+          '',
+          '(Veja a aba Receitas para o detalhamento)',
+        ];
         break;
       }
       case 'despesas': {
         title = 'DESPESAS DO PERIODO';
-        if (exps.length === 0) {
-          lines = ['Nenhuma despesa\nregistrada neste periodo.'];
-        } else {
-          lines = exps.map(e => `• ${e.description}\n  ${this.fmt(e.amount)}`);
-          lines.push('', `TOTAL: ${this.fmt(s.totalExpense)}`);
-        }
+        lines = [
+          `Total: ${this.fmt(s.totalExpense)}`,
+          '',
+          '(Veja a aba Despesas para o detalhamento)',
+        ];
         break;
       }
       case 'pago': {
         title = 'DESPESAS PAGAS';
-        const pagas = exps.filter(e => e.paymentStatus === PaymentStatus.Paid);
-        if (pagas.length === 0) {
-          lines = ['Nenhuma despesa\npaga neste periodo.'];
-        } else {
-          lines = pagas.map(e => `• ${e.description}\n  ${this.fmt(e.amount)}`);
-          lines.push('', `TOTAL PAGO: ${this.fmt(s.totalPaid)}`);
-        }
+        lines = [`Total pago: ${this.fmt(s.totalPaid)}`];
         break;
       }
       case 'apagar': {
         title = 'DESPESAS A PAGAR';
-        const pendentes = exps.filter(
-          e => e.paymentStatus === PaymentStatus.Pending || e.paymentStatus === PaymentStatus.Partial
-        );
-        if (pendentes.length === 0) {
-          lines = ['Nenhuma despesa\npendente neste periodo.'];
-        } else {
-          lines = pendentes.map(e => {
-            const sufixo = e.paymentStatus === PaymentStatus.Partial ? ' (parcial)' : '';
-            return `• ${e.description}${sufixo}\n  ${this.fmt(e.amount)}`;
-          });
-          lines.push('', `TOTAL A PAGAR: ${this.fmt(s.totalOwed)}`);
-        }
+        lines = [`Total a pagar: ${this.fmt(s.totalOwed)}`];
         break;
       }
       case 'saldo': {
