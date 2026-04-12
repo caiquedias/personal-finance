@@ -65,4 +65,8 @@ public interface IAdminUserRepository
 {
     Task<IEnumerable<User>> GetAllAsync(CancellationToken ct = default);
     Task<User?> GetByIdAsync(Guid id, CancellationToken ct = default);
+    Task<(IEnumerable<User> items, int totalCount)> GetPagedAsync(
+        int pageNumber, int pageSize,
+        string? name, string? email, bool? isActive,
+        CancellationToken ct = default);
 }

@@ -13,6 +13,14 @@ public sealed record AdminUserResponseDto(
     IEnumerable<string> Roles
 );
 
+/// <summary>Filtros e paginação para listagem de usuários admin.</summary>
+public sealed record AdminUserFilterDto(
+    int     PageNumber = 1,
+    int     PageSize   = 20,
+    string? Name       = null,
+    string? Email      = null,
+    bool?   IsActive   = null);
+
 /// <summary>Atribuição de role a usuário.</summary>
 public sealed record AssignRoleDto(
     Guid UserId,

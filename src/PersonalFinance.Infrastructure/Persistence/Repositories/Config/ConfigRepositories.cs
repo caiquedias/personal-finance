@@ -193,4 +193,30 @@ public sealed class AdminUserRepository : IAdminUserRepository
         => await _context.Users
                .IgnoreQueryFilters()
                .FirstOrDefaultAsync(u => u.Id == id, ct);
+
+    public async Task<(IEnumerable<Domain.Entities.Auth.User> items, int totalCount)> GetPagedAsync(
+        int pageNumber, int pageSize,
+        string? name, string? email, bool? isActive,
+        CancellationToken ct = default)
+    {
+        var query = _context.Users
+            .IgnoreQueryFilters()
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(name))
+            query = query.Where(u => u.Name.Contains(name));
+        if (!string.IsNullOrWhiteSpace(email))
+            query = query.Where(u => u.Email.Contains(email));
+        if (isActive.HasValue)
+            query = query.Where(u => u.IsActive == isActive.Value);
+
+        var totalCount = await query.CountAsync(ct);
+        var items = await query
+            .OrderBy(u => u.Name)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(ct);
+
+        return (items, totalCount);
+    }
 }

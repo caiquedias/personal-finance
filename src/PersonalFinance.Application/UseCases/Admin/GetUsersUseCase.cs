@@ -1,9 +1,10 @@
-﻿using PersonalFinance.Application.DTOs.Admin;
+﻿using PersonalFinance.Application.DTOs;
+using PersonalFinance.Application.DTOs.Admin;
 using PersonalFinance.Domain.Interfaces.Repositories;
 
 namespace PersonalFinance.Application.UseCases.Admin
 {
-    /// <summary>Lista todos os usuários do sistema com suas roles.</summary>
+    /// <summary>Lista usuários do sistema com paginação e filtros.</summary>
     public sealed class GetUsersUseCase
     {
         private readonly IAdminUserRepository _userRepository;
@@ -15,9 +16,12 @@ namespace PersonalFinance.Application.UseCases.Admin
             _roleRepository = roleRepository;
         }
 
-        public async Task<IEnumerable<AdminUserResponseDto>> ExecuteAsync(CancellationToken ct = default)
+        public async Task<PagedResult<AdminUserResponseDto>> ExecuteAsync(
+            AdminUserFilterDto filter, CancellationToken ct = default)
         {
-            var users = await _userRepository.GetAllAsync(ct);
+            var (users, totalCount) = await _userRepository.GetPagedAsync(
+                filter.PageNumber, filter.PageSize,
+                filter.Name, filter.Email, filter.IsActive, ct);
 
             var result = new List<AdminUserResponseDto>();
             foreach (var user in users)
@@ -29,7 +33,7 @@ namespace PersonalFinance.Application.UseCases.Admin
                     user.CreatedAt, roles));
             }
 
-            return result;
+            return new PagedResult<AdminUserResponseDto>(result, totalCount, filter.PageNumber, filter.PageSize);
         }
     }
 }
