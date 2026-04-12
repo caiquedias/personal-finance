@@ -65,7 +65,7 @@ namespace PersonalFinance.Api.Tests.Integration
             // GET lista — deve conter a despesa
             var list = await client.GetAsync($"/api/v1/expenses?periodId={pid}");
             var arr = await list.Content.ReadFromJsonAsync<JsonElement>();
-            arr.GetArrayLength().Should().Be(1);
+            arr.GetProperty("items").GetArrayLength().Should().Be(1);
         }
 
         [Fact(DisplayName = "POST /expenses deve retornar 400 para amount zero")]
