@@ -148,6 +148,9 @@ public sealed class UpdateExpenseUseCase
                 case PaymentStatus.Partial:
                     expense.MarkAsPartial();
                     break;
+                case PaymentStatus.Pending:
+                    expense.MarkAsPending();
+                    break;
             }
         }
 
