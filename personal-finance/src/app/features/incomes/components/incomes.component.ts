@@ -1,24 +1,27 @@
 import {
-  Component, inject, signal, OnInit,
-  TemplateRef, ViewChild, ElementRef, input
+  Component, inject, signal, computed, OnInit,
+  ViewChild, ElementRef, input
 } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { trigger, style, animate, transition } from '@angular/animations';
 import { ApiService } from '../../../core/services/api.service';
 import { HeaderComponent } from '../../../shared/components/header/header.component';
 import { SonicModalComponent } from '../../../shared/components/modal/sonic-modal.component';
+import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { CurrencyBrlPipe } from '../../../shared/pipes/currency-brl.pipe';
 import {
   IncomeResponse, PeriodResponse,
   MONTH_NAMES, FORTNIGHT_TYPE_LABELS, FortnightType
 } from '../../../core/models/models';
 
+type SortCol = 'description' | 'fortnightType' | 'receivedAt' | 'amount';
+
 @Component({
   selector: 'app-incomes',
   standalone: true,
   imports: [
     HeaderComponent, CurrencyBrlPipe, ReactiveFormsModule,
-    SonicModalComponent
+    SonicModalComponent, PaginationComponent
   ],
   animations: [
     trigger('backdropAnim', [
@@ -51,7 +54,7 @@ import {
 
     <div class="page-content">
 
-      <!-- Filtro -->
+      <!-- Filtro por período -->
       <div class="filter-row">
         <label class="field-label">Filtrar por período</label>
         <select
@@ -67,25 +70,65 @@ import {
         </select>
       </div>
 
+      <!-- Filtros externos (server-side) — visíveis apenas quando há período selecionado -->
+      @if (selectedPeriodId) {
+        <div class="external-filters card">
+          <div class="filters-grid">
+            <div class="filter-field">
+              <label class="field-label">Descrição</label>
+              <input
+                class="input input-sm"
+                placeholder="Buscar..."
+                [value]="filterDescription()"
+                (input)="onFilterDescriptionChange($event)"
+              />
+            </div>
+
+            <div class="filter-field">
+              <label class="field-label">Quinzena</label>
+              <select class="input input-sm" (change)="onFilterFortnightChange($event)">
+                <option value="">Ambas</option>
+                <option [value]="FortnightType.First">1ª Quinzena</option>
+                <option [value]="FortnightType.Second">2ª Quinzena</option>
+              </select>
+            </div>
+          </div>
+
+          @if (hasActiveFilters()) {
+            <button class="btn-clear-filters" (click)="clearFilters()">Limpar filtros</button>
+          }
+        </div>
+      }
+
       <!-- Lista -->
       @if (loadingList()) {
         <div class="loading-state"><span class="spinner-lg"></span></div>
-      } @else if (incomes().length === 0) {
+      } @else if (!selectedPeriodId) {
+        <div class="empty-state"><p>Selecione um período para ver as receitas.</p></div>
+      } @else if (totalCount() === 0) {
         <div class="empty-state"><p>Nenhuma receita encontrada.</p></div>
       } @else {
         <div class="table-wrap card">
           <table class="table">
             <thead>
               <tr>
-                <th>Descrição</th>
-                <th>Quinzena</th>
-                <th>Recebido em</th>
-                <th>Valor</th>
+                <th class="sortable" (click)="toggleSort('description')">
+                  Descrição {{ sortIndicator('description') }}
+                </th>
+                <th class="sortable" (click)="toggleSort('fortnightType')">
+                  Quinzena {{ sortIndicator('fortnightType') }}
+                </th>
+                <th class="sortable" (click)="toggleSort('receivedAt')">
+                  Recebido em {{ sortIndicator('receivedAt') }}
+                </th>
+                <th class="sortable" (click)="toggleSort('amount')">
+                  Valor {{ sortIndicator('amount') }}
+                </th>
                 <th>Ações</th>
               </tr>
             </thead>
             <tbody>
-              @for (income of incomes(); track income.id) {
+              @for (income of displayedIncomes(); track income.id) {
                 <tr>
                   <td>
                     <div class="cell-primary">{{ income.description }}</div>
@@ -117,14 +160,16 @@ import {
                 </tr>
               }
             </tbody>
-            <tfoot>
-              <tr class="total-row">
-                <td colspan="3" class="total-label">Total no período</td>
-                <td class="amount-positive">{{ total() | currencyBrl }}</td>
-                <td></td>
-              </tr>
-            </tfoot>
           </table>
+
+          <!-- Paginação -->
+          <app-pagination
+            [totalCount]="totalCount()"
+            [pageSize]="pageSize()"
+            [currentPage]="currentPage()"
+            (pageChange)="onPageChange($event)"
+            (pageSizeChange)="onPageSizeChange($event)"
+          />
         </div>
       }
     </div>
@@ -224,6 +269,19 @@ import {
     .page-content { padding: 28px; display: flex; flex-direction: column; gap: 20px; }
     .filter-row   { display: flex; align-items: center; gap: 12px; }
 
+    /* ── Filtros externos ── */
+    .external-filters { padding: 16px; }
+    .filters-grid {
+      display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;
+    }
+    .filter-field { display: flex; flex-direction: column; gap: 6px; min-width: 160px; }
+    .input-sm     { padding: 6px 10px; font-size: 0.8125rem; }
+    .btn-clear-filters {
+      margin-top: 10px; background: none; border: none; cursor: pointer;
+      font-size: 0.8125rem; color: var(--rust); text-decoration: underline; padding: 0;
+    }
+
+    /* ── Tabela ── */
     .table-wrap { overflow-x: auto; }
     .table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
     .table th {
@@ -232,6 +290,10 @@ import {
       text-transform: uppercase; letter-spacing: 0.04em;
       color: var(--ink3); border-bottom: 1px solid var(--border);
     }
+    .table th.sortable {
+      cursor: pointer; user-select: none;
+    }
+    .table th.sortable:hover { color: var(--ink2); }
     .table td {
       padding: 12px 16px; border-bottom: 1px solid var(--bg3);
       color: var(--ink2); vertical-align: middle;
@@ -244,9 +306,6 @@ import {
     .text-sm        { font-size: 0.8125rem; }
     .text-muted     { color: var(--ink3); }
     .amount-positive { font-weight: 600; color: var(--sage2); }
-
-    .total-row td { background: var(--bg2); font-weight: 600; }
-    .total-label  { color: var(--ink2); font-size: 0.875rem; }
 
     .row-actions { display: flex; gap: 4px; }
     .action-btn {
@@ -261,45 +320,28 @@ import {
 
     /* ── Modal overlay e painel ── */
     .modal-overlay {
-      position: fixed;
-      inset: 0;
+      position: fixed; inset: 0;
       background: rgba(26, 20, 14, 0.55);
-      backdrop-filter: blur(3px);
-      z-index: 900;
+      backdrop-filter: blur(3px); z-index: 900;
     }
-
     .modal-center {
-      position: fixed;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 901;
-      pointer-events: none;  /* deixa clique passar para o overlay */
+      position: fixed; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      z-index: 901; pointer-events: none;
     }
-
-    .modal-center > * {
-      pointer-events: all;   /* reativa nos filhos */
-    }
+    .modal-center > * { pointer-events: all; }
 
     /* ── Modal form ── */
-    .modal-form-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-    }
-
+    .modal-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
     .field       { display: flex; flex-direction: column; gap: 6px; }
     .field-full  { grid-column: span 2; }
     .field-label { font-size: 0.875rem; font-weight: 500; color: var(--ink2); }
     .field-error { font-size: 0.8125rem; color: var(--color-danger); }
-
     .form-error {
       margin-top: 12px; padding: 10px 14px;
       background: var(--color-danger-bg); color: var(--color-danger);
       border-radius: var(--radius); font-size: 0.875rem;
     }
-
     .modal-footer {
       display: flex; justify-content: flex-end; gap: 10px;
       margin-top: 20px; padding-top: 16px;
@@ -323,8 +365,24 @@ export class IncomesComponent implements OnInit {
   private readonly api = inject(ApiService);
   private readonly fb  = inject(FormBuilder);
 
-  readonly periods     = signal<PeriodResponse[]>([]);
+  readonly FortnightType = FortnightType;
+
+  readonly periods = signal<PeriodResponse[]>([]);
+
+  // Dados vindos da API (página atual)
   readonly incomes     = signal<IncomeResponse[]>([]);
+  readonly totalCount  = signal(0);
+  readonly currentPage = signal(1);
+  readonly pageSize    = signal(20);
+
+  // Filtros externos (server-side)
+  readonly filterDescription   = signal('');
+  readonly filterFortnightType = signal<FortnightType | null>(null);
+
+  // Ordenação client-side (página atual)
+  readonly sortCol = signal<SortCol | null>(null);
+  readonly sortDir = signal<'asc' | 'desc'>('asc');
+
   readonly loadingList = signal(false);
   readonly saving      = signal(false);
   readonly apiError    = signal<string | null>(null);
@@ -332,13 +390,41 @@ export class IncomesComponent implements OnInit {
   readonly modalMode   = signal<'create' | 'edit'>('create');
 
   private editingId: string | null = null;
-  private selectedPeriodId: string | null = null;
+  selectedPeriodId: string | null = null;
+
+  private descriptionDebounce: ReturnType<typeof setTimeout> | null = null;
 
   /** Pré-seleção via query param: /incomes?periodId=xxx */
   readonly periodId = input<string>();
   @ViewChild('periodFilterSelect') periodFilterSelect!: ElementRef<HTMLSelectElement>;
 
-  readonly total = () => this.incomes().reduce((s, i) => s + i.amount, 0);
+  readonly hasActiveFilters = computed(() =>
+    !!this.filterDescription() || this.filterFortnightType() != null);
+
+  readonly displayedIncomes = computed<IncomeResponse[]>(() => {
+    const col = this.sortCol();
+    const dir = this.sortDir();
+    const list = [...this.incomes()];
+
+    if (!col) return list;
+
+    return list.sort((a, b) => {
+      let va: string | number;
+      let vb: string | number;
+
+      switch (col) {
+        case 'description':   va = a.description.toLowerCase(); vb = b.description.toLowerCase(); break;
+        case 'fortnightType': va = a.fortnightType;             vb = b.fortnightType;             break;
+        case 'receivedAt':    va = a.receivedAt;                vb = b.receivedAt;                break;
+        case 'amount':        va = a.amount;                    vb = b.amount;                    break;
+        default:              return 0;
+      }
+
+      if (va < vb) return dir === 'asc' ? -1 : 1;
+      if (va > vb) return dir === 'asc' ?  1 : -1;
+      return 0;
+    });
+  });
 
   readonly form = this.fb.group({
     periodId:      ['', Validators.required],
@@ -355,16 +441,30 @@ export class IncomesComponent implements OnInit {
       this.periods.set(p);
       if (preId) {
         this.selectedPeriodId = preId;
-        this.loadingList.set(true);
-        this.api.getIncomesByPeriod(preId).subscribe({
-          next: i => { this.incomes.set(i); this.loadingList.set(false); },
-          error: () => this.loadingList.set(false)
-        });
+        this.loadPage();
         setTimeout(() => {
           if (this.periodFilterSelect?.nativeElement)
             this.periodFilterSelect.nativeElement.value = preId;
         }, 0);
       }
+    });
+  }
+
+  private loadPage(): void {
+    if (!this.selectedPeriodId) return;
+    this.loadingList.set(true);
+    this.api.getIncomesByPeriod(this.selectedPeriodId, {
+      pageNumber:    this.currentPage(),
+      pageSize:      this.pageSize(),
+      description:   this.filterDescription() || undefined,
+      fortnightType: this.filterFortnightType() ?? undefined,
+    }).subscribe({
+      next: result => {
+        this.incomes.set(result.items);
+        this.totalCount.set(result.totalCount);
+        this.loadingList.set(false);
+      },
+      error: () => this.loadingList.set(false)
     });
   }
 
@@ -414,11 +514,10 @@ export class IncomesComponent implements OnInit {
 
     if (this.modalMode() === 'create') {
       this.api.createIncome(payload).subscribe({
-        next: income => {
-          if (this.selectedPeriodId === income.periodId)
-            this.incomes.update(list => [income, ...list]);
+        next: () => {
           this.closeModal();
           this.saving.set(false);
+          this.loadPage();
         },
         error: err => { this.apiError.set(err.error?.message ?? 'Erro ao criar receita.'); this.saving.set(false); }
       });
@@ -427,16 +526,15 @@ export class IncomesComponent implements OnInit {
       this.api.deleteIncome(id).subscribe({
         next: () => {
           this.api.createIncome(payload).subscribe({
-            next: updated => {
-              this.incomes.update(list => list.map(i => i.id === id ? updated : i));
+            next: () => {
               this.closeModal();
               this.saving.set(false);
+              this.loadPage();
             },
             error: err => {
               this.apiError.set(err.error?.message ?? 'Erro ao salvar alterações.');
               this.saving.set(false);
-              if (this.selectedPeriodId)
-                this.api.getIncomesByPeriod(this.selectedPeriodId).subscribe(i => this.incomes.set(i));
+              this.loadPage();
             }
           });
         },
@@ -448,23 +546,75 @@ export class IncomesComponent implements OnInit {
   deleteIncome(id: string): void {
     if (!confirm('Confirma a exclusão desta receita?')) return;
     this.api.deleteIncome(id).subscribe({
-      next: () => this.incomes.update(list => list.filter(i => i.id !== id))
+      next: () => this.loadPage()
     });
   }
 
   onPeriodFilter(event: Event): void {
     const periodId = (event.target as HTMLSelectElement).value;
     this.selectedPeriodId = periodId || null;
-    if (periodId) {
-      this.loadingList.set(true);
-      this.api.getIncomesByPeriod(periodId).subscribe({
-        next: i => { this.incomes.set(i); this.loadingList.set(false); },
-        error: () => this.loadingList.set(false)
-      });
+    this.currentPage.set(1);
+    this.incomes.set([]);
+    this.totalCount.set(0);
+    if (periodId) this.loadPage();
+  }
+
+  // ── Filtros externos ──────────────────────────────────────────────────────
+
+  onFilterDescriptionChange(event: Event): void {
+    const val = (event.target as HTMLInputElement).value;
+    this.filterDescription.set(val);
+    if (this.descriptionDebounce) clearTimeout(this.descriptionDebounce);
+    this.descriptionDebounce = setTimeout(() => {
+      this.currentPage.set(1);
+      this.loadPage();
+    }, 350);
+  }
+
+  onFilterFortnightChange(event: Event): void {
+    const val = (event.target as HTMLSelectElement).value;
+    this.filterFortnightType.set(val ? Number(val) as FortnightType : null);
+    this.currentPage.set(1);
+    this.loadPage();
+  }
+
+  clearFilters(): void {
+    this.filterDescription.set('');
+    this.filterFortnightType.set(null);
+    this.currentPage.set(1);
+    this.loadPage();
+  }
+
+  // ── Paginação ─────────────────────────────────────────────────────────────
+
+  onPageChange(page: number): void {
+    this.currentPage.set(page);
+    this.loadPage();
+  }
+
+  onPageSizeChange(size: number): void {
+    this.pageSize.set(size);
+    this.currentPage.set(1);
+    this.loadPage();
+  }
+
+  // ── Ordenação client-side ─────────────────────────────────────────────────
+
+  toggleSort(col: SortCol): void {
+    if (this.sortCol() === col) {
+      this.sortDir.set(this.sortDir() === 'asc' ? 'desc' : 'asc');
     } else {
-      this.incomes.set([]);
+      this.sortCol.set(col);
+      this.sortDir.set('asc');
     }
   }
+
+  sortIndicator(col: SortCol): string {
+    if (this.sortCol() !== col) return '';
+    return this.sortDir() === 'asc' ? '↑' : '↓';
+  }
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
 
   showError(field: string): boolean {
     const ctrl = this.form.get(field);
