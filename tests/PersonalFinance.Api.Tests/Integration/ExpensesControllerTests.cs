@@ -32,8 +32,8 @@ namespace PersonalFinance.Api.Tests.Integration
             var (client, pid, _) = await SetupAsync();
             var r = await client.GetAsync($"/api/v1/expenses?periodId={pid}");
             r.StatusCode.Should().Be(HttpStatusCode.OK);
-            var arr = await r.Content.ReadFromJsonAsync<JsonElement>();
-            arr.GetArrayLength().Should().Be(0); // período vazio
+            var body = await r.Content.ReadFromJsonAsync<JsonElement>();
+            body.GetProperty("items").GetArrayLength().Should().Be(0); // período vazio
         }
 
         [Fact(DisplayName = "POST e GET /expenses deve persistir e retornar a despesa")]
