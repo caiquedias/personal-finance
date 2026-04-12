@@ -294,6 +294,18 @@ type SortCol = 'description' | 'category' | 'fortnightType' | 'dueDate' | 'amoun
                 </select>
               </div>
 
+              @if (modalMode() === 'edit') {
+                <div class="field">
+                  <label class="field-label">Status</label>
+                  <select formControlName="status" class="input">
+                    <option [value]="PaymentStatus.Pending">Pendente</option>
+                    <option [value]="PaymentStatus.Paid">Pago</option>
+                    <option [value]="PaymentStatus.Partial">Parcial</option>
+                    <option [value]="PaymentStatus.Cancelled">Cancelado</option>
+                  </select>
+                </div>
+              }
+
               <div class="field field-full">
                 <label class="field-label">Observações</label>
                 <input formControlName="notes" class="input" placeholder="Opcional..." />
@@ -555,6 +567,7 @@ export class ExpensesComponent implements OnInit {
     sourceType:    [SourceType.Personal],
     fortnightType: [FortnightType.First],
     notes:         [''],
+    status:        [PaymentStatus.Pending],
   });
 
   ngOnInit(): void {
@@ -618,6 +631,7 @@ export class ExpensesComponent implements OnInit {
       sourceType:    expense.sourceType,
       fortnightType: expense.fortnightType,
       notes:         expense.notes ?? '',
+      status:        expense.paymentStatus,
     });
     this.modalOpen.set(true);
   }
@@ -748,6 +762,7 @@ export class ExpensesComponent implements OnInit {
       const id = this.editingId!;
       const sourceType    = Number(v.sourceType)    as SourceType;
       const fortnightType = Number(v.fortnightType) as FortnightType;
+      const status        = Number(v.status)        as PaymentStatus;
 
       this.api.updateExpense(id, {
         categoryId:    v.categoryId!,
@@ -757,6 +772,7 @@ export class ExpensesComponent implements OnInit {
         sourceType,
         fortnightType,
         notes:         v.notes || undefined,
+        status,
       }).subscribe({
         next: () => {
           this.expenses.update(list =>
@@ -768,6 +784,7 @@ export class ExpensesComponent implements OnInit {
                   dueDate:       v.dueDate!,
                   sourceType,
                   fortnightType,
+                  paymentStatus: status,
                   notes:         v.notes || null }
               : e
             )

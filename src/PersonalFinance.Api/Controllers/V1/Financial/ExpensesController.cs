@@ -64,7 +64,7 @@ public sealed class ExpensesController(
         return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
     }
 
-    /// <summary>Atualiza dados editáveis da despesa. Não altera status — use PATCH.</summary>
+    /// <summary>Atualiza dados editáveis da despesa, incluindo status de pagamento.</summary>
     [HttpPut("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
