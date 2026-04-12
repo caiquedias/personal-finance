@@ -535,7 +535,7 @@ export class PeriodDetailComponent implements OnInit {
     ]).then(([summary, expensesResult, incomes, categories]) => {
       this.summary.set(summary ?? null);
       this.expenses.set(expensesResult?.items ?? []);
-      this.incomes.set(incomes ?? []);
+      this.incomes.set(incomes?.items ?? []);
       this.categories.set(categories ?? []);
       this.loading.set(false);
     }).catch(() => this.loading.set(false));

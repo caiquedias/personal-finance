@@ -70,6 +70,13 @@ public sealed record ExpenseFilterDto(
     FortnightType? FortnightType = null
 );
 
+public sealed record IncomeFilterDto(
+    int            PageNumber    = 1,
+    int            PageSize      = 20,
+    string?        Description   = null,
+    FortnightType? FortnightType = null
+);
+
 // ── Income ────────────────────────────────────────────────────────────────────
 
 public sealed record CreateIncomeDto(
