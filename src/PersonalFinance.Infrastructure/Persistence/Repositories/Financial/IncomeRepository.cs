@@ -27,6 +27,33 @@ public sealed class IncomeRepository : IIncomeRepository
                .ThenBy(i => i.ReceivedAt)
                .ToListAsync(ct);
 
+    public async Task<(IEnumerable<Income> Items, int TotalCount)> GetPagedByPeriodAsync(
+        Guid periodId, Guid userId,
+        int pageNumber, int pageSize,
+        string? description, FortnightType? fortnightType,
+        CancellationToken ct = default)
+    {
+        var query = _context.Incomes
+            .Where(i => i.PeriodId == periodId && i.UserId == userId);
+
+        if (!string.IsNullOrWhiteSpace(description))
+            query = query.Where(i => i.Description.Contains(description));
+
+        if (fortnightType.HasValue)
+            query = query.Where(i => i.FortnightType == fortnightType.Value);
+
+        var totalCount = await query.CountAsync(ct);
+
+        var items = await query
+            .OrderBy(i => i.FortnightType)
+            .ThenBy(i => i.ReceivedAt)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(ct);
+
+        return (items, totalCount);
+    }
+
     /// <summary>
     /// Busca por chave de idempotência: PeriodId + Descrição + Valor + Quinzena.
     /// Ignora soft delete para detectar registros desativados e evitar duplicatas.

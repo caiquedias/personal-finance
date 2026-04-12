@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using PersonalFinance.Application.DTOs;
 using PersonalFinance.Application.DTOs.Financial;
 using PersonalFinance.Application.UseCases.Financial.Incomes;
 
@@ -32,13 +33,14 @@ public sealed class IncomesController : ApiControllerBase
     /// Requer query param: ?periodId={guid}
     /// </summary>
     [HttpGet]
-    [ProducesResponseType(typeof(IEnumerable<IncomeResponseDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PagedResult<IncomeResponseDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetByPeriod(
         [FromQuery] Guid periodId,
+        [FromQuery] IncomeFilterDto filter,
         CancellationToken ct)
     {
-        var result = await _getByPeriodUseCase.ExecuteAsync(periodId, CurrentUserId, ct);
+        var result = await _getByPeriodUseCase.ExecuteAsync(periodId, CurrentUserId, filter, ct);
         return Ok(result);
     }
 

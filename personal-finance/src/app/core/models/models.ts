@@ -153,6 +153,13 @@ export interface ExpenseFilterParams {
   fortnightType?: FortnightType;
 }
 
+export interface IncomeFilterParams {
+  pageNumber?:    number;
+  pageSize?:      number;
+  description?:   string;
+  fortnightType?: FortnightType;
+}
+
 // ── Income ────────────────────────────────────────────────────────────────────
 
 export interface IncomeResponse {
