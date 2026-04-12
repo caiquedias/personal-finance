@@ -1,4 +1,5 @@
-﻿using PersonalFinance.Application.DTOs.Financial;
+﻿using PersonalFinance.Application.DTOs;
+using PersonalFinance.Application.DTOs.Financial;
 using PersonalFinance.Domain.Entities.Financial;
 using PersonalFinance.Domain.Exceptions;
 using PersonalFinance.Domain.Interfaces.Repositories;
@@ -22,15 +23,24 @@ namespace PersonalFinance.Application.UseCases.Financial.Incomes
             _periodRepository = periodRepository;
         }
 
-        public async Task<IEnumerable<IncomeResponseDto>> ExecuteAsync(
-            Guid periodId, Guid userId, CancellationToken ct = default)
+        public async Task<PagedResult<IncomeResponseDto>> ExecuteAsync(
+            Guid periodId, Guid userId, IncomeFilterDto filter, CancellationToken ct = default)
         {
             var periodExists = await _periodRepository.ExistsByIdAndUserAsync(periodId, userId, ct);
             if (!periodExists)
                 throw new DomainException("Período não encontrado ou sem permissão de acesso.");
 
-            var incomes = await _incomeRepository.GetByPeriodAsync(periodId, userId, ct);
-            return incomes.Select(ToDto);
+            var (items, totalCount) = await _incomeRepository.GetPagedByPeriodAsync(
+                periodId, userId,
+                filter.PageNumber, filter.PageSize,
+                filter.Description, filter.FortnightType,
+                ct);
+
+            return new PagedResult<IncomeResponseDto>(
+                items.Select(ToDto),
+                totalCount,
+                filter.PageNumber,
+                filter.PageSize);
         }
 
         private static IncomeResponseDto ToDto(Income i) =>
