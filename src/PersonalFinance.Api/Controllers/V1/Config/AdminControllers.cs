@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PersonalFinance.Application.DTOs;
 using PersonalFinance.Application.DTOs.Admin;
 using PersonalFinance.Application.UseCases.Admin;
 using PersonalFinance.Application.UseCases.Config;
@@ -222,11 +223,12 @@ public sealed class AdminUsersController : ApiControllerBase
         _resetPassword = resetPassword;
     }
 
-    /// <summary>Lista todos os usuários do sistema, incluindo inativos.</summary>
+    /// <summary>Lista usuários do sistema com paginação e filtros opcionais.</summary>
     [HttpGet]
-    [ProducesResponseType(typeof(IEnumerable<AdminUserResponseDto>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetAll(CancellationToken ct)
-        => Ok(await _getUsers.ExecuteAsync(ct));
+    [ProducesResponseType(typeof(PagedResult<AdminUserResponseDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetAll(
+        [FromQuery] AdminUserFilterDto filter, CancellationToken ct)
+        => Ok(await _getUsers.ExecuteAsync(filter, ct));
 
     /// <summary>
     /// Ativa ou desativa um usuário (toggle).

@@ -185,6 +185,14 @@ export interface CreateIncomeRequest {
 
 // ── Admin ─────────────────────────────────────────────────────────────────────
 
+export interface AdminUserFilterParams {
+  pageNumber?: number;
+  pageSize?:   number;
+  name?:       string;
+  email?:      string;
+  isActive?:   boolean;
+}
+
 export interface AdminUserResponse {
   id:        string;
   name:      string;
