@@ -262,6 +262,13 @@ SQL Server LocalDB para dev: `(localdb)\MSSQLLocalDB;Database=PersonalFinanceDb`
 
 ---
 
+## Regras absolutas de execução
+
+- **Nunca alterar fora do escopo** — qualquer alteração não prevista no plano de execução deve ser apresentada como novo plano antes de ser implementada; Caique avalia e aprova caso a caso
+- **Verificar PR antes de push** — antes de subir qualquer ajuste, verificar se o PR destino ainda está aberto; se estiver, apenas commitar e fazer push; se estiver fechado/mergeado, abrir novo PR para os ajustes
+
+---
+
 ## Regras absolutas de código
 
 ### Geral
