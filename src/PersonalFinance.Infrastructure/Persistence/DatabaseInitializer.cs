@@ -78,7 +78,7 @@ public sealed class DatabaseInitializer : IHostedService
                 COALESCE(e.[TotalSecondFortnight], 0)                          AS [TotalSecondFortnight],
 
                 -- Saldo
-                COALESCE(i.[TotalIncome], 0) - COALESCE(e.[TotalExpense], 0)  AS [Balance]
+                COALESCE(i.[TotalIncome], 0) - COALESCE(e.[TotalPaid], 0)  AS [Balance]
 
             FROM [dbo].[Period] p
 
