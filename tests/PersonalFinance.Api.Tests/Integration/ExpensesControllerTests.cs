@@ -112,6 +112,84 @@ namespace PersonalFinance.Api.Tests.Integration
             exp.GetProperty("paymentStatus").GetInt32().Should().Be(2); // Paid = 2
         }
 
+        [Fact(DisplayName = "PUT /expenses/{id} deve retornar 204")]
+        public async Task Update_ShouldReturn204()
+        {
+            var (client, pid, cid) = await SetupAsync();
+
+            var created = await client.PostAsJsonAsync("/api/v1/expenses", new
+            {
+                periodId = pid,
+                categoryId = cid,
+                sourceType = 2,
+                fortnightType = 1,
+                description = "Original",
+                amount = 100.00,
+                dueDate = "2026-08-10"
+            });
+            var body = await created.Content.ReadFromJsonAsync<JsonElement>();
+            var id = body.GetProperty("id").GetString()!;
+
+            var r = await client.PutAsJsonAsync($"/api/v1/expenses/{id}", new
+            {
+                categoryId = cid,
+                sourceType = 2,
+                fortnightType = 1,
+                description = "Atualizado",
+                amount = 200.00,
+                dueDate = "2026-08-15",
+                paymentStatus = 1
+            });
+
+            r.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        }
+
+        [Fact(DisplayName = "PATCH /expenses/{id}/cancel deve retornar 204")]
+        public async Task Cancel_ShouldReturn204()
+        {
+            var (client, pid, cid) = await SetupAsync();
+
+            var created = await client.PostAsJsonAsync("/api/v1/expenses", new
+            {
+                periodId = pid,
+                categoryId = cid,
+                sourceType = 2,
+                fortnightType = 1,
+                description = "A Cancelar",
+                amount = 50.00,
+                dueDate = "2026-08-10"
+            });
+            var body = await created.Content.ReadFromJsonAsync<JsonElement>();
+            var id = body.GetProperty("id").GetString()!;
+
+            var r = await client.PatchAsync($"/api/v1/expenses/{id}/cancel", null);
+
+            r.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        }
+
+        [Fact(DisplayName = "PATCH /expenses/{id}/partial deve retornar 204")]
+        public async Task MarkAsPartial_ShouldReturn204()
+        {
+            var (client, pid, cid) = await SetupAsync();
+
+            var created = await client.PostAsJsonAsync("/api/v1/expenses", new
+            {
+                periodId = pid,
+                categoryId = cid,
+                sourceType = 2,
+                fortnightType = 1,
+                description = "Parcial",
+                amount = 300.00,
+                dueDate = "2026-08-10"
+            });
+            var body = await created.Content.ReadFromJsonAsync<JsonElement>();
+            var id = body.GetProperty("id").GetString()!;
+
+            var r = await client.PatchAsync($"/api/v1/expenses/{id}/partial", null);
+
+            r.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        }
+
         [Fact(DisplayName = "DELETE /expenses/{id} deve retornar 204 e sumir da lista")]
         public async Task Delete_ShouldReturn204AndDisappearFromList()
         {

@@ -66,6 +66,32 @@ namespace PersonalFinance.Api.Tests.Integration
             summary.GetProperty("balance").GetDecimal().Should().Be(0m);
         }
 
+        [Fact(DisplayName = "DELETE /periods/{id} vazio deve retornar 204")]
+        public async Task Delete_EmptyPeriod_ShouldReturn204()
+        {
+            var (client, _) = await GetAuthenticatedClientAsync();
+            var created = await client.PostAsJsonAsync("/api/v1/periods", new { year = 2026, month = 9 });
+            var body = await created.Content.ReadFromJsonAsync<JsonElement>();
+            var id = body.GetProperty("id").GetString();
+
+            var r = await client.DeleteAsync($"/api/v1/periods/{id}");
+
+            r.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        }
+
+        [Fact(DisplayName = "PATCH /periods/{id}/toggle-active deve retornar 204")]
+        public async Task ToggleActive_ShouldReturn204()
+        {
+            var (client, _) = await GetAuthenticatedClientAsync();
+            var created = await client.PostAsJsonAsync("/api/v1/periods", new { year = 2026, month = 10 });
+            var body = await created.Content.ReadFromJsonAsync<JsonElement>();
+            var id = body.GetProperty("id").GetString();
+
+            var r = await client.PatchAsync($"/api/v1/periods/{id}/toggle-active", null);
+
+            r.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        }
+
         [Fact(DisplayName = "GET /periods/{id} de outro usuário deve retornar 404")]
         public async Task GetById_FromOtherUser_ShouldReturn404()
         {

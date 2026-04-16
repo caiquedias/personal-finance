@@ -255,6 +255,36 @@ public class ImportLegacyDataUseCaseTests
         _incRepo.Verify(r => r.AddAsync(It.IsAny<Income>(), default), Times.Never);
     }
 
+    // ── Sem mudança na receita — ignora update desnecessário ─────────────────
+
+    [Fact(DisplayName = "Deve ignorar receita quando dados são idênticos")]
+    public async Task Execute_IncomeUnchanged_ShouldSkipUpdate()
+    {
+        var dto = BuildIncomeDto();
+
+        var existing = Income.Create(
+            PeriodId, UserId, FortnightType.First,
+            "Receita 1ª Quinzena", 2613m,
+            dto.ReceivedAt,  // mesma data
+            null);
+
+        _parser.Setup(p => p.ParseAsync(It.IsAny<Stream>(), default))
+               .ReturnsAsync(new[] { BuildSheet(incomes: new[] { dto }) });
+
+        SetupExistingPeriod();
+        SetupAllCategoriesExist();
+        _incRepo.Setup(r => r.FindByImportKeyAsync(
+            It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<decimal>(),
+            It.IsAny<FortnightType>(), default))
+            .ReturnsAsync(existing);
+
+        var result = await _sut.ExecuteAsync(Stream.Null, UserId);
+
+        result.IncomesImported.Should().Be(0);
+        _incRepo.Verify(r => r.AddAsync(It.IsAny<Income>(), default),    Times.Never);
+        _incRepo.Verify(r => r.UpdateAsync(It.IsAny<Income>(), default), Times.Never);
+    }
+
     // ── Valor zero → skip ─────────────────────────────────────────────────────
 
     [Fact(DisplayName = "Deve ignorar despesas e receitas com valor zero")]
