@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PersonalFinance.Application.DTOs.Financial;
+using PersonalFinance.Application.DTOs.Reports;
 using PersonalFinance.Application.Interfaces;
 using PersonalFinance.Infrastructure.Persistence.Context;
 
@@ -59,6 +60,39 @@ namespace PersonalFinance.Infrastructure.Persistence.Repositories.Reports
                 TotalSecondFortnight: row.TotalSecondFortnight,
                 Balance: row.Balance
             );
+        }
+
+        public async Task<ExpensesReportDto> GetExpensesReportAsync(
+            Guid userId,
+            int year,
+            int? month,
+            CancellationToken ct = default)
+        {
+            var shortYear = (short)year;
+
+            var items = await _context.Expenses
+                .Join(_context.Periods,
+                    e => e.PeriodId,
+                    p => p.Id,
+                    (e, p) => new { Expense = e, Period = p })
+                .Where(x =>
+                    x.Expense.UserId == userId &&
+                    x.Period.Year == shortYear &&
+                    (!month.HasValue || x.Period.Month == (byte)month.Value))
+                .Join(_context.Categories,
+                    x => x.Expense.CategoryId,
+                    c => c.Id,
+                    (x, c) => new { x.Expense, Category = c })
+                .GroupBy(x => new { x.Expense.CategoryId, x.Category.Name, x.Category.Color })
+                .Select(g => new ExpenseByCategoryItemDto(
+                    g.Key.CategoryId,
+                    g.Key.Name,
+                    g.Key.Color,
+                    g.Sum(x => x.Expense.Amount)))
+                .OrderByDescending(i => i.Total)
+                .ToListAsync(ct);
+
+            return new ExpensesReportDto(year, month, items);
         }
 
         // Tipo interno para mapeamento do SQL raw — nunca exposto fora da Infrastructure

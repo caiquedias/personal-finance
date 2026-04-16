@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PersonalFinance.Application.DTOs.Financial;
+using PersonalFinance.Application.DTOs.Reports;
 using PersonalFinance.Application.Interfaces;
 using PersonalFinance.Domain.Enums;
 using PersonalFinance.Infrastructure.Persistence.Context;
@@ -61,6 +62,44 @@ namespace PersonalFinance.Api.Tests.Integration
                 TotalSecondFortnight: totalSecondFortnight,
                 Balance: totalIncome - totalExpense
             );
+        }
+
+        public async Task<ExpensesReportDto> GetExpensesReportAsync(
+            Guid userId, int year, int? month, CancellationToken ct = default)
+        {
+            var shortYear = (short)year;
+
+            var periods = await _context.Periods
+                .IgnoreQueryFilters()
+                .Where(p => p.UserId == userId && p.Year == shortYear && (month == null || p.Month == (byte)month.Value))
+                .Select(p => p.Id)
+                .ToListAsync(ct);
+
+            var expenses = await _context.Expenses
+                .IgnoreQueryFilters()
+                .Where(e => e.UserId == userId && periods.Contains(e.PeriodId) && e.DeletedAt == null)
+                .ToListAsync(ct);
+
+            var categories = await _context.Categories
+                .IgnoreQueryFilters()
+                .Where(c => expenses.Select(e => e.CategoryId).Contains(c.Id))
+                .ToDictionaryAsync(c => c.Id, ct);
+
+            var items = expenses
+                .GroupBy(e => e.CategoryId)
+                .Select(g =>
+                {
+                    categories.TryGetValue(g.Key, out var cat);
+                    return new ExpenseByCategoryItemDto(
+                        g.Key,
+                        cat?.Name ?? "Desconhecida",
+                        cat?.Color ?? "#888888",
+                        g.Sum(e => e.Amount));
+                })
+                .OrderByDescending(i => i.Total)
+                .ToList();
+
+            return new ExpensesReportDto(year, month, items);
         }
 
     }
