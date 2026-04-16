@@ -70,25 +70,32 @@ namespace PersonalFinance.Infrastructure.Persistence.Repositories.Reports
         {
             var shortYear = (short)year;
 
-            var items = await _context.Expenses
+            // Filtro base: join Expenses + Periods + projeção plana (evita acesso aninhado no GroupBy)
+            var baseQuery = _context.Expenses
                 .Join(_context.Periods,
                     e => e.PeriodId,
                     p => p.Id,
-                    (e, p) => new { Expense = e, Period = p })
-                .Where(x =>
-                    x.Expense.UserId == userId &&
-                    x.Period.Year == shortYear &&
-                    (!month.HasValue || x.Period.Month == (byte)month.Value))
+                    (e, p) => new { e.UserId, e.CategoryId, e.Amount, p.Year, p.Month })
+                .Where(x => x.UserId == userId && x.Year == shortYear);
+
+            // Filtro de mês aplicado separadamente para garantir tradução SQL
+            if (month.HasValue)
+            {
+                var byteMonth = (byte)month.Value;
+                baseQuery = baseQuery.Where(x => x.Month == byteMonth);
+            }
+
+            var items = await baseQuery
                 .Join(_context.Categories,
-                    x => x.Expense.CategoryId,
+                    x => x.CategoryId,
                     c => c.Id,
-                    (x, c) => new { x.Expense, Category = c })
-                .GroupBy(x => new { x.Expense.CategoryId, x.Category.Name, x.Category.Color })
+                    (x, c) => new { x.CategoryId, c.Name, c.Color, x.Amount })
+                .GroupBy(x => new { x.CategoryId, x.Name, x.Color })
                 .Select(g => new ExpenseByCategoryItemDto(
                     g.Key.CategoryId,
                     g.Key.Name,
                     g.Key.Color,
-                    g.Sum(x => x.Expense.Amount)))
+                    g.Sum(x => x.Amount)))
                 .OrderByDescending(i => i.Total)
                 .ToListAsync(ct);
 
