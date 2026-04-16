@@ -12,6 +12,7 @@ import {
   CreatePaymentStatusRequest, CreateSourceTypeRequest, CreateFortnightTypeRequest,
   UpdatePaymentStatusRequest, UpdateSourceTypeRequest, UpdateFortnightTypeRequest,
   AdminUserResponse, AdminUserFilterParams, AssignRoleRequest, ResetPasswordRequest,
+  ExpensesReport,
 } from '../models/models';
 
 @Injectable({ providedIn: 'root' })
@@ -208,5 +209,13 @@ export class ApiService {
 
   resetUserPassword(userId: string, data: ResetPasswordRequest): Observable<void> {
     return this.http.patch<void>(`${this.base}/admin/users/${userId}/reset-password`, data);
+  }
+
+  // ── Reports ────────────────────────────────────────────────────────────────
+
+  getExpensesReport(year: number, month?: number): Observable<ExpensesReport> {
+    let params = new HttpParams().set('year', year);
+    if (month != null) params = params.set('month', month);
+    return this.http.get<ExpensesReport>(`${this.base}/reports/expenses`, { params });
   }
 }

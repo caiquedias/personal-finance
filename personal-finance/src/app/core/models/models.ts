@@ -243,3 +243,18 @@ export const FORTNIGHT_TYPE_LABELS: Record<FortnightType, string> = {
   [FortnightType.First]:  '1ª Quinzena',
   [FortnightType.Second]: '2ª Quinzena',
 };
+
+// ── Reports ───────────────────────────────────────────────────────────────────
+
+export interface ExpenseByCategoryItem {
+  categoryId:    string;
+  categoryName:  string;
+  categoryColor: string;
+  total:         number;
+}
+
+export interface ExpensesReport {
+  year:  number;
+  month: number | null;
+  items: ExpenseByCategoryItem[];
+}
