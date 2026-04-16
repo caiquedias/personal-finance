@@ -18,6 +18,7 @@ public interface IExpenseRepository
         Guid?         categoryId,
         PaymentStatus? paymentStatus,
         FortnightType? fortnightType,
+        SourceType?    sourceType,
         CancellationToken ct = default);
 
     /// <summary>

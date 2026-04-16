@@ -8,11 +8,11 @@ import { PaginationComponent } from '../../../shared/components/pagination/pagin
 import { CurrencyBrlPipe } from '../../../shared/pipes/currency-brl.pipe';
 import {
   ExpenseResponse, PeriodResponse, CategoryResponse,
-  MONTH_NAMES, PAYMENT_STATUS_LABELS, FORTNIGHT_TYPE_LABELS,
+  MONTH_NAMES, PAYMENT_STATUS_LABELS, FORTNIGHT_TYPE_LABELS, SOURCE_TYPE_LABELS,
   PaymentStatus, SourceType, FortnightType
 } from '../../../core/models/models';
 
-type SortCol = 'description' | 'category' | 'fortnightType' | 'dueDate' | 'amount' | 'paymentStatus';
+type SortCol = 'description' | 'category' | 'sourceType' | 'fortnightType' | 'dueDate' | 'amount' | 'paymentStatus';
 
 @Component({
   selector: 'app-expenses',
@@ -85,6 +85,15 @@ type SortCol = 'description' | 'category' | 'fortnightType' | 'dueDate' | 'amoun
             </div>
 
             <div class="filter-field">
+              <label class="field-label">Fonte</label>
+              <select class="input input-sm" (change)="onFilterSourceTypeChange($event)">
+                <option value="">Todas</option>
+                <option [value]="SourceType.Parental">Parental</option>
+                <option [value]="SourceType.Personal">Própria</option>
+              </select>
+            </div>
+
+            <div class="filter-field">
               <label class="field-label">Status</label>
               <select class="input input-sm" (change)="onFilterStatusChange($event)">
                 <option value="">Todos</option>
@@ -133,6 +142,9 @@ type SortCol = 'description' | 'category' | 'fortnightType' | 'dueDate' | 'amoun
                 <th class="sortable" (click)="toggleSort('category')">
                   Categoria {{ sortIcon('category') }}
                 </th>
+                <th class="sortable" (click)="toggleSort('sourceType')">
+                  Fonte {{ sortIcon('sourceType') }}
+                </th>
                 <th class="sortable" (click)="toggleSort('fortnightType')">
                   Quinzena {{ sortIcon('fortnightType') }}
                 </th>
@@ -161,6 +173,7 @@ type SortCol = 'description' | 'category' | 'fortnightType' | 'dueDate' | 'amoun
                     <span class="category-dot" [style.background]="categoryColor(expense.categoryId)"></span>
                     {{ categoryName(expense.categoryId) }}
                   </td>
+                  <td class="text-muted text-sm">{{ sourceLabel(expense.sourceType) }}</td>
                   <td class="text-muted text-sm">{{ fortnightLabel(expense.fortnightType) }}</td>
                   <td class="text-muted text-sm">{{ formatDate(expense.dueDate) }}</td>
                   <td class="font-semibold">{{ expense.amount | currencyBrl }}</td>
@@ -489,6 +502,7 @@ export class ExpensesComponent implements OnInit {
 
   readonly PaymentStatus = PaymentStatus;
   readonly FortnightType = FortnightType;
+  readonly SourceType    = SourceType;
 
   readonly periods    = signal<PeriodResponse[]>([]);
   readonly categories = signal<CategoryResponse[]>([]);
@@ -504,6 +518,7 @@ export class ExpensesComponent implements OnInit {
   readonly filterCategoryId    = signal('');
   readonly filterStatus        = signal<PaymentStatus | null>(null);
   readonly filterFortnightType = signal<FortnightType | null>(null);
+  readonly filterSourceType    = signal<SourceType | null>(null);
 
   // Ordenação client-side (página atual)
   readonly sortCol = signal<SortCol | null>(null);
@@ -528,7 +543,8 @@ export class ExpensesComponent implements OnInit {
   /** Verifica se há algum filtro ativo */
   readonly hasActiveFilters = computed(() =>
     !!this.filterDescription() || !!this.filterCategoryId() ||
-    this.filterStatus() != null || this.filterFortnightType() != null);
+    this.filterStatus() != null || this.filterFortnightType() != null ||
+    this.filterSourceType() != null);
 
   /** Aplica ordenação client-side sobre os itens da página atual */
   readonly displayedExpenses = computed<ExpenseResponse[]>(() => {
@@ -545,6 +561,7 @@ export class ExpensesComponent implements OnInit {
       switch (col) {
         case 'description':   va = a.description.toLowerCase();   vb = b.description.toLowerCase();   break;
         case 'category':      va = this.categoryName(a.categoryId); vb = this.categoryName(b.categoryId); break;
+        case 'sourceType':    va = a.sourceType;                  vb = b.sourceType;                  break;
         case 'fortnightType': va = a.fortnightType;               vb = b.fortnightType;               break;
         case 'dueDate':       va = a.dueDate;                     vb = b.dueDate;                     break;
         case 'amount':        va = a.amount;                      vb = b.amount;                      break;
@@ -594,8 +611,9 @@ export class ExpensesComponent implements OnInit {
       pageSize:      this.pageSize(),
       description:   this.filterDescription() || undefined,
       categoryId:    this.filterCategoryId()  || undefined,
-      paymentStatus: this.filterStatus()      ?? undefined,
+      paymentStatus: this.filterStatus()        ?? undefined,
       fortnightType: this.filterFortnightType() ?? undefined,
+      sourceType:    this.filterSourceType()    ?? undefined,
     }).subscribe({
       next: result => {
         this.expenses.set(result.items);
@@ -688,11 +706,19 @@ export class ExpensesComponent implements OnInit {
     this.loadPage();
   }
 
+  onFilterSourceTypeChange(event: Event): void {
+    const val = (event.target as HTMLSelectElement).value;
+    this.filterSourceType.set(val ? Number(val) as SourceType : null);
+    this.currentPage.set(1);
+    this.loadPage();
+  }
+
   clearFilters(): void {
     this.filterDescription.set('');
     this.filterCategoryId.set('');
     this.filterStatus.set(null);
     this.filterFortnightType.set(null);
+    this.filterSourceType.set(null);
     this.currentPage.set(1);
     this.loadPage();
   }
@@ -835,6 +861,7 @@ export class ExpensesComponent implements OnInit {
   }
 
   statusLabel(status: PaymentStatus): string     { return PAYMENT_STATUS_LABELS[status]; }
+  sourceLabel(type: SourceType): string           { return SOURCE_TYPE_LABELS[type];     }
   fortnightLabel(type: FortnightType): string     { return FORTNIGHT_TYPE_LABELS[type];  }
   monthName(month: number): string               { return MONTH_NAMES[month - 1].substring(0, 3); }
   formatDate(d: string): string                  { return new Date(d).toLocaleDateString('pt-BR'); }
