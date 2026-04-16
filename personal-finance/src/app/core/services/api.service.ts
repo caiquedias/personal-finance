@@ -77,6 +77,7 @@ export class ApiService {
     if (filters?.categoryId)            params = params.set('categoryId',    filters.categoryId);
     if (filters?.paymentStatus != null) params = params.set('paymentStatus', filters.paymentStatus);
     if (filters?.fortnightType != null) params = params.set('fortnightType', filters.fortnightType);
+    if (filters?.sourceType != null)    params = params.set('sourceType',    filters.sourceType);
     return this.http.get<PagedResult<ExpenseResponse>>(`${this.base}/expenses`, { params });
   }
 
