@@ -256,4 +256,134 @@ public class ConfigControllerTests : ApiIntegrationTestBase
 
         r.StatusCode.Should().Be(HttpStatusCode.NoContent);
     }
+
+    // ── Source Type — admin happy path ────────────────────────────────────────
+
+    [Fact(DisplayName = "POST /config/source-types por admin deve retornar 201")]
+    public async Task CreateSourceType_Admin_ShouldReturn201()
+    {
+        var (client, _) = await GetAdminAuthenticatedClientAsync();
+
+        var r = await client.PostAsJsonAsync("/api/v1/config/source-types",
+            new { name = $"Empresarial_{Guid.NewGuid():N}" });
+
+        r.StatusCode.Should().Be(HttpStatusCode.Created);
+    }
+
+    [Fact(DisplayName = "PUT /config/source-types/{id} (seed) por admin deve retornar 400")]
+    public async Task UpdateSourceType_Seed_ShouldReturn400()
+    {
+        var (client, _) = await GetAdminAuthenticatedClientAsync();
+
+        var r = await client.PutAsJsonAsync("/api/v1/config/source-types/1",
+            new { name = "Alterado" });
+
+        r.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact(DisplayName = "PUT /config/source-types/{id} (item customizado) por admin deve retornar 200")]
+    public async Task UpdateSourceType_Custom_ShouldReturn200()
+    {
+        var (client, _) = await GetAdminAuthenticatedClientAsync();
+
+        var created = await client.PostAsJsonAsync("/api/v1/config/source-types",
+            new { name = $"Src_{Guid.NewGuid():N}" });
+        var createdBody = await created.Content.ReadFromJsonAsync<JsonElement>();
+        var id = createdBody.GetProperty("id").GetInt32();
+
+        var r = await client.PutAsJsonAsync($"/api/v1/config/source-types/{id}",
+            new { name = $"SrcAtualizado_{Guid.NewGuid():N}" });
+
+        r.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact(DisplayName = "DELETE /config/source-types/{id} (seed) por admin deve retornar 400")]
+    public async Task DeleteSourceType_Seed_ShouldReturn400()
+    {
+        var (client, _) = await GetAdminAuthenticatedClientAsync();
+
+        var r = await client.DeleteAsync("/api/v1/config/source-types/1");
+
+        r.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact(DisplayName = "DELETE /config/source-types/{id} (item customizado) por admin deve retornar 204")]
+    public async Task DeleteSourceType_Custom_ShouldReturn204()
+    {
+        var (client, _) = await GetAdminAuthenticatedClientAsync();
+
+        var created = await client.PostAsJsonAsync("/api/v1/config/source-types",
+            new { name = $"SrcDel_{Guid.NewGuid():N}" });
+        var createdBody = await created.Content.ReadFromJsonAsync<JsonElement>();
+        var id = createdBody.GetProperty("id").GetInt32();
+
+        var r = await client.DeleteAsync($"/api/v1/config/source-types/{id}");
+
+        r.StatusCode.Should().Be(HttpStatusCode.NoContent);
+    }
+
+    // ── Fortnight Type — admin happy path ────────────────────────────────────
+
+    [Fact(DisplayName = "POST /config/fortnight-types por admin deve retornar 201")]
+    public async Task CreateFortnightType_Admin_ShouldReturn201()
+    {
+        var (client, _) = await GetAdminAuthenticatedClientAsync();
+
+        var r = await client.PostAsJsonAsync("/api/v1/config/fortnight-types",
+            new { name = $"Quinzena_{Guid.NewGuid():N}" });
+
+        r.StatusCode.Should().Be(HttpStatusCode.Created);
+    }
+
+    [Fact(DisplayName = "PUT /config/fortnight-types/{id} (seed) por admin deve retornar 400")]
+    public async Task UpdateFortnightType_Seed_ShouldReturn400()
+    {
+        var (client, _) = await GetAdminAuthenticatedClientAsync();
+
+        var r = await client.PutAsJsonAsync("/api/v1/config/fortnight-types/1",
+            new { name = "Alterado" });
+
+        r.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact(DisplayName = "PUT /config/fortnight-types/{id} (item customizado) por admin deve retornar 200")]
+    public async Task UpdateFortnightType_Custom_ShouldReturn200()
+    {
+        var (client, _) = await GetAdminAuthenticatedClientAsync();
+
+        var created = await client.PostAsJsonAsync("/api/v1/config/fortnight-types",
+            new { name = $"Fort_{Guid.NewGuid():N}" });
+        var createdBody = await created.Content.ReadFromJsonAsync<JsonElement>();
+        var id = createdBody.GetProperty("id").GetInt32();
+
+        var r = await client.PutAsJsonAsync($"/api/v1/config/fortnight-types/{id}",
+            new { name = $"FortAtualizado_{Guid.NewGuid():N}" });
+
+        r.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact(DisplayName = "DELETE /config/fortnight-types/{id} (seed) por admin deve retornar 400")]
+    public async Task DeleteFortnightType_Seed_ShouldReturn400()
+    {
+        var (client, _) = await GetAdminAuthenticatedClientAsync();
+
+        var r = await client.DeleteAsync("/api/v1/config/fortnight-types/1");
+
+        r.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact(DisplayName = "DELETE /config/fortnight-types/{id} (item customizado) por admin deve retornar 204")]
+    public async Task DeleteFortnightType_Custom_ShouldReturn204()
+    {
+        var (client, _) = await GetAdminAuthenticatedClientAsync();
+
+        var created = await client.PostAsJsonAsync("/api/v1/config/fortnight-types",
+            new { name = $"FortDel_{Guid.NewGuid():N}" });
+        var createdBody = await created.Content.ReadFromJsonAsync<JsonElement>();
+        var id = createdBody.GetProperty("id").GetInt32();
+
+        var r = await client.DeleteAsync($"/api/v1/config/fortnight-types/{id}");
+
+        r.StatusCode.Should().Be(HttpStatusCode.NoContent);
+    }
 }

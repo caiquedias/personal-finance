@@ -77,20 +77,94 @@ public class AdminUsersControllerTests : ApiIntegrationTestBase
         r.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
-    // ── Usuário que se auto-atribui role Admin e usa os endpoints ─────────────
-    // Nota: nos testes de integração com InMemory não há mecanismo de seed automático
-    // de admin. Os testes acima cobrem o comportamento de autorização (403 para não-admin).
-    // Testes de fluxo completo de admin (assinar role, listar, etc.) são cobertos
-    // pelos testes unitários dos use cases correspondentes.
+    // ── Admin — happy paths ───────────────────────────────────────────────────
 
-    [Fact(DisplayName = "GET /admin/users com usuário registrado deve ter pelo menos 1 resultado")]
-    public async Task GetAll_AfterRegisteringUser_ShouldHaveAtLeastOneUser()
+    [Fact(DisplayName = "GET /admin/users por admin deve retornar 200 com ao menos 1 usuário")]
+    public async Task GetAll_Admin_ShouldReturnUsers()
     {
-        // Registra um usuário e testa via SQL direto no DbContext do InMemory
-        // Simulação: aqui só verificamos que o endpoint existe e retorna 403 para não-admin
-        // O teste real de listagem exige um token com role Admin — coberto nos unit tests
-        var (client, _) = await GetAuthenticatedClientAsync();
+        var (client, _) = await GetAdminAuthenticatedClientAsync();
+
         var r = await client.GetAsync("/api/v1/admin/users");
-        r.StatusCode.Should().Be(HttpStatusCode.Forbidden); // não-admin = 403, correto
+        var body = await r.Content.ReadFromJsonAsync<JsonElement>();
+
+        r.StatusCode.Should().Be(HttpStatusCode.OK);
+        body.GetProperty("items").GetArrayLength().Should().BeGreaterThan(0);
+    }
+
+    [Fact(DisplayName = "PATCH /admin/users/{id}/toggle-active por admin deve retornar 204")]
+    public async Task ToggleActive_Admin_ShouldReturn204()
+    {
+        var (adminClient, _) = await GetAdminAuthenticatedClientAsync();
+
+        // Cria usuário-alvo
+        var email = $"target_{Guid.NewGuid():N}@test.com";
+        var reg = await Client.PostAsJsonAsync("/api/v1/auth/register",
+            new { name = "Target", email, password = "Senha@Teste123" });
+        var regBody = await reg.Content.ReadFromJsonAsync<JsonElement>();
+        var targetId = regBody.GetProperty("id").GetString()!;
+
+        var r = await adminClient.PatchAsync(
+            $"/api/v1/admin/users/{targetId}/toggle-active", null);
+
+        r.StatusCode.Should().Be(HttpStatusCode.NoContent);
+    }
+
+    [Fact(DisplayName = "POST /admin/users/{id}/roles por admin deve retornar 204")]
+    public async Task AssignRole_Admin_ShouldReturn204()
+    {
+        var (adminClient, _) = await GetAdminAuthenticatedClientAsync();
+
+        var email = $"assign_{Guid.NewGuid():N}@test.com";
+        var reg = await Client.PostAsJsonAsync("/api/v1/auth/register",
+            new { name = "Assign", email, password = "Senha@Teste123" });
+        var regBody = await reg.Content.ReadFromJsonAsync<JsonElement>();
+        var targetId = regBody.GetProperty("id").GetString()!;
+
+        var r = await adminClient.PostAsJsonAsync(
+            $"/api/v1/admin/users/{targetId}/roles",
+            new { roleId = 2 });
+
+        r.StatusCode.Should().Be(HttpStatusCode.NoContent);
+    }
+
+    [Fact(DisplayName = "DELETE /admin/users/{id}/roles/{roleId} por admin deve retornar 204")]
+    public async Task RemoveRole_Admin_ShouldReturn204()
+    {
+        var (adminClient, _) = await GetAdminAuthenticatedClientAsync();
+
+        var email = $"remove_{Guid.NewGuid():N}@test.com";
+        var reg = await Client.PostAsJsonAsync("/api/v1/auth/register",
+            new { name = "Remove", email, password = "Senha@Teste123" });
+        var regBody = await reg.Content.ReadFromJsonAsync<JsonElement>();
+        var targetId = regBody.GetProperty("id").GetString()!;
+
+        // Atribui role 2 ao usuário
+        await adminClient.PostAsJsonAsync(
+            $"/api/v1/admin/users/{targetId}/roles",
+            new { roleId = 2 });
+
+        // Remove role 2
+        var r = await adminClient.DeleteAsync(
+            $"/api/v1/admin/users/{targetId}/roles/2");
+
+        r.StatusCode.Should().Be(HttpStatusCode.NoContent);
+    }
+
+    [Fact(DisplayName = "PATCH /admin/users/{id}/reset-password por admin deve retornar 204")]
+    public async Task ResetPassword_Admin_ShouldReturn204()
+    {
+        var (adminClient, _) = await GetAdminAuthenticatedClientAsync();
+
+        var email = $"reset_{Guid.NewGuid():N}@test.com";
+        var reg = await Client.PostAsJsonAsync("/api/v1/auth/register",
+            new { name = "Reset", email, password = "Senha@Teste123" });
+        var regBody = await reg.Content.ReadFromJsonAsync<JsonElement>();
+        var targetId = regBody.GetProperty("id").GetString()!;
+
+        var r = await adminClient.PatchAsJsonAsync(
+            $"/api/v1/admin/users/{targetId}/reset-password",
+            new { newPassword = "NovaSenha@456" });
+
+        r.StatusCode.Should().Be(HttpStatusCode.NoContent);
     }
 }
