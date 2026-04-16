@@ -70,34 +70,37 @@ namespace PersonalFinance.Infrastructure.Persistence.Repositories.Reports
         {
             var shortYear = (short)year;
 
-            // Filtro base: join Expenses + Periods + projeção plana (evita acesso aninhado no GroupBy)
-            var baseQuery = _context.Expenses
+            // Etapa 1 — SELECT plano via SQL (sem GroupBy no banco, evita problema de tradução EF Core)
+            var flatQuery = _context.Expenses
                 .Join(_context.Periods,
                     e => e.PeriodId,
                     p => p.Id,
                     (e, p) => new { e.UserId, e.CategoryId, e.Amount, p.Year, p.Month })
                 .Where(x => x.UserId == userId && x.Year == shortYear);
 
-            // Filtro de mês aplicado separadamente para garantir tradução SQL
             if (month.HasValue)
             {
                 var byteMonth = (byte)month.Value;
-                baseQuery = baseQuery.Where(x => x.Month == byteMonth);
+                flatQuery = flatQuery.Where(x => x.Month == byteMonth);
             }
 
-            var items = await baseQuery
+            var flat = await flatQuery
                 .Join(_context.Categories,
                     x => x.CategoryId,
                     c => c.Id,
-                    (x, c) => new { x.CategoryId, c.Name, c.Color, x.Amount })
-                .GroupBy(x => new { x.CategoryId, x.Name, x.Color })
+                    (x, c) => new { x.CategoryId, CategoryName = c.Name, CategoryColor = c.Color, x.Amount })
+                .ToListAsync(ct);
+
+            // Etapa 2 — agrupamento no cliente (dados já filtrados e projetados)
+            var items = flat
+                .GroupBy(x => new { x.CategoryId, x.CategoryName, x.CategoryColor })
                 .Select(g => new ExpenseByCategoryItemDto(
                     g.Key.CategoryId,
-                    g.Key.Name,
-                    g.Key.Color,
+                    g.Key.CategoryName,
+                    g.Key.CategoryColor,
                     g.Sum(x => x.Amount)))
                 .OrderByDescending(i => i.Total)
-                .ToListAsync(ct);
+                .ToList();
 
             return new ExpensesReportDto(year, month, items);
         }
