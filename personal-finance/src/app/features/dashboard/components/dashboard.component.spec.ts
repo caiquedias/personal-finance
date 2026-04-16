@@ -6,7 +6,7 @@ import { of, throwError } from 'rxjs';
 import { DashboardComponent } from './dashboard.component';
 import { ApiService } from '../../../core/services/api.service';
 import { AuthService } from '../../../core/auth/auth.service';
-import { PeriodResponse, PeriodSummary } from '../../../core/models/models';
+import { PeriodResponse, PeriodSummary, ExpensesReport } from '../../../core/models/models';
 
 const MOCK_PERIODS: PeriodResponse[] = [
   { id: 'p-1', userId: 'u', year: 2024, month: 3, isActive: true },
@@ -34,11 +34,13 @@ describe('DashboardComponent', () => {
   let authSpy: jasmine.SpyObj<AuthService>;
 
   beforeEach(async () => {
-    apiSpy  = jasmine.createSpyObj('ApiService', ['getPeriods', 'getPeriodSummary']);
+    apiSpy  = jasmine.createSpyObj('ApiService', ['getPeriods', 'getPeriodSummary', 'getExpensesReport']);
     authSpy = jasmine.createSpyObj('AuthService', [], { currentUser: () => ({ name: 'Caique', email: 'c@t.com' }) });
 
+    const emptyReport: ExpensesReport = { year: 2024, month: null, items: [] };
     apiSpy.getPeriods.and.returnValue(of(MOCK_PERIODS));
     apiSpy.getPeriodSummary.and.returnValue(of(MOCK_SUMMARY));
+    apiSpy.getExpensesReport.and.returnValue(of(emptyReport));
 
     await TestBed.configureTestingModule({
       imports: [DashboardComponent, RouterModule.forRoot([])],

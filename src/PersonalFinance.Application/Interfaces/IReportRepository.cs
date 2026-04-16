@@ -1,4 +1,5 @@
 using PersonalFinance.Application.DTOs.Financial;
+using PersonalFinance.Application.DTOs.Reports;
 
 namespace PersonalFinance.Application.Interfaces;
 
@@ -17,5 +18,15 @@ public interface IReportRepository
     Task<PeriodSummaryDto?> GetPeriodSummaryAsync(
         Guid periodId,
         Guid userId,
+        CancellationToken ct = default);
+
+    /// <summary>
+    /// Agrega despesas por categoria para o ano informado.
+    /// Se month for informado, filtra pelo mês específico.
+    /// </summary>
+    Task<ExpensesReportDto> GetExpensesReportAsync(
+        Guid userId,
+        int year,
+        int? month,
         CancellationToken ct = default);
 }

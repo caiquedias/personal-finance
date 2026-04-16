@@ -1,19 +1,20 @@
-import { Component, inject, signal, computed, OnInit } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, effect, untracked } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { DecimalPipe } from '@angular/common';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { switchMap, catchError, of } from 'rxjs';
+import { NgxEchartsDirective } from 'ngx-echarts';
+import type { EChartsOption } from 'echarts';
 import { ApiService } from '../../../core/services/api.service';
 import { AuthService } from '../../../core/auth/auth.service';
+import { ThemeService } from '../../../core/services/theme.service';
 import { HeaderComponent } from '../../../shared/components/header/header.component';
 import { StatCardComponent } from '../../../shared/components/stat-card/stat-card.component';
 import { CurrencyBrlPipe } from '../../../shared/pipes/currency-brl.pipe';
-import { PeriodResponse, PeriodSummary, MONTH_NAMES, PaymentStatus } from '../../../core/models/models';
+import { PeriodResponse, PeriodSummary, MONTH_NAMES, MONTH_NAMES as MONTHS, PaymentStatus, ExpensesReport } from '../../../core/models/models';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [HeaderComponent, StatCardComponent, CurrencyBrlPipe, DecimalPipe, RouterLink],
+  imports: [HeaderComponent, StatCardComponent, CurrencyBrlPipe, DecimalPipe, RouterLink, NgxEchartsDirective],
   template: `
     <app-header
       title="Dashboard"
@@ -170,6 +171,51 @@ import { PeriodResponse, PeriodSummary, MONTH_NAMES, PaymentStatus } from '../..
       } @else if (!loadingPeriods() && filteredPeriods().length > 0) {
         <div class="empty-state">
           <span>Selecione um período para ver o resumo</span>
+        </div>
+      }
+
+      <!-- Gráficos de despesas -->
+      @if (availableYears().length > 0) {
+        <div class="charts-section">
+          <h2 class="charts-section-title">Análise de Despesas — {{ selectedYear() }}</h2>
+          <div class="charts-grid">
+
+            <!-- Gráfico 1 — Pizza por categoria (anual) -->
+            <div class="card chart-card">
+              <h3 class="detail-card-title">Despesas por Categoria (Anual)</h3>
+              @if (loadingChart1()) {
+                <div class="chart-loading"><span class="spinner-lg"></span></div>
+              } @else if (chart1Options()) {
+                <div echarts [options]="chart1Options()!" class="echart"></div>
+              } @else {
+                <div class="chart-empty">Sem dados para o período</div>
+              }
+            </div>
+
+            <!-- Gráfico 2 — Barras por categoria (mensal) -->
+            <div class="card chart-card">
+              <div class="chart-card-header">
+                <h3 class="detail-card-title" style="margin-bottom:0">Despesas por Categoria</h3>
+                <select
+                  class="year-dropdown"
+                  [value]="selectedMonth()"
+                  (change)="selectMonth(+$any($event.target).value)"
+                >
+                  @for (m of MONTH_NAMES; track $index) {
+                    <option [value]="$index + 1">{{ m }}</option>
+                  }
+                </select>
+              </div>
+              @if (loadingChart2()) {
+                <div class="chart-loading"><span class="spinner-lg"></span></div>
+              } @else if (chart2Options()) {
+                <div echarts [options]="chart2Options()!" class="echart"></div>
+              } @else {
+                <div class="chart-empty">Sem dados para o período</div>
+              }
+            </div>
+
+          </div>
         </div>
       }
 
@@ -364,11 +410,55 @@ import { PeriodResponse, PeriodSummary, MONTH_NAMES, PaymentStatus } from '../..
     }
 
     @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Gráficos ── */
+    .charts-section {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .charts-section-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--ink);
+    }
+
+    .charts-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+
+    @media (max-width: 960px) { .charts-grid { grid-template-columns: 1fr; } }
+
+    .chart-card { padding: 20px; }
+
+    .chart-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .echart { width: 100%; height: 300px; }
+
+    .chart-loading, .chart-empty {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 300px;
+      color: var(--ink3);
+      font-size: 0.875rem;
+    }
   `]
 })
 export class DashboardComponent implements OnInit {
-  private readonly api  = inject(ApiService);
-  private readonly auth = inject(AuthService);
+  private readonly api   = inject(ApiService);
+  private readonly auth  = inject(AuthService);
+  private readonly theme = inject(ThemeService);
+
+  readonly MONTH_NAMES = MONTH_NAMES;
 
   readonly periods          = signal<PeriodResponse[]>([]);
   readonly selectedYear     = signal<number>(new Date().getFullYear());
@@ -376,6 +466,14 @@ export class DashboardComponent implements OnInit {
   readonly summary          = signal<PeriodSummary | null>(null);
   readonly loadingPeriods   = signal(true);
   readonly loadingSummary   = signal(false);
+
+  readonly selectedMonth  = signal<number>(new Date().getMonth() + 1);
+  readonly loadingChart1  = signal(false);
+  readonly loadingChart2  = signal(false);
+  readonly chart1Options  = signal<EChartsOption | null>(null);
+  readonly chart2Options  = signal<EChartsOption | null>(null);
+
+  private readonly chartTextColor = computed(() => this.theme.isDark() ? '#ccc' : '#444');
 
   readonly availableYears = computed(() =>
     [...new Set(this.periods().map(p => p.year))].sort((a, b) => b - a)
@@ -408,6 +506,18 @@ export class DashboardComponent implements OnInit {
   readonly expenseIcon = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>`;
   readonly owedIcon    = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`;
 
+  constructor() {
+    // Reconstrói os gráficos ao trocar de tema para aplicar cor de texto correta.
+    // untracked() evita dependência nos signals de opções, prevenindo loop.
+    effect(() => {
+      this.theme.isDark(); // única dependência reativa: mudança de tema
+      untracked(() => {
+        if (this.chart1Options()) this.loadChart1(this.selectedYear());
+        if (this.chart2Options()) this.loadChart2(this.selectedYear(), this.selectedMonth());
+      });
+    });
+  }
+
   ngOnInit(): void {
     this.api.getPeriods().subscribe({
       next: periods => {
@@ -421,6 +531,8 @@ export class DashboardComponent implements OnInit {
           }
           // Seleciona o período mais recente por padrão
           this.selectPeriod(periods[0].id);
+          // Carrega gráficos com o ano selecionado
+          this.loadCharts(this.selectedYear(), this.selectedMonth());
         }
       },
       error: () => this.loadingPeriods.set(false)
@@ -445,9 +557,77 @@ export class DashboardComponent implements OnInit {
     this.selectedYear.set(year);
     this.selectedPeriodId.set(null);
     this.summary.set(null);
+    this.loadCharts(year, this.selectedMonth());
+  }
+
+  selectMonth(month: number): void {
+    this.selectedMonth.set(month);
+    this.loadChart2(this.selectedYear(), month);
   }
 
   monthName(month: number): string {
     return MONTH_NAMES[month - 1].substring(0, 3);
+  }
+
+  private loadCharts(year: number, month: number): void {
+    this.loadChart1(year);
+    this.loadChart2(year, month);
+  }
+
+  private loadChart1(year: number): void {
+    this.loadingChart1.set(true);
+    this.chart1Options.set(null);
+    this.api.getExpensesReport(year).subscribe({
+      next: report => {
+        this.chart1Options.set(this.buildPieOptions(report));
+        this.loadingChart1.set(false);
+      },
+      error: () => this.loadingChart1.set(false),
+    });
+  }
+
+  private loadChart2(year: number, month: number): void {
+    this.loadingChart2.set(true);
+    this.chart2Options.set(null);
+    this.api.getExpensesReport(year, month).subscribe({
+      next: report => {
+        this.chart2Options.set(this.buildPieOptions(report));
+        this.loadingChart2.set(false);
+      },
+      error: () => this.loadingChart2.set(false),
+    });
+  }
+
+  private buildPieOptions(report: ExpensesReport): EChartsOption | null {
+    if (!report.items.length) return null;
+    const textColor = this.chartTextColor();
+    return {
+      tooltip: {
+        trigger: 'item',
+        formatter: (params: any) =>
+          `${params.name}<br/><b>R$ ${params.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</b> (${params.percent}%)`,
+      },
+      legend: {
+        orient: 'vertical',
+        right: 10,
+        top: 'center',
+        textStyle: { fontSize: 12, color: textColor },
+      },
+      series: [{
+        type: 'pie',
+        radius: ['40%', '70%'],
+        center: ['38%', '50%'],
+        avoidLabelOverlap: false,
+        label: { show: false },
+        emphasis: {
+          label: { show: true, fontSize: 13, fontWeight: 'bold', color: textColor },
+        },
+        data: report.items.map(i => ({
+          name: i.categoryName,
+          value: i.total,
+          itemStyle: { color: i.categoryColor },
+        })),
+      }],
+    };
   }
 }
