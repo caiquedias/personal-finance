@@ -1,10 +1,11 @@
-import { Component, inject, signal, computed, OnInit } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, effect } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { DecimalPipe } from '@angular/common';
 import { NgxEchartsDirective } from 'ngx-echarts';
 import type { EChartsOption } from 'echarts';
 import { ApiService } from '../../../core/services/api.service';
 import { AuthService } from '../../../core/auth/auth.service';
+import { ThemeService } from '../../../core/services/theme.service';
 import { HeaderComponent } from '../../../shared/components/header/header.component';
 import { StatCardComponent } from '../../../shared/components/stat-card/stat-card.component';
 import { CurrencyBrlPipe } from '../../../shared/pipes/currency-brl.pipe';
@@ -453,8 +454,9 @@ import { PeriodResponse, PeriodSummary, MONTH_NAMES, MONTH_NAMES as MONTHS, Paym
   `]
 })
 export class DashboardComponent implements OnInit {
-  private readonly api  = inject(ApiService);
-  private readonly auth = inject(AuthService);
+  private readonly api   = inject(ApiService);
+  private readonly auth  = inject(AuthService);
+  private readonly theme = inject(ThemeService);
 
   readonly MONTH_NAMES = MONTH_NAMES;
 
@@ -470,6 +472,8 @@ export class DashboardComponent implements OnInit {
   readonly loadingChart2  = signal(false);
   readonly chart1Options  = signal<EChartsOption | null>(null);
   readonly chart2Options  = signal<EChartsOption | null>(null);
+
+  private readonly chartTextColor = computed(() => this.theme.isDark() ? '#ccc' : '#444');
 
   readonly availableYears = computed(() =>
     [...new Set(this.periods().map(p => p.year))].sort((a, b) => b - a)
@@ -501,6 +505,15 @@ export class DashboardComponent implements OnInit {
   readonly incomeIcon = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>`;
   readonly expenseIcon = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>`;
   readonly owedIcon    = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`;
+
+  constructor() {
+    // Reconstrói os gráficos ao trocar de tema para aplicar cor de texto correta
+    effect(() => {
+      this.theme.isDark(); // leitura reativa
+      if (this.chart1Options()) this.loadChart1(this.selectedYear());
+      if (this.chart2Options()) this.loadChart2(this.selectedYear(), this.selectedMonth());
+    });
+  }
 
   ngOnInit(): void {
     this.api.getPeriods().subscribe({
@@ -575,7 +588,7 @@ export class DashboardComponent implements OnInit {
     this.chart2Options.set(null);
     this.api.getExpensesReport(year, month).subscribe({
       next: report => {
-        this.chart2Options.set(this.buildBarOptions(report));
+        this.chart2Options.set(this.buildPieOptions(report));
         this.loadingChart2.set(false);
       },
       error: () => this.loadingChart2.set(false),
@@ -584,51 +597,33 @@ export class DashboardComponent implements OnInit {
 
   private buildPieOptions(report: ExpensesReport): EChartsOption | null {
     if (!report.items.length) return null;
+    const textColor = this.chartTextColor();
     return {
       tooltip: {
         trigger: 'item',
         formatter: (params: any) =>
           `${params.name}<br/><b>R$ ${params.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</b> (${params.percent}%)`,
       },
-      legend: { orient: 'vertical', right: 10, top: 'center', textStyle: { fontSize: 12 } },
+      legend: {
+        orient: 'vertical',
+        right: 10,
+        top: 'center',
+        textStyle: { fontSize: 12, color: textColor },
+      },
       series: [{
         type: 'pie',
         radius: ['40%', '70%'],
         center: ['38%', '50%'],
         avoidLabelOverlap: false,
         label: { show: false },
-        emphasis: { label: { show: true, fontSize: 13, fontWeight: 'bold' } },
+        emphasis: {
+          label: { show: true, fontSize: 13, fontWeight: 'bold', color: textColor },
+        },
         data: report.items.map(i => ({
           name: i.categoryName,
           value: i.total,
           itemStyle: { color: i.categoryColor },
         })),
-      }],
-    };
-  }
-
-  private buildBarOptions(report: ExpensesReport): EChartsOption | null {
-    if (!report.items.length) return null;
-    return {
-      tooltip: {
-        trigger: 'axis',
-        axisPointer: { type: 'shadow' },
-        formatter: (params: any) => {
-          const p = Array.isArray(params) ? params[0] : params;
-          return `${p.name}<br/><b>R$ ${Number(p.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</b>`;
-        },
-      },
-      grid: { left: 16, right: 16, bottom: 40, top: 16, containLabel: true },
-      xAxis: {
-        type: 'category',
-        data: report.items.map(i => i.categoryName),
-        axisLabel: { fontSize: 11, rotate: report.items.length > 5 ? 30 : 0 },
-      },
-      yAxis: { type: 'value', axisLabel: { formatter: (v: number) => `R$ ${v.toLocaleString('pt-BR')}` } },
-      series: [{
-        type: 'bar',
-        data: report.items.map(i => ({ value: i.total, itemStyle: { color: i.categoryColor } })),
-        barMaxWidth: 60,
       }],
     };
   }
