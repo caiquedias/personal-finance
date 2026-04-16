@@ -87,5 +87,20 @@ namespace PersonalFinance.Api.Tests.Integration
             var r = await client.DeleteAsync($"/api/v1/categories/{id}");
             r.StatusCode.Should().Be(HttpStatusCode.NoContent);
         }
+
+        [Fact(DisplayName = "PUT /categories/{id} deve retornar 204")]
+        public async Task Update_ShouldReturn204()
+        {
+            var (client, _) = await GetAuthenticatedClientAsync();
+            var created = await client.PostAsJsonAsync("/api/v1/categories", new
+            { name = "Alimentação", color = "#FFFFFF" });
+            var body = await created.Content.ReadFromJsonAsync<JsonElement>();
+            var id = body.GetProperty("id").GetString();
+
+            var r = await client.PutAsJsonAsync($"/api/v1/categories/{id}", new
+            { name = "Alimentação Atualizada", color = "#000000", icon = "food" });
+
+            r.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        }
     }
 }
