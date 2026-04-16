@@ -9,11 +9,11 @@ import { PaginationComponent } from '../../../shared/components/pagination/pagin
 import {
   PeriodSummary, ExpenseResponse, IncomeResponse, CategoryResponse,
   MONTH_NAMES, PAYMENT_STATUS_LABELS, SOURCE_TYPE_LABELS,
-  FORTNIGHT_TYPE_LABELS, PaymentStatus, FortnightType
+  FORTNIGHT_TYPE_LABELS, PaymentStatus, FortnightType, SourceType
 } from '../../../core/models/models';
 
 type MarioTarget = 'receitas' | 'despesas' | 'pago' | 'apagar' | 'saldo';
-type ExpSortCol = 'description' | 'category' | 'fortnightType' | 'dueDate' | 'amount' | 'paymentStatus';
+type ExpSortCol = 'description' | 'category' | 'fortnightType' | 'dueDate' | 'amount' | 'paymentStatus' | 'sourceType';
 type IncSortCol = 'description' | 'fortnightType' | 'receivedAt' | 'amount';
 
 @Component({
@@ -161,6 +161,14 @@ type IncSortCol = 'description' | 'fortnightType' | 'receivedAt' | 'amount';
                   <option [value]="FortnightType.Second">2ª Quinzena</option>
                 </select>
               </div>
+              <div class="filter-field">
+                <label class="field-label">Fonte</label>
+                <select class="input input-sm" (change)="onExpSourceTypeChange($event)">
+                  <option value="">Todas</option>
+                  <option [value]="SourceType.Personal">Própria</option>
+                  <option [value]="SourceType.Parental">Parental</option>
+                </select>
+              </div>
             </div>
             @if (expHasFilters()) {
               <button class="btn-clear-filters" (click)="clearExpFilters()">Limpar filtros</button>
@@ -181,6 +189,7 @@ type IncSortCol = 'description' | 'fortnightType' | 'receivedAt' | 'amount';
                   <tr>
                     <th class="sortable" (click)="toggleExpSort('description')">Descrição {{ expSortIcon('description') }}</th>
                     <th class="sortable" (click)="toggleExpSort('category')">Categoria {{ expSortIcon('category') }}</th>
+                    <th class="sortable" (click)="toggleExpSort('sourceType')">Fonte {{ expSortIcon('sourceType') }}</th>
                     <th class="sortable" (click)="toggleExpSort('fortnightType')">Quinzena {{ expSortIcon('fortnightType') }}</th>
                     <th class="sortable" (click)="toggleExpSort('dueDate')">Vencimento {{ expSortIcon('dueDate') }}</th>
                     <th class="sortable" (click)="toggleExpSort('amount')">Valor {{ expSortIcon('amount') }}</th>
@@ -190,14 +199,12 @@ type IncSortCol = 'description' | 'fortnightType' | 'receivedAt' | 'amount';
                 <tbody>
                   @for (expense of displayedExpenses(); track expense.id) {
                     <tr>
-                      <td>
-                        <div class="cell-primary">{{ expense.description }}</div>
-                        <div class="cell-secondary">{{ sourceLabel(expense.sourceType) }}</div>
-                      </td>
+                      <td class="cell-primary">{{ expense.description }}</td>
                       <td>
                         <span class="category-dot" [style.background]="categoryColor(expense.categoryId)"></span>
                         {{ categoryName(expense.categoryId) }}
                       </td>
+                      <td class="text-muted text-sm">{{ sourceLabel(expense.sourceType) }}</td>
                       <td class="text-muted text-sm">{{ fortnightLabel(expense.fortnightType) }}</td>
                       <td class="text-muted text-sm">{{ formatDate(expense.dueDate) }}</td>
                       <td class="font-semibold">{{ expense.amount | currencyBrl }}</td>
@@ -654,13 +661,15 @@ export class PeriodDetailComponent implements OnInit {
   readonly expCategoryId   = signal('');
   readonly expStatus       = signal<PaymentStatus | null>(null);
   readonly expFortnight    = signal<FortnightType | null>(null);
+  readonly expSourceType   = signal<SourceType | null>(null);
   readonly expSortCol      = signal<ExpSortCol | null>(null);
   readonly expSortDir      = signal<'asc' | 'desc'>('asc');
   private expDescDebounce: ReturnType<typeof setTimeout> | null = null;
 
   readonly expHasFilters = computed(() =>
     !!this.expDesc() || !!this.expCategoryId() ||
-    this.expStatus() != null || this.expFortnight() != null);
+    this.expStatus() != null || this.expFortnight() != null ||
+    this.expSourceType() != null);
 
   readonly displayedExpenses = computed<ExpenseResponse[]>(() => {
     const col = this.expSortCol();
@@ -677,6 +686,7 @@ export class PeriodDetailComponent implements OnInit {
         case 'dueDate':       va = a.dueDate;                       vb = b.dueDate;                       break;
         case 'amount':        va = a.amount;                        vb = b.amount;                        break;
         case 'paymentStatus': va = a.paymentStatus;                 vb = b.paymentStatus;                 break;
+        case 'sourceType':    va = a.sourceType;                   vb = b.sourceType;                   break;
         default:              return 0;
       }
       if (va < vb) return dir === 'asc' ? -1 : 1;
@@ -730,6 +740,7 @@ export class PeriodDetailComponent implements OnInit {
   // Exposição de enums para o template
   readonly PaymentStatus  = PaymentStatus;
   readonly FortnightType  = FortnightType;
+  readonly SourceType     = SourceType;
 
   ngOnInit(): void {
     const periodId = this.id();
@@ -755,8 +766,9 @@ export class PeriodDetailComponent implements OnInit {
       pageSize:      this.expPageSize(),
       description:   this.expDesc()       || undefined,
       categoryId:    this.expCategoryId() || undefined,
-      paymentStatus: this.expStatus()     ?? undefined,
-      fortnightType: this.expFortnight()  ?? undefined,
+      paymentStatus: this.expStatus()      ?? undefined,
+      fortnightType: this.expFortnight()   ?? undefined,
+      sourceType:    this.expSourceType()  ?? undefined,
     }).subscribe({
       next: result => {
         this.expenses.set(result.items);
@@ -793,11 +805,19 @@ export class PeriodDetailComponent implements OnInit {
     this.loadExpenses();
   }
 
+  onExpSourceTypeChange(event: Event): void {
+    const val = (event.target as HTMLSelectElement).value;
+    this.expSourceType.set(val ? Number(val) as SourceType : null);
+    this.expPage.set(1);
+    this.loadExpenses();
+  }
+
   clearExpFilters(): void {
     this.expDesc.set('');
     this.expCategoryId.set('');
     this.expStatus.set(null);
     this.expFortnight.set(null);
+    this.expSourceType.set(null);
     this.expPage.set(1);
     this.loadExpenses();
   }
