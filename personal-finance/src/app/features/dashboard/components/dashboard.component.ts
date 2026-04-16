@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed, OnInit, effect } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, effect, untracked } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { DecimalPipe } from '@angular/common';
 import { NgxEchartsDirective } from 'ngx-echarts';
@@ -507,11 +507,14 @@ export class DashboardComponent implements OnInit {
   readonly owedIcon    = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`;
 
   constructor() {
-    // Reconstrói os gráficos ao trocar de tema para aplicar cor de texto correta
+    // Reconstrói os gráficos ao trocar de tema para aplicar cor de texto correta.
+    // untracked() evita dependência nos signals de opções, prevenindo loop.
     effect(() => {
-      this.theme.isDark(); // leitura reativa
-      if (this.chart1Options()) this.loadChart1(this.selectedYear());
-      if (this.chart2Options()) this.loadChart2(this.selectedYear(), this.selectedMonth());
+      this.theme.isDark(); // única dependência reativa: mudança de tema
+      untracked(() => {
+        if (this.chart1Options()) this.loadChart1(this.selectedYear());
+        if (this.chart2Options()) this.loadChart2(this.selectedYear(), this.selectedMonth());
+      });
     });
   }
 
