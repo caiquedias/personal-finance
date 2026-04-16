@@ -64,6 +64,7 @@ public sealed class ExpenseRepository : IExpenseRepository
         Guid?         categoryId,
         PaymentStatus? paymentStatus,
         FortnightType? fortnightType,
+        SourceType?    sourceType,
         CancellationToken ct = default)
     {
         var query = _context.Expenses
@@ -80,6 +81,9 @@ public sealed class ExpenseRepository : IExpenseRepository
 
         if (fortnightType.HasValue)
             query = query.Where(e => e.FortnightType == fortnightType.Value);
+
+        if (sourceType.HasValue)
+            query = query.Where(e => e.SourceType == sourceType.Value);
 
         var totalCount = await query.CountAsync(ct);
 

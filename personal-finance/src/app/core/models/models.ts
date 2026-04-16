@@ -151,6 +151,7 @@ export interface ExpenseFilterParams {
   categoryId?:    string;
   paymentStatus?: PaymentStatus;
   fortnightType?: FortnightType;
+  sourceType?:    SourceType;
 }
 
 export interface IncomeFilterParams {

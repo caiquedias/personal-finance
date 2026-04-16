@@ -67,7 +67,8 @@ public sealed record ExpenseFilterDto(
     string?        Description   = null,
     Guid?          CategoryId    = null,
     PaymentStatus? PaymentStatus = null,
-    FortnightType? FortnightType = null
+    FortnightType? FortnightType = null,
+    SourceType?    SourceType    = null
 );
 
 public sealed record IncomeFilterDto(
