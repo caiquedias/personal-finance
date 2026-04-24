@@ -204,8 +204,10 @@ export interface AdminUserResponse {
   roles:     string[];
 }
 
-export interface AssignRoleRequest  { roleId: number; }
-export interface ResetPasswordRequest { newPassword: string; }
+export interface AssignRoleRequest       { roleId: number; }
+export interface ResetPasswordRequest    { newPassword: string; }
+export interface CreateUserByAdminRequest { name: string; email: string; password: string; }
+export interface UpdateUserByAdminRequest { name: string; }
 export interface CreatePaymentStatusRequest { name: string; description: string; }
 export interface CreateSourceTypeRequest    { name: string; }
 export interface CreateFortnightTypeRequest { name: string; }

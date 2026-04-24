@@ -1,15 +1,36 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { FormsModule } from '@angular/forms';
+import { animate, style, transition, trigger } from '@angular/animations';
 import { ApiService } from '../../../core/services/api.service';
 import { HeaderComponent } from '../../../shared/components/header/header.component';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { AdminUserResponse } from '../../../core/models/models';
 
+const AVAILABLE_ROLES = [
+  { id: 1, name: 'Admin' },
+  { id: 2, name: 'User'  },
+];
+
 @Component({
   selector: 'app-admin-users',
   standalone: true,
   imports: [HeaderComponent, ReactiveFormsModule, FormsModule, PaginationComponent],
+  animations: [
+    trigger('backdropAnim', [
+      transition(':enter', [style({ opacity: 0 }), animate('200ms ease', style({ opacity: 1 }))]),
+      transition(':leave', [animate('180ms ease', style({ opacity: 0 }))]),
+    ]),
+    trigger('modalAnim', [
+      transition(':enter', [
+        style({ opacity: 0, transform: 'scale(0.88) translateY(-16px)' }),
+        animate('260ms cubic-bezier(0.34,1.56,0.64,1)', style({ opacity: 1, transform: 'scale(1) translateY(0)' })),
+      ]),
+      transition(':leave', [
+        animate('180ms ease-in', style({ opacity: 0, transform: 'scale(0.93) translateY(10px)' })),
+      ]),
+    ]),
+  ],
   template: `
     <app-header title="Usuários" subtitle="Gerenciamento de usuários do sistema" />
 
@@ -17,25 +38,16 @@ import { AdminUserResponse } from '../../../core/models/models';
       <!-- Filtros externos -->
       <div class="filters-bar card">
         <div class="filters-row">
-          <input
-            class="input filter-input"
-            type="text"
-            placeholder="Nome"
-            [(ngModel)]="nameFilter"
-          />
-          <input
-            class="input filter-input"
-            type="text"
-            placeholder="E-mail"
-            [(ngModel)]="emailFilter"
-          />
+          <input class="input filter-input" type="text" placeholder="Nome"   [(ngModel)]="nameFilter"   />
+          <input class="input filter-input" type="text" placeholder="E-mail" [(ngModel)]="emailFilter"  />
           <select class="input filter-select" [(ngModel)]="statusFilter">
             <option value="">Todos</option>
             <option value="true">Ativo</option>
             <option value="false">Inativo</option>
           </select>
-          <button class="btn btn-primary" (click)="applyFilters()">Filtrar</button>
+          <button class="btn btn-primary"   (click)="applyFilters()">Filtrar</button>
           <button class="btn btn-secondary" (click)="clearFilters()">Limpar</button>
+          <button class="btn btn-primary" style="margin-left: auto" (click)="openCreate()">+ Novo Usuário</button>
         </div>
       </div>
 
@@ -74,21 +86,14 @@ import { AdminUserResponse } from '../../../core/models/models';
                   <td class="text-muted text-sm">{{ formatDate(user.createdAt) }}</td>
                   <td>
                     <div class="row-actions">
+                      <button class="action-btn action-primary" (click)="openEdit(user)" title="Editar">✏️</button>
                       <button
                         class="action-btn"
                         [class]="user.isActive ? 'action-warning' : 'action-success'"
                         (click)="toggleActive(user)"
                         [title]="user.isActive ? 'Desativar' : 'Ativar'"
-                      >
-                        {{ user.isActive ? '⏸' : '▶' }}
-                      </button>
-                      <button
-                        class="action-btn action-info"
-                        (click)="openResetPassword(user)"
-                        title="Resetar senha"
-                      >
-                        🔑
-                      </button>
+                      >{{ user.isActive ? '⏸' : '▶' }}</button>
+                      <button class="action-btn action-info" (click)="openResetPassword(user)" title="Resetar senha">🔑</button>
                     </div>
                   </td>
                 </tr>
@@ -105,20 +110,90 @@ import { AdminUserResponse } from '../../../core/models/models';
           />
         </div>
 
+        <!-- Modal criar usuário -->
+        @if (showCreateModal()) {
+          <div class="modal-overlay" @backdropAnim (click)="showCreateModal.set(false)"></div>
+          <div class="modal-center" @modalAnim>
+            <div class="modal-card card" (click)="$event.stopPropagation()">
+              <h3 class="modal-title">Novo Usuário</h3>
+              <form [formGroup]="createForm" (ngSubmit)="onCreateUser()">
+                <div class="field" style="margin-bottom: 14px">
+                  <label class="field-label">Nome *</label>
+                  <input type="text" formControlName="name" class="input" placeholder="Nome completo" />
+                </div>
+                <div class="field" style="margin-bottom: 14px">
+                  <label class="field-label">E-mail *</label>
+                  <input type="email" formControlName="email" class="input" placeholder="email@exemplo.com" />
+                </div>
+                <div class="field" style="margin-bottom: 14px">
+                  <label class="field-label">Senha *</label>
+                  <input type="password" formControlName="password" class="input" placeholder="Mínimo 8 caracteres" />
+                </div>
+                @if (createError()) {
+                  <div class="form-error">{{ createError() }}</div>
+                }
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" (click)="showCreateModal.set(false)">Cancelar</button>
+                  <button type="submit" class="btn btn-primary" [disabled]="loadingAction()">
+                    {{ loadingAction() ? 'Salvando...' : 'Criar' }}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        }
+
+        <!-- Modal editar usuário -->
+        @if (showEditModal()) {
+          <div class="modal-overlay" @backdropAnim (click)="showEditModal.set(false)"></div>
+          <div class="modal-center" @modalAnim>
+            <div class="modal-card card" (click)="$event.stopPropagation()">
+              <h3 class="modal-title">Editar — {{ selectedUser()?.email }}</h3>
+              <form [formGroup]="editForm" (ngSubmit)="onUpdateUser()">
+                <div class="field" style="margin-bottom: 14px">
+                  <label class="field-label">Nome *</label>
+                  <input type="text" formControlName="name" class="input" />
+                </div>
+                <div class="field" style="margin-bottom: 16px">
+                  <label class="field-label">Roles</label>
+                  <div class="roles-edit">
+                    @for (role of availableRoles; track role.id) {
+                      <label class="role-check">
+                        <input
+                          type="checkbox"
+                          [checked]="selectedUser()?.roles?.includes(role.name)"
+                          (change)="onRoleToggle(role.id, role.name, $event)"
+                          [disabled]="loadingAction()"
+                        />
+                        {{ role.name }}
+                      </label>
+                    }
+                  </div>
+                </div>
+                @if (editError()) {
+                  <div class="form-error">{{ editError() }}</div>
+                }
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" (click)="showEditModal.set(false)">Cancelar</button>
+                  <button type="submit" class="btn btn-primary" [disabled]="loadingAction()">
+                    {{ loadingAction() ? 'Salvando...' : 'Salvar' }}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        }
+
         <!-- Modal reset senha -->
         @if (showResetModal()) {
-          <div class="modal-overlay" (click)="showResetModal.set(false)">
+          <div class="modal-overlay" @backdropAnim (click)="showResetModal.set(false)"></div>
+          <div class="modal-center" @modalAnim>
             <div class="modal-card card" (click)="$event.stopPropagation()">
               <h3 class="modal-title">Resetar senha — {{ selectedUser()?.name }}</h3>
               <form [formGroup]="resetForm" (ngSubmit)="onResetPassword()">
                 <div class="field" style="margin-bottom: 16px">
                   <label class="field-label">Nova senha *</label>
-                  <input
-                    type="password"
-                    formControlName="newPassword"
-                    class="input"
-                    placeholder="Mínimo 8 caracteres"
-                  />
+                  <input type="password" formControlName="newPassword" class="input" placeholder="Mínimo 8 caracteres" />
                 </div>
                 @if (resetError()) {
                   <div class="form-error">{{ resetError() }}</div>
@@ -175,28 +250,35 @@ import { AdminUserResponse } from '../../../core/models/models';
       display: flex; align-items: center; justify-content: center;
       transition: all var(--transition);
     }
-    .action-success:hover { background: var(--color-success-bg); border-color: var(--sage2); }
+    .action-primary:hover { background: var(--color-info-bg);    border-color: var(--color-info);    }
+    .action-success:hover { background: var(--color-success-bg); border-color: var(--sage2);         }
     .action-warning:hover { background: var(--color-warning-bg); border-color: var(--color-warning); }
     .action-info:hover    { background: var(--color-info-bg);    border-color: var(--color-info);    }
 
     /* Modal */
     .modal-overlay {
       position: fixed; inset: 0;
-      background: rgba(0,0,0,.4);
-      display: flex; align-items: center; justify-content: center;
-      z-index: 100;
+      background: rgba(0,0,0,.4); z-index: 100;
     }
-
+    .modal-center {
+      position: fixed; inset: 0; z-index: 101;
+      display: flex; align-items: center; justify-content: center;
+      pointer-events: none;
+    }
     .modal-card {
-      width: 100%; max-width: 400px;
+      width: 100%; max-width: 420px;
       padding: 28px;
       box-shadow: var(--shadow-modal);
+      pointer-events: all;
     }
 
     .modal-title { font-size: 1rem; margin-bottom: 20px; }
 
     .field { display: flex; flex-direction: column; gap: 6px; }
     .field-label { font-size: 0.875rem; font-weight: 500; color: var(--ink2); }
+
+    .roles-edit { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 4px; }
+    .role-check { display: flex; align-items: center; gap: 6px; font-size: 0.875rem; cursor: pointer; }
 
     .form-error {
       margin-top: 12px; padding: 10px 14px;
@@ -206,19 +288,12 @@ import { AdminUserResponse } from '../../../core/models/models';
 
     .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
 
-    .loading-state {
-      display: flex; align-items: center;
-      justify-content: center; padding: 64px;
-    }
-
+    .loading-state { display: flex; align-items: center; justify-content: center; padding: 64px; }
     .spinner-lg {
-      width: 32px; height: 32px;
-      border: 3px solid var(--border);
-      border-top-color: var(--sage2);
-      border-radius: 50%;
+      width: 32px; height: 32px; border: 3px solid var(--border);
+      border-top-color: var(--sage2); border-radius: 50%;
       animation: spin .8s linear infinite; display: block;
     }
-
     @keyframes spin { to { transform: rotate(360deg); } }
   `]
 })
@@ -226,33 +301,47 @@ export class AdminUsersComponent implements OnInit {
   private readonly api = inject(ApiService);
   private readonly fb  = inject(FormBuilder);
 
-  readonly users         = signal<AdminUserResponse[]>([]);
-  readonly loading       = signal(true);
-  readonly loadingAction = signal(false);
-  readonly showResetModal = signal(false);
-  readonly selectedUser  = signal<AdminUserResponse | null>(null);
-  readonly resetError    = signal<string | null>(null);
-  readonly totalCount    = signal(0);
-  readonly currentPage   = signal(1);
-  readonly pageSize      = signal(20);
+  readonly availableRoles = AVAILABLE_ROLES;
+
+  readonly users          = signal<AdminUserResponse[]>([]);
+  readonly loading        = signal(true);
+  readonly loadingAction  = signal(false);
+  readonly selectedUser   = signal<AdminUserResponse | null>(null);
+  readonly totalCount     = signal(0);
+  readonly currentPage    = signal(1);
+  readonly pageSize       = signal(20);
+
+  readonly showCreateModal = signal(false);
+  readonly showEditModal   = signal(false);
+  readonly showResetModal  = signal(false);
+
+  readonly createError = signal<string | null>(null);
+  readonly editError   = signal<string | null>(null);
+  readonly resetError  = signal<string | null>(null);
 
   nameFilter   = '';
   emailFilter  = '';
   statusFilter = '';
 
-  readonly resetForm = this.fb.group({
-    newPassword: ['', [Validators.required, Validators.minLength(8)]]
+  readonly createForm = this.fb.group({
+    name:     ['', [Validators.required]],
+    email:    ['', [Validators.required, Validators.email]],
+    password: ['', [Validators.required, Validators.minLength(8)]],
   });
 
-  ngOnInit(): void {
-    this.load();
-  }
+  readonly editForm = this.fb.group({
+    name: ['', [Validators.required]],
+  });
+
+  readonly resetForm = this.fb.group({
+    newPassword: ['', [Validators.required, Validators.minLength(8)]],
+  });
+
+  ngOnInit(): void { this.load(); }
 
   private load(): void {
     this.loading.set(true);
-    const isActive = this.statusFilter === '' ? undefined
-      : this.statusFilter === 'true';
-
+    const isActive = this.statusFilter === '' ? undefined : this.statusFilter === 'true';
     this.api.getAdminUsers({
       pageNumber: this.currentPage(),
       pageSize:   this.pageSize(),
@@ -260,48 +349,109 @@ export class AdminUsersComponent implements OnInit {
       email:      this.emailFilter || undefined,
       isActive,
     }).subscribe({
-      next: result => {
-        this.users.set(result.items);
-        this.totalCount.set(result.totalCount);
-        this.loading.set(false);
-      },
-      error: () => this.loading.set(false)
+      next: result => { this.users.set(result.items); this.totalCount.set(result.totalCount); this.loading.set(false); },
+      error: () => this.loading.set(false),
     });
   }
 
-  applyFilters(): void {
-    this.currentPage.set(1);
-    this.load();
-  }
+  applyFilters(): void { this.currentPage.set(1); this.load(); }
 
   clearFilters(): void {
-    this.nameFilter   = '';
-    this.emailFilter  = '';
-    this.statusFilter = '';
-    this.currentPage.set(1);
-    this.load();
+    this.nameFilter = ''; this.emailFilter = ''; this.statusFilter = '';
+    this.currentPage.set(1); this.load();
   }
 
-  onPageChange(page: number): void {
-    this.currentPage.set(page);
-    this.load();
-  }
-
-  onPageSizeChange(size: number): void {
-    this.pageSize.set(size);
-    this.currentPage.set(1);
-    this.load();
-  }
+  onPageChange(page: number): void { this.currentPage.set(page); this.load(); }
+  onPageSizeChange(size: number): void { this.pageSize.set(size); this.currentPage.set(1); this.load(); }
 
   toggleActive(user: AdminUserResponse): void {
     this.api.toggleUserActive(user.id).subscribe({
-      next: () => {
-        this.users.update(list => list.map(u =>
-          u.id === user.id ? { ...u, isActive: !u.isActive } : u
-        ));
-      }
+      next: () => this.users.update(list => list.map(u => u.id === user.id ? { ...u, isActive: !u.isActive } : u)),
     });
   }
+
+  // ── Criar usuário ──────────────────────────────────────────────────────────
+
+  openCreate(): void {
+    this.createForm.reset();
+    this.createError.set(null);
+    this.showCreateModal.set(true);
+  }
+
+  onCreateUser(): void {
+    if (this.createForm.invalid) return;
+    this.loadingAction.set(true);
+    const { name, email, password } = this.createForm.value;
+    this.api.createAdminUser({ name: name!, email: email!, password: password! }).subscribe({
+      next: created => {
+        this.users.update(list => [created, ...list]);
+        this.totalCount.update(c => c + 1);
+        this.showCreateModal.set(false);
+        this.loadingAction.set(false);
+      },
+      error: err => {
+        this.createError.set(err.error?.message ?? 'Erro ao criar usuário.');
+        this.loadingAction.set(false);
+      },
+    });
+  }
+
+  // ── Editar usuário ─────────────────────────────────────────────────────────
+
+  openEdit(user: AdminUserResponse): void {
+    this.selectedUser.set(user);
+    this.editForm.patchValue({ name: user.name });
+    this.editError.set(null);
+    this.showEditModal.set(true);
+  }
+
+  onUpdateUser(): void {
+    if (this.editForm.invalid) return;
+    this.loadingAction.set(true);
+    const userId = this.selectedUser()!.id;
+    const { name } = this.editForm.value;
+    this.api.updateAdminUser(userId, { name: name! }).subscribe({
+      next: updated => {
+        this.users.update(list => list.map(u => u.id === userId ? updated : u));
+        this.showEditModal.set(false);
+        this.loadingAction.set(false);
+      },
+      error: err => {
+        this.editError.set(err.error?.message ?? 'Erro ao atualizar usuário.');
+        this.loadingAction.set(false);
+      },
+    });
+  }
+
+  onRoleToggle(roleId: number, roleName: string, event: Event): void {
+    const checked = (event.target as HTMLInputElement).checked;
+    const user    = this.selectedUser()!;
+    this.loadingAction.set(true);
+
+    const req$ = checked
+      ? this.api.assignRole(user.id, { roleId })
+      : this.api.removeRole(user.id, roleId);
+
+    req$.subscribe({
+      next: () => {
+        const updatedRoles = checked
+          ? [...user.roles, roleName]
+          : user.roles.filter(r => r !== roleName);
+        const updatedUser = { ...user, roles: updatedRoles };
+        this.selectedUser.set(updatedUser);
+        this.users.update(list => list.map(u => u.id === user.id ? updatedUser : u));
+        this.loadingAction.set(false);
+      },
+      error: err => {
+        this.editError.set(err.error?.message ?? 'Erro ao alterar role.');
+        this.loadingAction.set(false);
+        // reverter o checkbox
+        (event.target as HTMLInputElement).checked = !checked;
+      },
+    });
+  }
+
+  // ── Reset senha ────────────────────────────────────────────────────────────
 
   openResetPassword(user: AdminUserResponse): void {
     this.selectedUser.set(user);
@@ -312,20 +462,12 @@ export class AdminUsersComponent implements OnInit {
 
   onResetPassword(): void {
     if (this.resetForm.invalid) return;
-
     this.loadingAction.set(true);
     const userId = this.selectedUser()!.id;
     const pass   = this.resetForm.value.newPassword!;
-
     this.api.resetUserPassword(userId, { newPassword: pass }).subscribe({
-      next: () => {
-        this.showResetModal.set(false);
-        this.loadingAction.set(false);
-      },
-      error: err => {
-        this.resetError.set(err.error?.message ?? 'Erro ao resetar senha.');
-        this.loadingAction.set(false);
-      }
+      next: () => { this.showResetModal.set(false); this.loadingAction.set(false); },
+      error: err => { this.resetError.set(err.error?.message ?? 'Erro ao resetar senha.'); this.loadingAction.set(false); },
     });
   }
 

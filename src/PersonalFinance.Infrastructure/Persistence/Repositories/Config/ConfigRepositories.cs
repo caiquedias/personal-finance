@@ -219,4 +219,18 @@ public sealed class AdminUserRepository : IAdminUserRepository
 
         return (items, totalCount);
     }
+
+    public async Task<bool> ExistsByEmailAsync(string email, CancellationToken ct = default)
+        => await _context.Users
+               .IgnoreQueryFilters()
+               .AnyAsync(u => u.Email == email.Trim().ToLowerInvariant(), ct);
+
+    public async Task AddAsync(Domain.Entities.Auth.User user, CancellationToken ct = default)
+        => await _context.Users.AddAsync(user, ct);
+
+    public Task UpdateAsync(Domain.Entities.Auth.User user, CancellationToken ct = default)
+    {
+        _context.Users.Update(user);
+        return Task.CompletedTask;
+    }
 }
