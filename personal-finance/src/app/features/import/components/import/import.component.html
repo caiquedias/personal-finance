@@ -1,0 +1,187 @@
+<app-header
+  title="Importar Dados"
+  subtitle="Importe o histórico financeiro da planilha legada (.xlsx)"
+>
+  <a routerLink="/" class="btn btn-secondary btn-sm">← Dashboard</a>
+</app-header>
+
+<div class="page-content">
+
+  <!-- Drop zone -->
+  @if (state() === 'idle' || state() === 'error') {
+    <div
+      class="drop-zone card"
+      [class.drag-over]="isDragging()"
+      [class.has-file]="selectedFile()"
+      (dragover)="onDragOver($event)"
+      (dragleave)="isDragging.set(false)"
+      (drop)="onDrop($event)"
+    >
+      <div class="drop-zone-inner">
+        <div class="drop-icon">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="12" y1="18" x2="12" y2="12"/>
+            <polyline points="9 15 12 12 15 15"/>
+          </svg>
+        </div>
+
+        @if (selectedFile()) {
+          <p class="drop-filename">{{ selectedFile()!.name }}</p>
+          <p class="drop-filesize">{{ formatSize(selectedFile()!.size) }}</p>
+        } @else {
+          <p class="drop-title">Arraste o arquivo aqui</p>
+          <p class="drop-subtitle">ou clique para selecionar</p>
+          <p class="drop-hint">Apenas arquivos .xlsx — máximo 10 MB</p>
+        }
+
+        <input
+          #fileInput
+          type="file"
+          accept=".xlsx"
+          class="file-input"
+          (change)="onFileSelected($event)"
+        />
+
+        <div class="drop-actions">
+          @if (selectedFile()) {
+            <button class="btn btn-primary" (click)="startImport()">
+              Importar agora
+            </button>
+            <button class="btn btn-ghost btn-sm" (click)="clearFile(fileInput)">
+              Trocar arquivo
+            </button>
+          } @else {
+            <button class="btn btn-secondary" (click)="fileInput.click()">
+              Selecionar arquivo
+            </button>
+          }
+        </div>
+      </div>
+    </div>
+
+    @if (state() === 'error') {
+      <div class="error-banner">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="8" x2="12" y2="12"/>
+          <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        {{ errorMessage() }}
+      </div>
+    }
+  }
+
+  <!-- Progresso -->
+  @if (state() === 'uploading' || state() === 'processing') {
+    <div class="progress-card card">
+      <div class="progress-header">
+        <span class="progress-title">
+          {{ state() === 'uploading' ? 'Enviando arquivo...' : 'Processando planilha...' }}
+        </span>
+        <span class="progress-pct">{{ uploadProgress() }}%</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" [style.width.%]="uploadProgress()"></div>
+      </div>
+      <p class="progress-hint text-muted">
+        {{ state() === 'uploading'
+          ? 'Aguarde enquanto o arquivo é enviado para o servidor.'
+          : 'O servidor está lendo as abas e importando os registros...' }}
+      </p>
+    </div>
+  }
+
+  <!-- Resultado -->
+  @if (state() === 'done' && result()) {
+    <div class="result-section">
+      <!-- Banner de sucesso -->
+      <div class="success-banner">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+          <polyline points="22 4 12 14.01 9 11.01"/>
+        </svg>
+        Importação concluída com sucesso!
+      </div>
+
+      <!-- Grid de métricas -->
+      <div class="metrics-grid">
+        <div class="metric-card card">
+          <span class="metric-label">Períodos criados</span>
+          <span class="metric-value success">{{ result()!.periodsCreated }}</span>
+          @if (result()!.periodsSkipped > 0) {
+            <span class="metric-sub">{{ result()!.periodsSkipped }} já existiam</span>
+          }
+        </div>
+        <div class="metric-card card">
+          <span class="metric-label">Despesas importadas</span>
+          <span class="metric-value">{{ result()!.expensesImported }}</span>
+          @if (result()!.expensesSkipped > 0) {
+            <span class="metric-sub">{{ result()!.expensesSkipped }} ignoradas</span>
+          }
+        </div>
+        <div class="metric-card card">
+          <span class="metric-label">Receitas importadas</span>
+          <span class="metric-value success">{{ result()!.incomesImported }}</span>
+          @if (result()!.incomesSkipped > 0) {
+            <span class="metric-sub">{{ result()!.incomesSkipped }} ignoradas</span>
+          }
+        </div>
+        <div class="metric-card card">
+          <span class="metric-label">Categorias criadas</span>
+          <span class="metric-value info">{{ result()!.categoriesCreated }}</span>
+          <span class="metric-sub">globais</span>
+        </div>
+      </div>
+
+      <!-- Avisos -->
+      @if (result()!.warnings.length > 0) {
+        <div class="warnings-section card">
+          <div class="warnings-header">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            {{ result()!.warnings.length }} aviso(s)
+          </div>
+          <ul class="warnings-list">
+            @for (w of result()!.warnings; track $index) {
+              <li>{{ w }}</li>
+            }
+          </ul>
+        </div>
+      }
+
+      <!-- Ações pós importação -->
+      <div class="post-actions">
+        <a routerLink="/" class="btn btn-primary">Ver dashboard</a>
+        <a routerLink="/periods" class="btn btn-secondary">Ver períodos</a>
+        <button class="btn btn-ghost btn-sm" (click)="resetState()">
+          Importar outro arquivo
+        </button>
+      </div>
+    </div>
+  }
+
+  <!-- Instruções -->
+  @if (state() === 'idle') {
+    <div class="instructions card">
+      <h3 class="instructions-title">Como funciona</h3>
+      <ol class="instructions-list">
+        <li>Selecione ou arraste sua planilha <strong>.xlsx</strong> no formato legado</li>
+        <li>O sistema lê cada aba como um <strong>período mensal</strong></li>
+        <li>Despesas planejadas, gastos diversos e receitas são importados automaticamente</li>
+        <li>Períodos já existentes são <strong>ignorados</strong> — a operação é segura</li>
+        <li>Ao final você verá um sumário completo com avisos de inconsistências</li>
+      </ol>
+
+      <div class="instructions-note">
+        <strong>Atenção:</strong> despesas com quinzena não definida (valor 0) são ignoradas —
+        elas indicam pagamentos realizados no mês anterior.
+      </div>
+    </div>
+  }
+
+</div>

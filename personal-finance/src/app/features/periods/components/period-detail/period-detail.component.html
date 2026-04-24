@@ -1,0 +1,278 @@
+<app-header
+  [title]="headerTitle()"
+  subtitle="Detalhes do período"
+>
+  <!-- Indicador somente-leitura -->
+  <span class="readonly-indicator" tabindex="0">
+    <img class="pswitch-icon" src="icons/readonly-indicator.png" width="22" height="22" alt="Somente leitura" />
+    <span class="readonly-tooltip">Tela apenas para consulta/visualização</span>
+  </span>
+  <a routerLink="/periods" class="btn btn-secondary btn-sm">← Períodos</a>
+  <a routerLink="/expenses" class="btn btn-primary btn-sm">+ Despesa</a>
+  <a routerLink="/incomes" class="btn btn-ghost btn-sm">+ Receita</a>
+</app-header>
+
+<div class="page-content">
+  @if (loading()) {
+    <div class="loading-state"><span class="spinner-lg"></span></div>
+  } @else {
+
+    <!-- Resumo compacto -->
+    @if (summary()) {
+      <div class="summary-bar card">
+        <div class="summary-item">
+          <span class="summary-label">
+            Receitas
+            <button class="mario-q" (click)="openMario('receitas')" title="Detalhes de Receitas">?</button>
+          </span>
+          <span class="summary-value success">{{ summary()!.totalIncome | currencyBrl }}</span>
+        </div>
+        <div class="summary-divider"></div>
+        <div class="summary-item">
+          <span class="summary-label">
+            Despesas
+            <button class="mario-q" (click)="openMario('despesas')" title="Detalhes de Despesas">?</button>
+          </span>
+          <span class="summary-value danger">{{ summary()!.totalExpense | currencyBrl }}</span>
+        </div>
+        <div class="summary-divider"></div>
+        <div class="summary-item">
+          <span class="summary-label">
+            Pago
+            <button class="mario-q" (click)="openMario('pago')" title="Detalhes de Pago">?</button>
+          </span>
+          <span class="summary-value">{{ summary()!.totalPaid | currencyBrl }}</span>
+        </div>
+        <div class="summary-divider"></div>
+        <div class="summary-item">
+          <span class="summary-label">
+            A pagar
+            <button class="mario-q" (click)="openMario('apagar')" title="Detalhes de A pagar">?</button>
+          </span>
+          <span class="summary-value warning">{{ summary()!.totalOwed | currencyBrl }}</span>
+        </div>
+        <div class="summary-divider"></div>
+        <div class="summary-item">
+          <span class="summary-label">
+            Saldo
+            <button class="mario-q" (click)="openMario('saldo')" title="Detalhes do Saldo">?</button>
+          </span>
+          <span class="summary-value" [class]="summary()!.balance >= 0 ? 'success' : 'danger'">
+            {{ summary()!.balance | currencyBrl: true }}
+          </span>
+        </div>
+      </div>
+    }
+
+    <!-- Abas -->
+    <div class="tabs">
+      <button class="tab" [class.active]="activeTab() === 'expenses'" (click)="activeTab.set('expenses')">
+        Despesas ({{ expTotal() }})
+      </button>
+      <button class="tab" [class.active]="activeTab() === 'incomes'" (click)="activeTab.set('incomes')">
+        Receitas ({{ incTotal() }})
+      </button>
+    </div>
+
+    <!-- ── Despesas ── -->
+    @if (activeTab() === 'expenses') {
+      <div class="tab-shortcut">
+        <a routerLink="/expenses" [queryParams]="{ periodId: id() }" class="btn btn-purple btn-sm">
+          Ir para Despesas →
+        </a>
+      </div>
+
+      <!-- Filtros externos -->
+      <div class="external-filters card">
+        <div class="filters-grid">
+          <div class="filter-field">
+            <label class="field-label">Descrição</label>
+            <input
+              class="input input-sm"
+              placeholder="Buscar..."
+              [value]="expDesc()"
+              (input)="onExpDescChange($event)"
+            />
+          </div>
+          <div class="filter-field">
+            <label class="field-label">Categoria</label>
+            <select class="input input-sm" (change)="onExpCategoryChange($event)">
+              <option value="">Todas</option>
+              @for (c of categories(); track c.id) {
+                <option [value]="c.id">{{ c.name }}</option>
+              }
+            </select>
+          </div>
+          <div class="filter-field">
+            <label class="field-label">Status</label>
+            <select class="input input-sm" (change)="onExpStatusChange($event)">
+              <option value="">Todos</option>
+              <option [value]="PaymentStatus.Pending">Pendente</option>
+              <option [value]="PaymentStatus.Paid">Pago</option>
+              <option [value]="PaymentStatus.Partial">Parcial</option>
+              <option [value]="PaymentStatus.Cancelled">Cancelado</option>
+            </select>
+          </div>
+          <div class="filter-field">
+            <label class="field-label">Quinzena</label>
+            <select class="input input-sm" (change)="onExpFortnightChange($event)">
+              <option value="">Ambas</option>
+              <option [value]="FortnightType.First">1ª Quinzena</option>
+              <option [value]="FortnightType.Second">2ª Quinzena</option>
+            </select>
+          </div>
+          <div class="filter-field">
+            <label class="field-label">Fonte</label>
+            <select class="input input-sm" (change)="onExpSourceTypeChange($event)">
+              <option value="">Todas</option>
+              <option [value]="SourceType.Personal">Própria</option>
+              <option [value]="SourceType.Parental">Parental</option>
+            </select>
+          </div>
+        </div>
+        @if (expHasFilters()) {
+          <button class="btn-clear-filters" (click)="clearExpFilters()">Limpar filtros</button>
+        }
+      </div>
+
+      @if (expLoadingList()) {
+        <div class="loading-state"><span class="spinner-lg"></span></div>
+      } @else if (expTotal() === 0) {
+        <div class="empty-state">
+          <p>Nenhuma despesa encontrada.</p>
+          <a routerLink="/expenses" class="btn btn-primary btn-sm">Adicionar despesa</a>
+        </div>
+      } @else {
+        <div class="table-wrap card">
+          <table class="table">
+            <thead>
+              <tr>
+                <th class="sortable" (click)="toggleExpSort('description')">Descrição {{ expSortIcon('description') }}</th>
+                <th class="sortable" (click)="toggleExpSort('category')">Categoria {{ expSortIcon('category') }}</th>
+                <th class="sortable" (click)="toggleExpSort('sourceType')">Fonte {{ expSortIcon('sourceType') }}</th>
+                <th class="sortable" (click)="toggleExpSort('fortnightType')">Quinzena {{ expSortIcon('fortnightType') }}</th>
+                <th class="sortable" (click)="toggleExpSort('dueDate')">Vencimento {{ expSortIcon('dueDate') }}</th>
+                <th class="sortable" (click)="toggleExpSort('amount')">Valor {{ expSortIcon('amount') }}</th>
+                <th class="sortable" (click)="toggleExpSort('paymentStatus')">Status {{ expSortIcon('paymentStatus') }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (expense of displayedExpenses(); track expense.id) {
+                <tr>
+                  <td class="cell-primary">{{ expense.description }}</td>
+                  <td>
+                    <span class="category-dot" [style.background]="categoryColor(expense.categoryId)"></span>
+                    {{ categoryName(expense.categoryId) }}
+                  </td>
+                  <td class="text-muted text-sm">{{ sourceLabel(expense.sourceType) }}</td>
+                  <td class="text-muted text-sm">{{ fortnightLabel(expense.fortnightType) }}</td>
+                  <td class="text-muted text-sm">{{ formatDate(expense.dueDate) }}</td>
+                  <td class="font-semibold">{{ expense.amount | currencyBrl }}</td>
+                  <td>
+                    <span class="badge" [class]="statusBadgeClass(expense.paymentStatus)">
+                      {{ statusLabel(expense.paymentStatus) }}
+                    </span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <app-pagination
+          [totalCount]="expTotal()"
+          [pageSize]="expPageSize()"
+          [currentPage]="expPage()"
+          (pageChange)="onExpPageChange($event)"
+          (pageSizeChange)="onExpPageSizeChange($event)"
+        />
+      }
+    }
+
+    <!-- ── Receitas ── -->
+    @if (activeTab() === 'incomes') {
+      <div class="tab-shortcut">
+        <a routerLink="/incomes" [queryParams]="{ periodId: id() }" class="btn btn-purple btn-sm">
+          Ir para Receitas →
+        </a>
+      </div>
+
+      <!-- Filtros externos -->
+      <div class="external-filters card">
+        <div class="filters-grid">
+          <div class="filter-field">
+            <label class="field-label">Descrição</label>
+            <input
+              class="input input-sm"
+              placeholder="Buscar..."
+              [value]="incDesc()"
+              (input)="onIncDescChange($event)"
+            />
+          </div>
+          <div class="filter-field">
+            <label class="field-label">Quinzena</label>
+            <select class="input input-sm" (change)="onIncFortnightChange($event)">
+              <option value="">Ambas</option>
+              <option [value]="FortnightType.First">1ª Quinzena</option>
+              <option [value]="FortnightType.Second">2ª Quinzena</option>
+            </select>
+          </div>
+        </div>
+        @if (incHasFilters()) {
+          <button class="btn-clear-filters" (click)="clearIncFilters()">Limpar filtros</button>
+        }
+      </div>
+
+      @if (incLoadingList()) {
+        <div class="loading-state"><span class="spinner-lg"></span></div>
+      } @else if (incTotal() === 0) {
+        <div class="empty-state">
+          <p>Nenhuma receita encontrada.</p>
+          <a routerLink="/incomes" class="btn btn-primary btn-sm">Adicionar receita</a>
+        </div>
+      } @else {
+        <div class="table-wrap card">
+          <table class="table">
+            <thead>
+              <tr>
+                <th class="sortable" (click)="toggleIncSort('description')">Descrição {{ incSortIcon('description') }}</th>
+                <th class="sortable" (click)="toggleIncSort('fortnightType')">Quinzena {{ incSortIcon('fortnightType') }}</th>
+                <th class="sortable" (click)="toggleIncSort('receivedAt')">Recebido em {{ incSortIcon('receivedAt') }}</th>
+                <th class="sortable" (click)="toggleIncSort('amount')">Valor {{ incSortIcon('amount') }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (income of displayedIncomes(); track income.id) {
+                <tr>
+                  <td class="cell-primary">{{ income.description }}</td>
+                  <td class="text-muted text-sm">{{ fortnightLabel(income.fortnightType) }}</td>
+                  <td class="text-muted text-sm">{{ formatDate(income.receivedAt) }}</td>
+                  <td class="font-semibold success-text">{{ income.amount | currencyBrl }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <app-pagination
+          [totalCount]="incTotal()"
+          [pageSize]="incPageSize()"
+          [currentPage]="incPage()"
+          (pageChange)="onIncPageChange($event)"
+          (pageSizeChange)="onIncPageSizeChange($event)"
+        />
+      }
+    }
+
+    <!-- Modal Mario -->
+    @if (marioOpen()) {
+      <div class="mario-overlay" @backdropAnim (click)="marioOpen.set(false)"></div>
+      <div class="mario-center" @modalAnim>
+        <app-mario-modal
+          [title]="marioTitle()"
+          [content]="marioContent()"
+          (closed)="marioOpen.set(false)"
+        />
+      </div>
+    }
+
+  }
+</div>

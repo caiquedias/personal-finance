@@ -1,0 +1,45 @@
+<div class="sonic-modal-wrap">
+
+  <!-- Borda superior com blocos Green Hill Zone -->
+  <div class="sonic-border sonic-border--top">
+    <div class="sonic-blocks">
+      @for (b of blocks; track $index) {
+        <div class="sonic-block" [class.sonic-block--dark]="b === 'd'"></div>
+      }
+    </div>
+  </div>
+
+  <!-- Conteúdo -->
+  <div class="sonic-modal-body">
+    <!-- Header -->
+    <div class="sonic-modal-header">
+      <h2 class="sonic-modal-title">{{ title() }}</h2>
+      <button
+        class="sonic-modal-close"
+        (click)="closed.emit()"
+        aria-label="Fechar"
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2.5">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Slot de conteúdo -->
+    <div class="sonic-modal-content">
+      <ng-content />
+    </div>
+  </div>
+
+  <!-- Borda inferior com blocos Green Hill Zone -->
+  <div class="sonic-border sonic-border--bottom">
+    <div class="sonic-blocks">
+      @for (b of blocks; track $index) {
+        <div class="sonic-block" [class.sonic-block--dark]="b === 'd'"></div>
+      }
+    </div>
+  </div>
+
+</div>
