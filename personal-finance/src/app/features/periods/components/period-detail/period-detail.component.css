@@ -1,0 +1,320 @@
+.page-content {
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Summary bar */
+.summary-bar {
+  display: flex;
+  align-items: center;
+  padding: 16px 24px;
+  gap: 0;
+}
+
+.summary-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+}
+
+.summary-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink3);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.summary-value {
+  font-size: 1.0625rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.summary-value.success { color: var(--sage2); }
+.summary-value.danger  { color: var(--rust);  }
+.summary-value.warning { color: var(--color-warning); }
+
+.summary-divider {
+  width: 1px;
+  height: 32px;
+  background: var(--border);
+  margin: 0 8px;
+}
+
+/* Botão ? estilo bloco Mario */
+.mario-q {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  background: #f5c518;
+  color: #5c3800;
+  font-size: 0.65rem;
+  font-weight: 900;
+  border: 2px solid #8a5400;
+  border-radius: 3px;
+  cursor: pointer;
+  box-shadow: 0 2px 0 #8a5400;
+  transition: transform 80ms ease, box-shadow 80ms ease;
+  line-height: 1;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.mario-q:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 0 #8a5400;
+}
+
+.mario-q:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 0 #8a5400;
+}
+
+/* Overlay Mario */
+.mario-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  z-index: 900;
+}
+
+.mario-center {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 901;
+  pointer-events: none;
+}
+
+.mario-center > * {
+  pointer-events: all;
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--border);
+}
+
+.tab {
+  padding: 10px 16px;
+  border: none;
+  background: none;
+  color: var(--ink3);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: all var(--transition);
+}
+
+.tab:hover  { color: var(--ink); }
+.tab.active { color: var(--sage2); border-bottom-color: var(--sage2); }
+
+/* External filters */
+.external-filters {
+  padding: 16px;
+}
+
+.filters-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 160px;
+}
+
+.btn-clear-filters {
+  margin-top: 12px;
+  background: none;
+  border: none;
+  color: var(--ink3);
+  font-size: 0.8125rem;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.btn-clear-filters:hover { color: var(--rust); }
+
+/* Table */
+.table-wrap { overflow-x: auto; }
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.table th {
+  text-align: left;
+  padding: 12px 16px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink3);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.table th.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.table th.sortable:hover { color: var(--ink); }
+
+.table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--bg3);
+  color: var(--ink2);
+  vertical-align: middle;
+}
+
+.table tr:last-child td { border-bottom: none; }
+
+.table tbody tr:hover { background: var(--surface-overlay); }
+
+.cell-primary   { color: var(--ink); font-weight: 500; }
+.cell-secondary { font-size: 0.75rem; color: var(--ink3); margin-top: 2px; }
+
+.category-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+}
+
+.text-sm   { font-size: 0.8125rem; }
+.font-semibold { font-weight: 600; color: var(--ink); }
+.success-text  { color: var(--sage2); }
+
+.loading-state, .empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 64px;
+  color: var(--ink3);
+}
+
+.spinner-lg {
+  width: 32px; height: 32px;
+  border: 3px solid var(--border);
+  border-top-color: var(--sage2);
+  border-radius: 50%;
+  animation: spin .8s linear infinite;
+  display: block;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── P-Switch readonly indicator ── */
+.readonly-indicator {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: default;
+  outline: none;
+}
+
+.pswitch-icon {
+  display: block;
+  image-rendering: pixelated;
+  animation: pswitch-bob 1.4s ease-in-out infinite;
+}
+
+@keyframes pswitch-bob {
+  0%   { transform: scale(1)    translateY(0);    opacity: 1;    }
+  30%  { transform: scale(1.08) translateY(-3px); opacity: 0.85; }
+  60%  { transform: scale(1)    translateY(0);    opacity: 1;    }
+  80%  { transform: scale(0.97) translateY(2px);  opacity: 0.9;  }
+  100% { transform: scale(1)    translateY(0);    opacity: 1;    }
+}
+
+.readonly-tooltip {
+  visibility: hidden;
+  opacity: 0;
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: var(--ink);
+  color: var(--bg);
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+  padding: 5px 10px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-modal);
+  pointer-events: none;
+  transition: opacity 150ms ease, visibility 150ms ease;
+  z-index: 100;
+}
+
+.readonly-tooltip::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  right: 8px;
+  border: 5px solid transparent;
+  border-bottom-color: var(--ink);
+}
+
+.readonly-indicator:hover .readonly-tooltip,
+.readonly-indicator:focus .readonly-tooltip {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* ── Botão roxo pastel ── */
+.btn-purple {
+  background: #c4b5e8;
+  color: #4a2d8a;
+  border: 1px solid #b0a0d8;
+}
+.btn-purple:hover:not(:disabled) {
+  background: #b3a2dc;
+  border-color: #9e8dcc;
+  color: #3a2070;
+}
+:host-context(.dark) .btn-purple {
+  background: #7c5cc4;
+  color: #f0ebff;
+  border-color: #6a4db0;
+}
+:host-context(.dark) .btn-purple:hover:not(:disabled) {
+  background: #8d6ed4;
+  border-color: #7a5dc0;
+  color: #ffffff;
+}
+
+/* ── Linha de atalho acima da tabela ── */
+.tab-shortcut {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.input-sm { padding: 6px 10px; font-size: 0.8125rem; }
+.field-label { font-size: 0.875rem; font-weight: 500; color: var(--ink2); }
+.text-muted { color: var(--ink3); }

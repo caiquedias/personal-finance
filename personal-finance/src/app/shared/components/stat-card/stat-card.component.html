@@ -1,0 +1,18 @@
+<div class="stat-card" [class]="'stat-card--' + variant()">
+  <div class="stat-card-header">
+    <span class="stat-card-label">{{ label() }}</span>
+    @if (icon()) {
+      <span class="stat-card-icon" [innerHTML]="icon()"></span>
+    }
+  </div>
+  <div class="stat-card-value">
+    @if (isCurrency() && isNumber(value())) {
+      {{ asNumber(value()) | currencyBrl }}
+    } @else {
+      {{ value() }}
+    }
+  </div>
+  @if (subtitle()) {
+    <p class="stat-card-subtitle">{{ subtitle() }}</p>
+  }
+</div>

@@ -1,0 +1,33 @@
+<div class="pagination-bar">
+  <span class="pagination-info">
+    {{ rangeStart() }}–{{ rangeEnd() }} de {{ totalCount() }} registros
+  </span>
+
+  <div class="pagination-controls">
+    <select class="page-size-select" [value]="pageSize()" (change)="onPageSizeChange($event)">
+      <option value="10">10 / pág.</option>
+      <option value="20">20 / pág.</option>
+      <option value="50">50 / pág.</option>
+    </select>
+
+    <button class="page-btn" [disabled]="currentPage() <= 1" (click)="goTo(currentPage() - 1)">
+      ‹
+    </button>
+
+    @for (p of visiblePages(); track p) {
+      @if (p === -1) {
+        <span class="page-ellipsis">…</span>
+      } @else {
+        <button
+          class="page-btn"
+          [class.active]="p === currentPage()"
+          (click)="goTo(p)"
+        >{{ p }}</button>
+      }
+    }
+
+    <button class="page-btn" [disabled]="currentPage() >= totalPages()" (click)="goTo(currentPage() + 1)">
+      ›
+    </button>
+  </div>
+</div>

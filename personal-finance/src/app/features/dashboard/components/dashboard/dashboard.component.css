@@ -1,0 +1,229 @@
+.page-content {
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  flex: 1;
+}
+
+/* ── Seletor de período ── */
+.period-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.period-selector-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.year-dropdown {
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--surface-raised);
+  color: var(--ink2);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  outline: none;
+  transition: border-color var(--transition);
+}
+
+.year-dropdown:focus { border-color: var(--sage2); }
+
+.period-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.period-tab {
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--surface-raised);
+  color: var(--ink2);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.period-tab:hover { background: var(--bg2); }
+
+.period-tab.active {
+  background: var(--sage2);
+  border-color: var(--sage2);
+  color: #fff;
+}
+
+/* ── Grid de stats ── */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 1200px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 640px)  { .stats-grid { grid-template-columns: 1fr; } }
+
+/* ── Grid de detalhes ── */
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 960px) { .detail-grid { grid-template-columns: 1fr; } }
+
+.detail-card { padding: 20px; }
+
+.detail-card-title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: var(--ink);
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+}
+
+.detail-label {
+  font-size: 0.875rem;
+  color: var(--ink2);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.detail-value {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.detail-value.paid  { color: var(--sage2); }
+.detail-value.owed  { color: var(--color-warning); }
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.status-dot.paid { background: var(--sage2); }
+.status-dot.owed { background: var(--color-warning); }
+
+/* Progress bar */
+.progress-bar-wrap {
+  height: 6px;
+  background: var(--bg3);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: var(--sage2);
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+
+/* Quick actions */
+.quick-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.quick-action {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: var(--radius);
+  color: var(--ink2);
+  font-size: 0.875rem;
+  text-decoration: none;
+  transition: all var(--transition);
+}
+
+.quick-action:hover {
+  background: var(--bg2);
+  color: var(--ink);
+}
+
+.quick-action-icon { font-size: 16px; }
+
+/* States */
+.loading-state, .empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 64px;
+  color: var(--ink3);
+}
+
+.spinner-lg {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--border);
+  border-top-color: var(--sage2);
+  border-radius: 50%;
+  animation: spin .8s linear infinite;
+  display: block;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Gráficos ── */
+.charts-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.charts-section-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 960px) { .charts-grid { grid-template-columns: 1fr; } }
+
+.chart-card { padding: 20px; }
+
+.chart-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.echart { width: 100%; height: 300px; }
+
+.chart-loading, .chart-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 300px;
+  color: var(--ink3);
+  font-size: 0.875rem;
+}

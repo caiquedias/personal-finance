@@ -1,0 +1,315 @@
+<app-header title="Configurações" subtitle="Categorias e tabelas de configuração" />
+
+<div class="page-content">
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab" [class.active]="tab() === 'categories'" (click)="tab.set('categories')">Categorias</button>
+    <button class="tab" [class.active]="tab() === 'payment'"    (click)="tab.set('payment')">Status de Pagamento</button>
+    <button class="tab" [class.active]="tab() === 'source'"     (click)="tab.set('source')">Tipos de Fonte</button>
+    <button class="tab" [class.active]="tab() === 'fortnight'"  (click)="tab.set('fortnight')">Quinzenas</button>
+  </div>
+
+  <!-- CATEGORIAS -->
+  @if (tab() === 'categories') {
+    <div class="section-header">
+      <span class="section-title">Suas categorias</span>
+      <button class="btn btn-primary btn-sm" (click)="showCatForm.update(v => !v)">
+        {{ showCatForm() ? 'Cancelar' : '+ Nova categoria' }}
+      </button>
+    </div>
+
+    @if (showCatForm()) {
+      <div class="card form-card">
+        <form [formGroup]="catForm" (ngSubmit)="onCreateCategory()">
+          <div class="form-row">
+            <div class="field">
+              <label class="field-label">Nome *</label>
+              <input formControlName="name" class="input" placeholder="Ex: Moradia" />
+            </div>
+            <div class="field">
+              <label class="field-label">Cor *</label>
+              <div class="color-input-wrap">
+                <input type="color" formControlName="color" class="color-picker" />
+                <input formControlName="color" class="input" placeholder="#1E4D2B" maxlength="7" />
+              </div>
+            </div>
+            <div class="field">
+              <label class="field-label">Ícone</label>
+              <input formControlName="icon" class="input" placeholder="home, car..." />
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary btn-sm" [disabled]="loadingCat()">
+                {{ loadingCat() ? 'Salvando...' : 'Criar' }}
+              </button>
+            </div>
+          </div>
+          @if (catError()) {
+            <div class="form-error">{{ catError() }}</div>
+          }
+        </form>
+      </div>
+    }
+
+    <div class="categories-grid">
+      @for (cat of categories(); track cat.id) {
+        <div class="category-card card">
+          <div class="category-color" [style.background]="cat.color">
+            @if(cat.icon)
+            {
+              <div class="category-icon-container">
+                <img [src]="getIcon(cat)" />
+              </div>
+            }
+          </div>
+          <div class="category-info">
+            <span class="category-name">{{ cat.name }}</span>
+            @if (cat.isGlobal) {
+              <span class="badge badge-info" style="font-size:0.7rem">Global</span>
+            }
+          </div>
+          <div class="card-actions">
+            @if (!cat.isGlobal || auth.isAdmin()) {
+              <button class="action-btn action-edit" title="Editar" (click)="openEditCat(cat)">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+              </button>
+            }
+            @if (!cat.isGlobal || auth.isAdmin()) {
+              <button class="action-btn action-danger" title="Excluir" (click)="deleteCategory(cat.id, cat.isGlobal)">✕</button>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- STATUS DE PAGAMENTO -->
+  @if (tab() === 'payment') {
+    <div class="section-header">
+      <span class="section-title">Status de pagamento</span>
+      @if (auth.isAdmin()) {
+        <button class="btn btn-primary btn-sm" (click)="showPayForm.update(v => !v)">
+          {{ showPayForm() ? 'Cancelar' : '+ Novo status' }}
+        </button>
+      }
+    </div>
+
+    @if (showPayForm() && auth.isAdmin()) {
+      <div class="card form-card">
+        <form [formGroup]="payForm" (ngSubmit)="onCreatePaymentStatus()">
+          <div class="form-row">
+            <div class="field">
+              <label class="field-label">Nome *</label>
+              <input formControlName="name" class="input" placeholder="Ex: Parcelado" />
+            </div>
+            <div class="field field-wide">
+              <label class="field-label">Descrição *</label>
+              <input formControlName="description" class="input" placeholder="Descreva o status..." />
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary btn-sm" [disabled]="loadingLookup()">Criar</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    }
+
+    <div class="lookup-list card">
+      @for (item of paymentStatuses(); track item.id) {
+        <div class="lookup-item">
+          <div class="lookup-info">
+            <span class="lookup-name">{{ item.name }}</span>
+            @if (item.description) {
+              <span class="lookup-desc">{{ item.description }}</span>
+            }
+          </div>
+          @if (item.isSystemSeed) {
+            <span class="badge badge-neutral" style="font-size:0.7rem">Sistema</span>
+          }
+          @if (!item.isSystemSeed && auth.isAdmin()) {
+            <div class="card-actions">
+              <button class="action-btn action-edit" title="Editar" (click)="openEditLookup(item, 'payment')">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+              </button>
+              <button class="action-btn action-danger" title="Excluir" (click)="deleteLookupItem(item.id, 'payment')">✕</button>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+
+  <!-- TIPOS DE FONTE -->
+  @if (tab() === 'source') {
+    <div class="section-header">
+      <span class="section-title">Tipos de fonte</span>
+      @if (auth.isAdmin()) {
+        <button class="btn btn-primary btn-sm" (click)="showSrcForm.update(v => !v)">
+          {{ showSrcForm() ? 'Cancelar' : '+ Novo tipo' }}
+        </button>
+      }
+    </div>
+
+    @if (showSrcForm() && auth.isAdmin()) {
+      <div class="card form-card">
+        <form [formGroup]="srcForm" (ngSubmit)="onCreateSourceType()">
+          <div class="form-row">
+            <div class="field field-wide">
+              <label class="field-label">Nome *</label>
+              <input formControlName="name" class="input" placeholder="Ex: Empresarial" />
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary btn-sm">Criar</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    }
+
+    <div class="lookup-list card">
+      @for (item of sourceTypes(); track item.id) {
+        <div class="lookup-item">
+          <span class="lookup-name">{{ item.name }}</span>
+          @if (item.isSystemSeed) {
+            <span class="badge badge-neutral" style="font-size:0.7rem">Sistema</span>
+          }
+          @if (!item.isSystemSeed && auth.isAdmin()) {
+            <div class="card-actions">
+              <button class="action-btn action-edit" title="Editar" (click)="openEditLookup(item, 'source')">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+              </button>
+              <button class="action-btn action-danger" title="Excluir" (click)="deleteLookupItem(item.id, 'source')">✕</button>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+
+  <!-- QUINZENAS -->
+  @if (tab() === 'fortnight') {
+    <div class="section-header">
+      <span class="section-title">Tipos de quinzena</span>
+      @if (auth.isAdmin()) {
+        <button class="btn btn-primary btn-sm" (click)="showFnForm.update(v => !v)">
+          {{ showFnForm() ? 'Cancelar' : '+ Novo tipo' }}
+        </button>
+      }
+    </div>
+
+    @if (showFnForm() && auth.isAdmin()) {
+      <div class="card form-card">
+        <form [formGroup]="fnForm" (ngSubmit)="onCreateFortnightType()">
+          <div class="form-row">
+            <div class="field field-wide">
+              <label class="field-label">Nome *</label>
+              <input formControlName="name" class="input" placeholder="Ex: Third" />
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary btn-sm">Criar</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    }
+
+    <div class="lookup-list card">
+      @for (item of fortnightTypes(); track item.id) {
+        <div class="lookup-item">
+          <span class="lookup-name">{{ item.name }}</span>
+          @if (item.isSystemSeed) {
+            <span class="badge badge-neutral" style="font-size:0.7rem">Sistema</span>
+          }
+          @if (!item.isSystemSeed && auth.isAdmin()) {
+            <div class="card-actions">
+              <button class="action-btn action-edit" title="Editar" (click)="openEditLookup(item, 'fortnight')">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+              </button>
+              <button class="action-btn action-danger" title="Excluir" (click)="deleteLookupItem(item.id, 'fortnight')">✕</button>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+
+</div>
+
+<!-- MODAL DE EDIÇÃO -->
+@if (modalOpen()) {
+  <div class="modal-overlay" @backdropAnim (click)="closeModal()"></div>
+  <div class="modal-center" @modalAnim>
+    <app-sonic-modal [title]="modalTitle()" (closed)="closeModal()">
+
+      @if (modalMode() === 'edit-cat') {
+        <form [formGroup]="editCatForm" (ngSubmit)="onSaveCat()" class="modal-form">
+          <div class="form-grid">
+            <div class="field field-full">
+              <label class="field-label">Nome *</label>
+              <input formControlName="name" class="input" placeholder="Ex: Moradia" />
+            </div>
+            <div class="field">
+              <label class="field-label">Cor *</label>
+              <div class="color-input-wrap">
+                <input type="color" formControlName="color" class="color-picker" />
+                <input formControlName="color" class="input" placeholder="#1E4D2B" maxlength="7" />
+              </div>
+            </div>
+            <div class="field">
+              <label class="field-label">Ícone</label>
+              <input formControlName="icon" class="input" placeholder="home, car..." />
+            </div>
+          </div>
+          @if (modalError()) {
+            <div class="form-error">{{ modalError() }}</div>
+          }
+          <div class="modal-footer">
+            <button type="button" class="btn btn-ghost btn-sm" (click)="closeModal()">Cancelar</button>
+            <button type="submit" class="btn btn-primary btn-sm" [disabled]="saving()">
+              {{ saving() ? 'Salvando...' : 'Salvar' }}
+            </button>
+          </div>
+        </form>
+      }
+
+      @if (modalMode() === 'edit-lookup') {
+        <form [formGroup]="editLookupForm" (ngSubmit)="onSaveLookup()" class="modal-form">
+          <div class="form-grid">
+            <div class="field field-full">
+              <label class="field-label">Nome *</label>
+              <input formControlName="name" class="input" />
+            </div>
+            @if (editingLookupTab === 'payment') {
+              <div class="field field-full">
+                <label class="field-label">Descrição</label>
+                <input formControlName="description" class="input" />
+              </div>
+            }
+          </div>
+          @if (modalError()) {
+            <div class="form-error">{{ modalError() }}</div>
+          }
+          <div class="modal-footer">
+            <button type="button" class="btn btn-ghost btn-sm" (click)="closeModal()">Cancelar</button>
+            <button type="submit" class="btn btn-primary btn-sm" [disabled]="saving()">
+              {{ saving() ? 'Salvando...' : 'Salvar' }}
+            </button>
+          </div>
+        </form>
+      }
+
+    </app-sonic-modal>
+  </div>
+}

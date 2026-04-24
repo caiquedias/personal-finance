@@ -6,7 +6,7 @@ export const routes: Routes = [
   {
     path: 'login',
     loadComponent: () =>
-      import('./features/auth/components/login.component')
+      import('./features/auth/components/login/login.component')
         .then(m => m.LoginComponent)
   },
 
@@ -22,50 +22,50 @@ export const routes: Routes = [
         path: '',
         pathMatch: 'full',
         loadComponent: () =>
-          import('./features/dashboard/components/dashboard.component')
+          import('./features/dashboard/components/dashboard/dashboard.component')
             .then(m => m.DashboardComponent)
       },
       {
         path: 'periods',
         loadComponent: () =>
-          import('./features/periods/components/periods.component')
+          import('./features/periods/components/periods/periods.component')
             .then(m => m.PeriodsComponent)
       },
       {
         path: 'periods/:id',
         loadComponent: () =>
-          import('./features/periods/components/period-detail.component')
+          import('./features/periods/components/period-detail/period-detail.component')
             .then(m => m.PeriodDetailComponent)
       },
       {
         path: 'expenses',
         loadComponent: () =>
-          import('./features/expenses/components/expenses.component')
+          import('./features/expenses/components/expenses/expenses.component')
             .then(m => m.ExpensesComponent)
       },
       {
         path: 'incomes',
         loadComponent: () =>
-          import('./features/incomes/components/incomes.component')
+          import('./features/incomes/components/incomes/incomes.component')
             .then(m => m.IncomesComponent)
       },
       {
         path: 'config',
         loadComponent: () =>
-          import('./features/config/components/config.component')
+          import('./features/config/components/config/config.component')
             .then(m => m.ConfigComponent)
       },
       {
         path: 'import',
         loadComponent: () =>
-          import('./features/import/components/import.component')
+          import('./features/import/components/import/import.component')
             .then(m => m.ImportComponent)
       },
       {
         path: 'admin/users',
         canActivate: [adminGuard],
         loadComponent: () =>
-          import('./features/config/components/admin-users.component')
+          import('./features/config/components/admin-users/admin-users.component')
             .then(m => m.AdminUsersComponent)
       },
     ]
