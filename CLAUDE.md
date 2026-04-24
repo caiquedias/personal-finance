@@ -229,6 +229,7 @@ Integration: `WebApplicationFactory<Program>` + banco InMemory. Unit: xUnit + Mo
 
 ## Referências
 
+- [`docs/claude-md-guide.md`](docs/claude-md-guide.md) — **consultar antes de qualquer alteração neste arquivo**
 - [`docs/test-factory.md`](docs/test-factory.md) — TestWebApplicationFactory setup
 - [`docs/patterns.md`](docs/patterns.md) — Padrão de modal Angular + Armadilhas conhecidas
 
