@@ -198,6 +198,10 @@ Integration: `WebApplicationFactory<Program>` + banco InMemory. Unit: xUnit + Mo
 
 ## Regras de testes
 
+> Todas as diretrizes abaixo se aplicam a **Backend e Frontend**.
+
+- **Toda nova feature exige testes de cobertura** — Backend (xUnit) e Frontend (Jasmine/Karma)
+- **Cobrir obrigatoriamente**: regras de negócio e casos de uso envolvidos na implementação
 - Testes apenas onde há **lógica de negócio nova** — não replicar padrões já cobertos
 - Um arquivo de teste por classe | xUnit + Moq + FluentAssertions
 - `MarkAsPaid` rejeita data futura → usar `DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-1))`
