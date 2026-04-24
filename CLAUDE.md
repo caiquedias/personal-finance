@@ -157,6 +157,26 @@ Necessário apenas se o token não tiver o escopo `project` (`gh auth status` pa
 5. PR: `feat/xxx` → `master` (requer aprovação do grupo)
 6. Merge em `master` dispara GitHub Action → sync automático: `develop` ← `master` e `release` ← `master`
 
+### Regra obrigatória de push no worktree
+
+O worktree Claude tem upstream configurado para a `feat/` — **nunca fazer push direto para ela**.
+
+Sequência correta:
+```bash
+# 1. Publicar SOMENTE na branch claude/
+git push origin HEAD:claude/<nome-worktree>
+
+# 2. Criar PR: claude/ → feat/ (com delta, revisável)
+gh pr create --head claude/<nome-worktree> --base feat/xxx ...
+```
+
+Se o push acidental for para a `feat/`, corrigir com:
+```bash
+# Reverter feat/ ao commit anterior (antes da implementação)
+git push origin <commit-anterior>:refs/heads/feat/xxx --force
+# Agora claude/ tem delta → criar PR normalmente
+```
+
 ### Fluxo Hotfix
 
 1. Criar `hotfix/xxx` a **partir de `master`** (não de `develop`) — garante estado exato de produção

@@ -39,6 +39,19 @@ public sealed record ResetPasswordDto(
     string NewPassword
 );
 
+/// <summary>Criação de usuário pelo admin.</summary>
+public sealed record CreateUserByAdminDto(
+    string Name,
+    string Email,
+    string Password
+);
+
+/// <summary>Atualização de usuário pelo admin (somente nome).</summary>
+public sealed record UpdateUserByAdminDto(
+    Guid   UserId,
+    string Name
+);
+
 // ── Lookup tables ─────────────────────────────────────────────────────────────
 
 /// <summary>Criação de novo status de pagamento personalizado.</summary>

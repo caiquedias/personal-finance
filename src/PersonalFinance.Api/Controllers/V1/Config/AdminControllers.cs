@@ -203,24 +203,53 @@ public sealed class ConfigController(
 [Authorize(Roles = "Admin")]
 public sealed class AdminUsersController : ApiControllerBase
 {
-    private readonly GetUsersUseCase           _getUsers;
-    private readonly ToggleUserActiveUseCase   _toggleActive;
-    private readonly AssignRoleUseCase         _assignRole;
-    private readonly RemoveRoleUseCase         _removeRole;
-    private readonly ResetUserPasswordUseCase  _resetPassword;
+    private readonly GetUsersUseCase            _getUsers;
+    private readonly ToggleUserActiveUseCase    _toggleActive;
+    private readonly AssignRoleUseCase          _assignRole;
+    private readonly RemoveRoleUseCase          _removeRole;
+    private readonly ResetUserPasswordUseCase   _resetPassword;
+    private readonly CreateUserByAdminUseCase   _createUser;
+    private readonly UpdateUserByAdminUseCase   _updateUser;
 
     public AdminUsersController(
-        GetUsersUseCase          getUsers,
-        ToggleUserActiveUseCase  toggleActive,
-        AssignRoleUseCase        assignRole,
-        RemoveRoleUseCase        removeRole,
-        ResetUserPasswordUseCase resetPassword)
+        GetUsersUseCase           getUsers,
+        ToggleUserActiveUseCase   toggleActive,
+        AssignRoleUseCase         assignRole,
+        RemoveRoleUseCase         removeRole,
+        ResetUserPasswordUseCase  resetPassword,
+        CreateUserByAdminUseCase  createUser,
+        UpdateUserByAdminUseCase  updateUser)
     {
         _getUsers      = getUsers;
         _toggleActive  = toggleActive;
         _assignRole    = assignRole;
         _removeRole    = removeRole;
         _resetPassword = resetPassword;
+        _createUser    = createUser;
+        _updateUser    = updateUser;
+    }
+
+    /// <summary>Cria um novo usuário com role padrão User.</summary>
+    [HttpPost]
+    [ProducesResponseType(typeof(AdminUserResponseDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> CreateUser(
+        [FromBody] CreateUserByAdminDto dto, CancellationToken ct)
+    {
+        var result = await _createUser.ExecuteAsync(dto, ct);
+        return CreatedAtAction(nameof(GetAll), result);
+    }
+
+    /// <summary>Atualiza o nome de um usuário.</summary>
+    [HttpPut("{id:guid}")]
+    [ProducesResponseType(typeof(AdminUserResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateUser(
+        Guid id, [FromBody] UpdateUserByAdminDto dto, CancellationToken ct)
+    {
+        var result = await _updateUser.ExecuteAsync(dto with { UserId = id }, ct);
+        return Ok(result);
     }
 
     /// <summary>Lista usuários do sistema com paginação e filtros opcionais.</summary>

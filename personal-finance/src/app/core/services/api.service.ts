@@ -12,6 +12,7 @@ import {
   CreatePaymentStatusRequest, CreateSourceTypeRequest, CreateFortnightTypeRequest,
   UpdatePaymentStatusRequest, UpdateSourceTypeRequest, UpdateFortnightTypeRequest,
   AdminUserResponse, AdminUserFilterParams, AssignRoleRequest, ResetPasswordRequest,
+  CreateUserByAdminRequest, UpdateUserByAdminRequest,
   ExpensesReport,
 } from '../models/models';
 
@@ -209,6 +210,14 @@ export class ApiService {
 
   resetUserPassword(userId: string, data: ResetPasswordRequest): Observable<void> {
     return this.http.patch<void>(`${this.base}/admin/users/${userId}/reset-password`, data);
+  }
+
+  createAdminUser(data: CreateUserByAdminRequest): Observable<AdminUserResponse> {
+    return this.http.post<AdminUserResponse>(`${this.base}/admin/users`, data);
+  }
+
+  updateAdminUser(userId: string, data: UpdateUserByAdminRequest): Observable<AdminUserResponse> {
+    return this.http.put<AdminUserResponse>(`${this.base}/admin/users/${userId}`, data);
   }
 
   // ── Reports ────────────────────────────────────────────────────────────────

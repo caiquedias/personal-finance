@@ -45,6 +45,8 @@ public static class ApplicationExtensions
         services.AddScoped<AssignRoleUseCase>();
         services.AddScoped<RemoveRoleUseCase>();
         services.AddScoped<ResetUserPasswordUseCase>();
+        services.AddScoped<CreateUserByAdminUseCase>();
+        services.AddScoped<UpdateUserByAdminUseCase>();
 
         // ── Financial — Periods ───────────────────────────────────────────────
         services.AddScoped<GetPeriodsByUserUseCase>();
