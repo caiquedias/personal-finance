@@ -1,0 +1,178 @@
+<app-header title="Usuários" subtitle="Gerenciamento de usuários do sistema" />
+
+<div class="page-content">
+  <!-- Filtros externos -->
+  <div class="filters-bar card">
+    <div class="filters-row">
+      <input class="input filter-input" type="text" placeholder="Nome"   [(ngModel)]="nameFilter"   />
+      <input class="input filter-input" type="text" placeholder="E-mail" [(ngModel)]="emailFilter"  />
+      <select class="input filter-select" [(ngModel)]="statusFilter">
+        <option value="">Todos</option>
+        <option value="true">Ativo</option>
+        <option value="false">Inativo</option>
+      </select>
+      <button class="btn btn-primary"   (click)="applyFilters()">Filtrar</button>
+      <button class="btn btn-secondary" (click)="clearFilters()">Limpar</button>
+      <button class="btn btn-primary" style="margin-left: auto" (click)="openCreate()">+ Novo Usuário</button>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-state"><span class="spinner-lg"></span></div>
+  } @else {
+    <div class="table-wrap card">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>E-mail</th>
+            <th>Roles</th>
+            <th>Status</th>
+            <th>Cadastro</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (user of users(); track user.id) {
+            <tr [class.row-inactive]="!user.isActive">
+              <td class="cell-primary">{{ user.name }}</td>
+              <td class="text-muted text-sm">{{ user.email }}</td>
+              <td>
+                <div class="roles-wrap">
+                  @for (role of user.roles; track role) {
+                    <span class="badge" [class]="role === 'Admin' ? 'badge-warning' : 'badge-info'">{{ role }}</span>
+                  }
+                </div>
+              </td>
+              <td>
+                <span class="badge" [class]="user.isActive ? 'badge-success' : 'badge-neutral'">
+                  {{ user.isActive ? 'Ativo' : 'Inativo' }}
+                </span>
+              </td>
+              <td class="text-muted text-sm">{{ formatDate(user.createdAt) }}</td>
+              <td>
+                <div class="row-actions">
+                  <button class="action-btn action-primary" (click)="openEdit(user)" title="Editar">✏️</button>
+                  <button
+                    class="action-btn"
+                    [class]="user.isActive ? 'action-warning' : 'action-success'"
+                    (click)="toggleActive(user)"
+                    [title]="user.isActive ? 'Desativar' : 'Ativar'"
+                  >{{ user.isActive ? '⏸' : '▶' }}</button>
+                  <button class="action-btn action-info" (click)="openResetPassword(user)" title="Resetar senha">🔑</button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+
+      <app-pagination
+        [totalCount]="totalCount()"
+        [pageSize]="pageSize()"
+        [currentPage]="currentPage()"
+        (pageChange)="onPageChange($event)"
+        (pageSizeChange)="onPageSizeChange($event)"
+      />
+    </div>
+
+    <!-- Modal criar usuário -->
+    @if (showCreateModal()) {
+      <div class="modal-overlay" @backdropAnim (click)="showCreateModal.set(false)"></div>
+      <div class="modal-center" @modalAnim>
+        <div class="modal-card card" (click)="$event.stopPropagation()">
+          <h3 class="modal-title">Novo Usuário</h3>
+          <form [formGroup]="createForm" (ngSubmit)="onCreateUser()">
+            <div class="field" style="margin-bottom: 14px">
+              <label class="field-label">Nome *</label>
+              <input type="text" formControlName="name" class="input" placeholder="Nome completo" />
+            </div>
+            <div class="field" style="margin-bottom: 14px">
+              <label class="field-label">E-mail *</label>
+              <input type="email" formControlName="email" class="input" placeholder="email@exemplo.com" />
+            </div>
+            <div class="field" style="margin-bottom: 14px">
+              <label class="field-label">Senha *</label>
+              <input type="password" formControlName="password" class="input" placeholder="Mínimo 8 caracteres" />
+            </div>
+            @if (createError()) {
+              <div class="form-error">{{ createError() }}</div>
+            }
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" (click)="showCreateModal.set(false)">Cancelar</button>
+              <button type="submit" class="btn btn-primary" [disabled]="loadingAction()">
+                {{ loadingAction() ? 'Salvando...' : 'Criar' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    }
+
+    <!-- Modal editar usuário -->
+    @if (showEditModal()) {
+      <div class="modal-overlay" @backdropAnim (click)="showEditModal.set(false)"></div>
+      <div class="modal-center" @modalAnim>
+        <div class="modal-card card" (click)="$event.stopPropagation()">
+          <h3 class="modal-title">Editar — {{ selectedUser()?.email }}</h3>
+          <form [formGroup]="editForm" (ngSubmit)="onUpdateUser()">
+            <div class="field" style="margin-bottom: 14px">
+              <label class="field-label">Nome *</label>
+              <input type="text" formControlName="name" class="input" />
+            </div>
+            <div class="field" style="margin-bottom: 16px">
+              <label class="field-label">Roles</label>
+              <div class="roles-edit">
+                @for (role of availableRoles; track role.id) {
+                  <label class="role-check">
+                    <input
+                      type="checkbox"
+                      [checked]="selectedUser()?.roles?.includes(role.name)"
+                      (change)="onRoleToggle(role.id, role.name, $event)"
+                      [disabled]="loadingAction()"
+                    />
+                    {{ role.name }}
+                  </label>
+                }
+              </div>
+            </div>
+            @if (editError()) {
+              <div class="form-error">{{ editError() }}</div>
+            }
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" (click)="showEditModal.set(false)">Cancelar</button>
+              <button type="submit" class="btn btn-primary" [disabled]="loadingAction()">
+                {{ loadingAction() ? 'Salvando...' : 'Salvar' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    }
+
+    <!-- Modal reset senha -->
+    @if (showResetModal()) {
+      <div class="modal-overlay" @backdropAnim (click)="showResetModal.set(false)"></div>
+      <div class="modal-center" @modalAnim>
+        <div class="modal-card card" (click)="$event.stopPropagation()">
+          <h3 class="modal-title">Resetar senha — {{ selectedUser()?.name }}</h3>
+          <form [formGroup]="resetForm" (ngSubmit)="onResetPassword()">
+            <div class="field" style="margin-bottom: 16px">
+              <label class="field-label">Nova senha *</label>
+              <input type="password" formControlName="newPassword" class="input" placeholder="Mínimo 8 caracteres" />
+            </div>
+            @if (resetError()) {
+              <div class="form-error">{{ resetError() }}</div>
+            }
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" (click)="showResetModal.set(false)">Cancelar</button>
+              <button type="submit" class="btn btn-primary" [disabled]="loadingAction()">
+                {{ loadingAction() ? 'Salvando...' : 'Salvar' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    }
+  }
+</div>
