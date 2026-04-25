@@ -333,15 +333,20 @@ export class PeriodDetailComponent implements OnInit {
         return;
       }
       case 'pago': {
-        title = 'DESPESAS PAGAS';
-        const pagas = exps.filter(e => e.paymentStatus === PaymentStatus.Paid);
-        if (pagas.length === 0) {
-          lines = ['Nenhuma despesa\npaga neste periodo.'];
-        } else {
-          lines = pagas.map(e => `• ${e.description}\n  ${this.fmt(e.amount)}`);
-          lines.push('', `TOTAL PAGO: ${this.fmt(s.totalPaid)}`);
-        }
-        break;
+        this.api.getExpensesByPeriod(this.id(), { pageNumber: 1, pageSize: 1000, paymentStatus: PaymentStatus.Paid })
+          .subscribe(result => {
+            const pagas = result.items;
+            if (pagas.length === 0) {
+              lines = ['Nenhuma despesa\npaga neste periodo.'];
+            } else {
+              lines = pagas.map(e => `• ${e.description}\n  ${this.fmt(e.amount)}`);
+              lines.push('', `TOTAL PAGO: ${this.fmt(s.totalPaid)}`);
+            }
+            this.marioTitle.set('DESPESAS PAGAS');
+            this.marioContent.set(lines.join('\n'));
+            this.marioOpen.set(true);
+          });
+        return;
       }
       case 'apagar': {
         this.api.getExpensesByPeriod(this.id(), { pageNumber: 1, pageSize: 1000, paymentStatus: PaymentStatus.Pending })

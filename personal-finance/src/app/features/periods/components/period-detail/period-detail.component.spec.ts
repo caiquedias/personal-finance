@@ -157,17 +157,21 @@ describe('PeriodDetailComponent', () => {
       expect(component.marioContent()).toContain('Nenhuma despesa');
     }));
 
-    it('target "pago" — lista despesas pagas', () => {
+    it('target "pago" — lista despesas pagas', fakeAsync(() => {
+      apiSpy.getExpensesByPeriod.and.returnValue(of({ items: [EXPENSE], totalCount: 1, pageNumber: 1, pageSize: 1000 }));
       component.openMario('pago');
+      tick();
       expect(component.marioTitle()).toBe('DESPESAS PAGAS');
       expect(component.marioContent()).toContain('Aluguel');
-    });
+      expect(component.marioOpen()).toBeTrue();
+    }));
 
-    it('target "pago" — sem despesas pagas', () => {
-      component.expenses.set([{ ...EXPENSE, paymentStatus: PaymentStatus.Pending }]);
+    it('target "pago" — sem despesas pagas', fakeAsync(() => {
+      apiSpy.getExpensesByPeriod.and.returnValue(of({ items: [], totalCount: 0, pageNumber: 1, pageSize: 1000 }));
       component.openMario('pago');
+      tick();
       expect(component.marioContent()).toContain('Nenhuma despesa');
-    });
+    }));
 
     it('target "apagar" — sem pendentes (tudo pago)', () => {
       apiSpy.getExpensesByPeriod.and.returnValue(of({ items: [], totalCount: 0, pageNumber: 1, pageSize: 1000 }));
