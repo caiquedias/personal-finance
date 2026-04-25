@@ -411,7 +411,7 @@ export class ExpensesComponent implements OnInit {
   sourceLabel(type: SourceType): string           { return SOURCE_TYPE_LABELS[type];     }
   fortnightLabel(type: FortnightType): string     { return FORTNIGHT_TYPE_LABELS[type];  }
   monthName(month: number): string               { return MONTH_NAMES[month - 1].substring(0, 3); }
-  formatDate(d: string): string                  { return new Date(d).toLocaleDateString('pt-BR'); }
+  formatDate(d: string): string                  { const [y, m, day] = d.substring(0, 10).split('-').map(Number); return new Date(y, m - 1, day).toLocaleDateString('pt-BR'); }
 
   statusBadgeClass(status: PaymentStatus): string {
     const map: Record<PaymentStatus, string> = {
