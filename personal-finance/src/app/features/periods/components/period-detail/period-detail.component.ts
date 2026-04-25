@@ -317,14 +317,20 @@ export class PeriodDetailComponent implements OnInit {
         return;
       }
       case 'despesas': {
-        title = 'DESPESAS DO PERIODO';
-        if (exps.length === 0) {
-          lines = ['Nenhuma despesa\nregistrada neste periodo.'];
-        } else {
-          lines = exps.map(e => `• ${e.description}\n  ${this.fmt(e.amount)}`);
-          lines.push('', `TOTAL: ${this.fmt(s.totalExpense)}`);
-        }
-        break;
+        this.api.getExpensesByPeriod(this.id(), { pageNumber: 1, pageSize: 1000 })
+          .subscribe(result => {
+            const despesas = result.items;
+            if (despesas.length === 0) {
+              lines = ['Nenhuma despesa\nregistrada neste periodo.'];
+            } else {
+              lines = despesas.map(e => `• ${e.description}\n  ${this.fmt(e.amount)}`);
+              lines.push('', `TOTAL: ${this.fmt(s.totalExpense)}`);
+            }
+            this.marioTitle.set('DESPESAS DO PERIODO');
+            this.marioContent.set(lines.join('\n'));
+            this.marioOpen.set(true);
+          });
+        return;
       }
       case 'pago': {
         title = 'DESPESAS PAGAS';
