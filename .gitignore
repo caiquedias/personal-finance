@@ -16,6 +16,7 @@ efbundle
 appsettings.*.json
 !appsettings.json
 !appsettings.Development.json
+!appsettings.Production.json
 
 # Logs
 *.log
