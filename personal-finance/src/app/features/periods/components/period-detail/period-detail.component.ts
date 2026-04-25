@@ -296,20 +296,25 @@ export class PeriodDetailComponent implements OnInit {
   openMario(target: MarioTarget): void {
     const s = this.summary()!;
     const exps = this.expenses();
-    const incs = this.incomes();
     let title = '';
     let lines: string[] = [];
 
     switch (target) {
       case 'receitas': {
-        title = 'RECEITAS DO PERIODO';
-        if (incs.length === 0) {
-          lines = ['Nenhuma receita\nregistrada neste periodo.'];
-        } else {
-          lines = incs.map(i => `• ${i.description}\n  ${this.fmt(i.amount)}`);
-          lines.push('', `TOTAL: ${this.fmt(s.totalIncome)}`);
-        }
-        break;
+        this.api.getIncomesByPeriod(this.id(), { pageNumber: 1, pageSize: 1000 })
+          .subscribe(result => {
+            const receitas = result.items;
+            if (receitas.length === 0) {
+              lines = ['Nenhuma receita\nregistrada neste periodo.'];
+            } else {
+              lines = receitas.map(i => `• ${i.description}\n  ${this.fmt(i.amount)}`);
+              lines.push('', `TOTAL: ${this.fmt(s.totalIncome)}`);
+            }
+            this.marioTitle.set('RECEITAS DO PERIODO');
+            this.marioContent.set(lines.join('\n'));
+            this.marioOpen.set(true);
+          });
+        return;
       }
       case 'despesas': {
         title = 'DESPESAS DO PERIODO';
@@ -339,7 +344,10 @@ export class PeriodDetailComponent implements OnInit {
             if (pendentes.length === 0) {
               lines = ['Nenhuma despesa\npendente neste periodo.'];
             } else {
-              lines = pendentes.map(e => `• ${e.description}\n  ${this.fmt(e.amount)}`);
+              lines = pendentes.map(e => {
+                const suffix = e.paymentStatus === PaymentStatus.Partial ? ' (parcial)' : '';
+                return `• ${e.description}${suffix}\n  ${this.fmt(e.amount)}`;
+              });
               lines.push('', `TOTAL A PAGAR: ${this.fmt(s.totalOwed)}`);
             }
             this.marioTitle.set('DESPESAS A PAGAR');

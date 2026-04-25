@@ -136,7 +136,7 @@ describe('PeriodDetailComponent', () => {
     });
 
     it('target "receitas" — lista vazia', () => {
-      component.incomes.set([]);
+      apiSpy.getIncomesByPeriod.and.returnValue(of({ items: [], totalCount: 0, pageNumber: 1, pageSize: 1000 }));
       component.openMario('receitas');
       expect(component.marioContent()).toContain('Nenhuma receita');
     });
@@ -166,12 +166,13 @@ describe('PeriodDetailComponent', () => {
     });
 
     it('target "apagar" — sem pendentes (tudo pago)', () => {
+      apiSpy.getExpensesByPeriod.and.returnValue(of({ items: [], totalCount: 0, pageNumber: 1, pageSize: 1000 }));
       component.openMario('apagar');
       expect(component.marioContent()).toContain('Nenhuma despesa');
     });
 
     it('target "apagar" — com despesa parcial mostra sufixo', () => {
-      component.expenses.set([{ ...EXPENSE, paymentStatus: PaymentStatus.Partial }]);
+      apiSpy.getExpensesByPeriod.and.returnValue(of({ items: [{ ...EXPENSE, paymentStatus: PaymentStatus.Partial }], totalCount: 1, pageNumber: 1, pageSize: 1000 }));
       component.openMario('apagar');
       expect(component.marioContent()).toContain('parcial');
     });
