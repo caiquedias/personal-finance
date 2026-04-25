@@ -333,20 +333,20 @@ export class PeriodDetailComponent implements OnInit {
         break;
       }
       case 'apagar': {
-        title = 'DESPESAS A PAGAR';
-        const pendentes = exps.filter(
-          e => e.paymentStatus === PaymentStatus.Pending || e.paymentStatus === PaymentStatus.Partial
-        );
-        if (pendentes.length === 0) {
-          lines = ['Nenhuma despesa\npendente neste periodo.'];
-        } else {
-          lines = pendentes.map(e => {
-            const sufixo = e.paymentStatus === PaymentStatus.Partial ? ' (parcial)' : '';
-            return `• ${e.description}${sufixo}\n  ${this.fmt(e.amount)}`;
+        this.api.getExpensesByPeriod(this.id(), { pageNumber: 1, pageSize: 1000, paymentStatus: PaymentStatus.Pending })
+          .subscribe(result => {
+            const pendentes = result.items;
+            if (pendentes.length === 0) {
+              lines = ['Nenhuma despesa\npendente neste periodo.'];
+            } else {
+              lines = pendentes.map(e => `• ${e.description}\n  ${this.fmt(e.amount)}`);
+              lines.push('', `TOTAL A PAGAR: ${this.fmt(s.totalOwed)}`);
+            }
+            this.marioTitle.set('DESPESAS A PAGAR');
+            this.marioContent.set(lines.join('\n'));
+            this.marioOpen.set(true);
           });
-          lines.push('', `TOTAL A PAGAR: ${this.fmt(s.totalOwed)}`);
-        }
-        break;
+        return;
       }
       case 'saldo': {
         title = 'CALCULO DO SALDO';
