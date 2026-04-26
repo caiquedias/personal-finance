@@ -16,6 +16,7 @@ export class ThemeService {
     effect(() => {
       const dark = this.isDark();
       document.documentElement.classList.toggle('dark', dark);
+      document.documentElement.setAttribute('data-dark', String(dark));
       localStorage.setItem(THEME_KEY, dark ? 'dark' : 'light');
     });
   }

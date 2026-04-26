@@ -4,10 +4,27 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Density tokens animáveis (CSS Houdini @property) ── */
+@property --density-gap {
+  syntax: '<length>';
+  inherits: true;
+  initial-value: 24px;
+}
+
+@property --density-padding {
+  syntax: '<length>';
+  inherits: true;
+  initial-value: 28px;
+}
+
 /* ── Base ────────────────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; }
 
-html { font-size: 16px; }
+html {
+  font-size: 16px;
+  transition: --density-gap 0.45s cubic-bezier(0.4,0,0.2,1),
+              --density-padding 0.45s cubic-bezier(0.4,0,0.2,1);
+}
 
 body {
   margin: 0;
