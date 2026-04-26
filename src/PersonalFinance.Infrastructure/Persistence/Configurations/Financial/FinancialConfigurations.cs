@@ -183,6 +183,40 @@ public sealed class ExpenseConfiguration : IEntityTypeConfiguration<Expense>
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
+// EXPENSE ORDER
+// ══════════════════════════════════════════════════════════════════════════════
+
+public sealed class ExpenseOrderConfiguration : IEntityTypeConfiguration<ExpenseOrder>
+{
+    public void Configure(EntityTypeBuilder<ExpenseOrder> builder)
+    {
+        builder.ToTable("ExpenseOrder");
+
+        builder.ApplyEntityBaseConfiguration();
+
+        builder.Property(o => o.ExpenseId)
+               .HasColumnName("ExpenseId")
+               .HasColumnType("uniqueidentifier")
+               .IsRequired();
+
+        builder.Property(o => o.Order)
+               .HasColumnName("Order")
+               .HasColumnType("int")
+               .IsRequired();
+
+        builder.HasOne<Expense>()
+               .WithMany()
+               .HasForeignKey(o => o.ExpenseId)
+               .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasIndex(o => o.ExpenseId)
+               .IsUnique()
+               .HasFilter("[DeletedAt] IS NULL")
+               .HasDatabaseName("UQ_ExpenseOrder_ExpenseId");
+    }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
 // INCOME
 // ══════════════════════════════════════════════════════════════════════════════
 

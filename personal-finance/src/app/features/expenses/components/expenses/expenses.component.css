@@ -150,3 +150,17 @@
   margin-top: 20px; padding-top: 16px;
   border-top: 1px solid var(--border);
 }
+
+/* ── Drag and Drop ── */
+.drag-col { width: 32px; padding: 0 8px !important; }
+.drag-handle {
+  cursor: grab; font-size: 1.1rem; color: var(--ink3);
+  display: block; text-align: center; user-select: none;
+}
+.drag-handle:active { cursor: grabbing; }
+.table tbody tr[draggable="true"]:hover { cursor: grab; }
+
+.order-save-bar {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+}
