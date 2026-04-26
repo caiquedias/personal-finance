@@ -80,6 +80,12 @@ export class DashboardComponent implements OnInit {
 
   readonly balancePositive = computed(() => (this.summary()?.balance ?? 0) >= 0);
 
+  /** Janela fixa de até 3 meses para o segmented do chart2. Não muda ao clicar. */
+  readonly chart2AvailableMonths = computed(() => {
+    const today = new Date().getMonth() + 1; // 1–12
+    return [today - 2, today - 1, today].filter(m => m >= 1);
+  });
+
   constructor() {
     effect(() => {
       this.theme.isDark();
@@ -176,7 +182,16 @@ export class DashboardComponent implements OnInit {
         formatter: (params: any) =>
           `${params.name}<br/><b>R$ ${params.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</b> (${params.percent}%)`,
       },
-      legend: { show: false },
+      legend: {
+        orient: 'vertical',
+        right: 4,
+        top: 'center',
+        textStyle: { fontSize: 11, color: textColor },
+        icon: 'circle',
+        itemWidth: 8,
+        itemHeight: 8,
+        itemGap: 10,
+      },
       graphic: [{
         type: 'group',
         left: 'center',
@@ -209,7 +224,7 @@ export class DashboardComponent implements OnInit {
       series: [{
         type: 'pie',
         radius: ['54%', '74%'],
-        center: ['50%', '50%'],
+        center: ['36%', '50%'],
         avoidLabelOverlap: false,
         label: { show: false },
         emphasis: {

@@ -175,14 +175,12 @@
               <div class="chart-header">
                 <h3 class="widget-title" style="margin-bottom:0">Despesas por categoria</h3>
                 <div class="segmented">
-                  @for (m of [selectedMonth() - 2, selectedMonth() - 1, selectedMonth()]; track m) {
-                    @if (m >= 1 && m <= 12) {
-                      <button
-                        class="seg-btn"
-                        [class.active]="selectedMonth() === m"
-                        (click)="selectMonth(m)"
-                      >{{ monthName(m) }}</button>
-                    }
+                  @for (m of chart2AvailableMonths(); track m) {
+                    <button
+                      class="seg-btn"
+                      [class.active]="selectedMonth() === m"
+                      (click)="selectMonth(m)"
+                    >{{ monthName(m) }}</button>
                   }
                 </div>
               </div>
