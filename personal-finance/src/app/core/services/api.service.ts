@@ -115,6 +115,18 @@ export class ApiService {
     return this.http.post<void>(`${this.base}/expenses/order`, items);
   }
 
+  batchPayExpenses(ids: string[]): Observable<void> {
+    return this.http.patch<void>(`${this.base}/expenses/batch/pay`, { expenseIds: ids });
+  }
+
+  batchCancelExpenses(ids: string[]): Observable<void> {
+    return this.http.patch<void>(`${this.base}/expenses/batch/cancel`, { expenseIds: ids });
+  }
+
+  batchDeleteExpenses(ids: string[]): Observable<void> {
+    return this.http.delete<void>(`${this.base}/expenses/batch`, { body: { expenseIds: ids } });
+  }
+
   // ── Incomes ───────────────────────────────────────────────────────────────
 
   getIncomesByPeriod(periodId: string, filters?: IncomeFilterParams): Observable<PagedResult<IncomeResponse>> {

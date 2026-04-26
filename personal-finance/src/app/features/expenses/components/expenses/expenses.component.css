@@ -164,3 +164,15 @@
   padding: 10px 16px;
   border-bottom: 1px solid var(--border);
 }
+
+.check-col { width: 36px; padding: 0 8px !important; text-align: center; }
+
+.batch-action-bar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface2);
+}
+.batch-count { font-size: 0.85rem; color: var(--ink2); margin-right: 4px; }
+
+.row-selected { background: color-mix(in srgb, var(--primary) 8%, transparent) !important; }
