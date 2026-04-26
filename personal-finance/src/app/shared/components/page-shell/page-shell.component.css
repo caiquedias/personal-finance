@@ -5,9 +5,14 @@
 
 .shell-main {
   flex: 1;
-  margin-left: var(--sidebar-width);
+  margin-left: 198px;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   overflow-x: hidden;
+  transition: margin-left 0.34s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.shell-main.collapsed {
+  margin-left: 64px;
 }

@@ -1,20 +1,36 @@
 import { Component, inject, signal, computed, OnInit, effect, untracked } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { DecimalPipe } from '@angular/common';
+import { CdkDragDrop, CdkDropList, CdkDrag, moveItemInArray } from '@angular/cdk/drag-drop';
 import { NgxEchartsDirective } from 'ngx-echarts';
 import type { EChartsOption } from 'echarts';
 import { ApiService } from '../../../../core/services/api.service';
 import { AuthService } from '../../../../core/auth/auth.service';
 import { ThemeService } from '../../../../core/services/theme.service';
 import { HeaderComponent } from '../../../../shared/components/header/header.component';
-import { StatCardComponent } from '../../../../shared/components/stat-card/stat-card.component';
 import { CurrencyBrlPipe } from '../../../../shared/pipes/currency-brl.pipe';
-import { PeriodResponse, PeriodSummary, MONTH_NAMES, MONTH_NAMES as MONTHS, PaymentStatus, ExpensesReport } from '../../../../core/models/models';
+import { PeriodResponse, PeriodSummary, MONTH_NAMES, PaymentStatus, ExpensesReport } from '../../../../core/models/models';
+
+export interface DashWidget {
+  id: string;
+  label: string;
+}
+
+const DEFAULT_WIDGETS: DashWidget[] = [
+  { id: 'fortnight', label: 'Por quinzena'          },
+  { id: 'payment',   label: 'Status de pagamento'   },
+  { id: 'actions',   label: 'Ações rápidas'          },
+  { id: 'chart1',    label: 'Despesas anuais'        },
+  { id: 'chart2',    label: 'Despesas mensais'       },
+];
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [HeaderComponent, StatCardComponent, CurrencyBrlPipe, DecimalPipe, RouterLink, NgxEchartsDirective],
+  imports: [
+    HeaderComponent, CurrencyBrlPipe, DecimalPipe, RouterLink,
+    NgxEchartsDirective, CdkDropList, CdkDrag,
+  ],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css'],
 })
@@ -38,7 +54,9 @@ export class DashboardComponent implements OnInit {
   readonly chart1Options  = signal<EChartsOption | null>(null);
   readonly chart2Options  = signal<EChartsOption | null>(null);
 
-  private readonly chartTextColor = computed(() => this.theme.isDark() ? '#ccc' : '#444');
+  readonly widgets = signal<DashWidget[]>([...DEFAULT_WIDGETS]);
+
+  private readonly chartTextColor = computed(() => this.theme.isDark() ? '#F0E8DC' : '#3a2e22');
 
   readonly availableYears = computed(() =>
     [...new Set(this.periods().map(p => p.year))].sort((a, b) => b - a)
@@ -60,22 +78,11 @@ export class DashboardComponent implements OnInit {
     return Math.min((s.totalPaid / s.totalExpense) * 100, 100);
   });
 
-  readonly balanceIcon = computed(() => {
-    const pos = this.summary()?.balance ?? 0 >= 0;
-    return pos
-      ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>`
-      : `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>`;
-  });
-
-  readonly incomeIcon = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>`;
-  readonly expenseIcon = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>`;
-  readonly owedIcon    = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`;
+  readonly balancePositive = computed(() => (this.summary()?.balance ?? 0) >= 0);
 
   constructor() {
-    // Reconstrói os gráficos ao trocar de tema para aplicar cor de texto correta.
-    // untracked() evita dependência nos signals de opções, prevenindo loop.
     effect(() => {
-      this.theme.isDark(); // única dependência reativa: mudança de tema
+      this.theme.isDark();
       untracked(() => {
         if (this.chart1Options()) this.loadChart1(this.selectedYear());
         if (this.chart2Options()) this.loadChart2(this.selectedYear(), this.selectedMonth());
@@ -89,14 +96,9 @@ export class DashboardComponent implements OnInit {
         this.periods.set(periods);
         this.loadingPeriods.set(false);
         if (periods.length > 0) {
-          // Garante que o ano selecionado existe nos períodos carregados
           const years = [...new Set(periods.map(p => p.year))].sort((a, b) => b - a);
-          if (!years.includes(this.selectedYear())) {
-            this.selectedYear.set(years[0]);
-          }
-          // Seleciona o período mais recente por padrão
+          if (!years.includes(this.selectedYear())) this.selectedYear.set(years[0]);
           this.selectPeriod(periods[0].id);
-          // Carrega gráficos com o ano selecionado
           this.loadCharts(this.selectedYear(), this.selectedMonth());
         }
       },
@@ -108,12 +110,8 @@ export class DashboardComponent implements OnInit {
     this.selectedPeriodId.set(id);
     this.loadingSummary.set(true);
     this.summary.set(null);
-
     this.api.getPeriodSummary(id).subscribe({
-      next: s => {
-        this.summary.set(s);
-        this.loadingSummary.set(false);
-      },
+      next: s  => { this.summary.set(s);  this.loadingSummary.set(false); },
       error: () => this.loadingSummary.set(false)
     });
   }
@@ -134,6 +132,12 @@ export class DashboardComponent implements OnInit {
     return MONTH_NAMES[month - 1].substring(0, 3);
   }
 
+  dropWidget(event: CdkDragDrop<DashWidget[]>): void {
+    const list = [...this.widgets()];
+    moveItemInArray(list, event.previousIndex, event.currentIndex);
+    this.widgets.set(list);
+  }
+
   private loadCharts(year: number, month: number): void {
     this.loadChart1(year);
     this.loadChart2(year, month);
@@ -143,11 +147,8 @@ export class DashboardComponent implements OnInit {
     this.loadingChart1.set(true);
     this.chart1Options.set(null);
     this.api.getExpensesReport(year).subscribe({
-      next: report => {
-        this.chart1Options.set(this.buildPieOptions(report));
-        this.loadingChart1.set(false);
-      },
-      error: () => this.loadingChart1.set(false),
+      next:  report => { this.chart1Options.set(this.buildDonutOptions(report)); this.loadingChart1.set(false); },
+      error: ()     => this.loadingChart1.set(false),
     });
   }
 
@@ -155,42 +156,73 @@ export class DashboardComponent implements OnInit {
     this.loadingChart2.set(true);
     this.chart2Options.set(null);
     this.api.getExpensesReport(year, month).subscribe({
-      next: report => {
-        this.chart2Options.set(this.buildPieOptions(report));
-        this.loadingChart2.set(false);
-      },
-      error: () => this.loadingChart2.set(false),
+      next:  report => { this.chart2Options.set(this.buildDonutOptions(report)); this.loadingChart2.set(false); },
+      error: ()     => this.loadingChart2.set(false),
     });
   }
 
-  private buildPieOptions(report: ExpensesReport): EChartsOption | null {
+  private buildDonutOptions(report: ExpensesReport): EChartsOption | null {
     if (!report.items.length) return null;
     const textColor = this.chartTextColor();
+    const total = report.items.reduce((sum, i) => sum + i.total, 0);
     return {
       tooltip: {
         trigger: 'item',
+        backgroundColor: 'rgba(24,19,16,0.92)',
+        borderColor: 'transparent',
+        borderRadius: 12,
+        padding: 11,
+        textStyle: { color: '#F0E8DC', fontSize: 12 },
         formatter: (params: any) =>
           `${params.name}<br/><b>R$ ${params.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</b> (${params.percent}%)`,
       },
-      legend: {
-        orient: 'vertical',
-        right: 10,
+      legend: { show: false },
+      graphic: [{
+        type: 'group',
+        left: 'center',
         top: 'center',
-        textStyle: { fontSize: 12, color: textColor },
-      },
+        children: [
+          {
+            type: 'text',
+            style: {
+              text: `R$ ${total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+              textAlign: 'center',
+              fill: textColor,
+              fontSize: 14,
+              fontFamily: 'DM Serif Display, serif',
+              fontWeight: '500',
+            },
+            top: -12,
+          } as any,
+          {
+            type: 'text',
+            style: {
+              text: 'total',
+              textAlign: 'center',
+              fill: this.theme.isDark() ? '#9A8E81' : '#8a7a68',
+              fontSize: 10,
+            },
+            top: 10,
+          } as any,
+        ],
+      }],
       series: [{
         type: 'pie',
-        radius: ['40%', '70%'],
-        center: ['38%', '50%'],
+        radius: ['54%', '74%'],
+        center: ['50%', '50%'],
         avoidLabelOverlap: false,
         label: { show: false },
         emphasis: {
-          label: { show: true, fontSize: 13, fontWeight: 'bold', color: textColor },
+          label: { show: false },
+          scaleSize: 4,
         },
+        animationType: 'expansion',
+        animationDuration: 950,
+        animationEasing: 'cubicInOut',
         data: report.items.map(i => ({
           name: i.categoryName,
           value: i.total,
-          itemStyle: { color: i.categoryColor },
+          itemStyle: { color: i.categoryColor, borderRadius: 4 },
         })),
       }],
     };
