@@ -177,7 +177,7 @@
   align-items: center;
   justify-content: center;
   transition: all var(--transition);
-  color: var(--ink3);
+  color: var(--terracotta);
 }
 
 .action-btn:disabled { opacity: 0.4; cursor: not-allowed; }

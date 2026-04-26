@@ -45,7 +45,7 @@
   background: none; border-radius: var(--radius-sm);
   cursor: pointer; font-size: 12px;
   display: flex; align-items: center; justify-content: center;
-  transition: all var(--transition); color: var(--ink3);
+  transition: all var(--transition); color: var(--terracotta);
 }
 .action-edit:hover   { background: var(--color-info-bg);   border-color: var(--color-info);  color: var(--color-info);  }
 .action-danger:hover { background: var(--color-danger-bg); border-color: var(--rust);        color: var(--rust);        }
