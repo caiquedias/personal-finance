@@ -102,6 +102,12 @@ public sealed record IncomeResponseDto(
     bool          IsActive
 );
 
+// ── Expense Order ─────────────────────────────────────────────────────────────
+
+public sealed record ExpenseOrderItemDto(Guid ExpenseId, int Order);
+
+public sealed record SaveExpenseOrderDto(Guid UserId, IEnumerable<ExpenseOrderItemDto> Items);
+
 // ── Period Summary (view) ─────────────────────────────────────────────────────
 
 /// <summary>

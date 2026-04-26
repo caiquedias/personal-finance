@@ -16,6 +16,7 @@ public sealed class ExpensesController(
     CreateExpenseUseCase createUseCase,
     UpdateExpenseUseCase updateUseCase,
     DeleteExpenseUseCase deleteUseCase,
+    SaveExpenseOrderUseCase saveOrderUseCase,
     IExpenseRepository expenseRepository,
     IUnitOfWork unitOfWork) : ApiControllerBase
 {
@@ -24,6 +25,7 @@ public sealed class ExpensesController(
     private readonly CreateExpenseUseCase _createUseCase = createUseCase;
     private readonly UpdateExpenseUseCase _updateUseCase = updateUseCase;
     private readonly DeleteExpenseUseCase _deleteUseCase = deleteUseCase;
+    private readonly SaveExpenseOrderUseCase _saveOrderUseCase = saveOrderUseCase;
     private readonly IExpenseRepository _expenseRepository = expenseRepository;
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
 
@@ -118,6 +120,18 @@ public sealed class ExpensesController(
         expense.MarkAsPartial();
         await _expenseRepository.UpdateAsync(expense, ct);
         await _unitOfWork.CommitAsync(ct);
+        return NoContent();
+    }
+
+    /// <summary>Persiste a ordenação de despesas definida via drag and drop.</summary>
+    [HttpPost("order")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> SaveOrder(
+        [FromBody] IEnumerable<ExpenseOrderItemDto> items, CancellationToken ct)
+    {
+        var dto = new SaveExpenseOrderDto(CurrentUserId, items);
+        await _saveOrderUseCase.ExecuteAsync(dto, ct);
         return NoContent();
     }
 
