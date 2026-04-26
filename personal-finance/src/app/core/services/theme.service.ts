@@ -7,6 +7,7 @@ export class ThemeService {
   readonly isDark = signal<boolean>(
     localStorage.getItem(THEME_KEY) === 'dark' ||
     (!localStorage.getItem(THEME_KEY) &&
+      typeof window.matchMedia === 'function' &&
       window.matchMedia('(prefers-color-scheme: dark)').matches)
   );
 
