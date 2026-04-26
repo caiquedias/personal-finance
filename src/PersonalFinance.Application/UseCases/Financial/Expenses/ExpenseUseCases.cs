@@ -198,3 +198,124 @@ public sealed class DeleteExpenseUseCase
         await _unitOfWork.CommitAsync(ct);
     }
 }
+
+// ══════════════════════════════════════════════════════════════════════════════
+// DELETE EXPENSES BATCH
+// ══════════════════════════════════════════════════════════════════════════════
+
+public sealed class DeleteExpensesBatchUseCase
+{
+    private readonly IExpenseRepository _expenseRepository;
+    private readonly IUnitOfWork        _unitOfWork;
+
+    public DeleteExpensesBatchUseCase(
+        IExpenseRepository expenseRepository,
+        IUnitOfWork        unitOfWork)
+    {
+        _expenseRepository = expenseRepository;
+        _unitOfWork        = unitOfWork;
+    }
+
+    public async Task ExecuteAsync(
+        BatchExpenseActionDto dto,
+        Guid userId,
+        CancellationToken ct = default)
+    {
+        if (dto.ExpenseIds.Count == 0)
+            throw new DomainException("A lista de despesas não pode ser vazia.");
+
+        var expenses = (await _expenseRepository
+            .GetByIdsAndUserAsync(dto.ExpenseIds, userId, ct)).ToList();
+
+        if (expenses.Count == 0)
+            throw new DomainException(
+                "Nenhuma despesa encontrada ou sem permissão de acesso.");
+
+        foreach (var expense in expenses)
+            expense.SoftDelete();
+
+        await _expenseRepository.UpdateRangeAsync(expenses, ct);
+        await _unitOfWork.CommitAsync(ct);
+    }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// PAY EXPENSES BATCH
+// ══════════════════════════════════════════════════════════════════════════════
+
+public sealed class PayExpensesBatchUseCase
+{
+    private readonly IExpenseRepository _expenseRepository;
+    private readonly IUnitOfWork        _unitOfWork;
+
+    public PayExpensesBatchUseCase(
+        IExpenseRepository expenseRepository,
+        IUnitOfWork        unitOfWork)
+    {
+        _expenseRepository = expenseRepository;
+        _unitOfWork        = unitOfWork;
+    }
+
+    public async Task ExecuteAsync(
+        BatchExpenseActionDto dto,
+        Guid userId,
+        CancellationToken ct = default)
+    {
+        if (dto.ExpenseIds.Count == 0)
+            throw new DomainException("A lista de despesas não pode ser vazia.");
+
+        var expenses = (await _expenseRepository
+            .GetByIdsAndUserAsync(dto.ExpenseIds, userId, ct)).ToList();
+
+        if (expenses.Count == 0)
+            throw new DomainException(
+                "Nenhuma despesa encontrada ou sem permissão de acesso.");
+
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        foreach (var expense in expenses)
+            expense.MarkAsPaid(today);
+
+        await _expenseRepository.UpdateRangeAsync(expenses, ct);
+        await _unitOfWork.CommitAsync(ct);
+    }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// CANCEL EXPENSES BATCH
+// ══════════════════════════════════════════════════════════════════════════════
+
+public sealed class CancelExpensesBatchUseCase
+{
+    private readonly IExpenseRepository _expenseRepository;
+    private readonly IUnitOfWork        _unitOfWork;
+
+    public CancelExpensesBatchUseCase(
+        IExpenseRepository expenseRepository,
+        IUnitOfWork        unitOfWork)
+    {
+        _expenseRepository = expenseRepository;
+        _unitOfWork        = unitOfWork;
+    }
+
+    public async Task ExecuteAsync(
+        BatchExpenseActionDto dto,
+        Guid userId,
+        CancellationToken ct = default)
+    {
+        if (dto.ExpenseIds.Count == 0)
+            throw new DomainException("A lista de despesas não pode ser vazia.");
+
+        var expenses = (await _expenseRepository
+            .GetByIdsAndUserAsync(dto.ExpenseIds, userId, ct)).ToList();
+
+        if (expenses.Count == 0)
+            throw new DomainException(
+                "Nenhuma despesa encontrada ou sem permissão de acesso.");
+
+        foreach (var expense in expenses)
+            expense.MarkAsCancelled();
+
+        await _expenseRepository.UpdateRangeAsync(expenses, ct);
+        await _unitOfWork.CommitAsync(ct);
+    }
+}

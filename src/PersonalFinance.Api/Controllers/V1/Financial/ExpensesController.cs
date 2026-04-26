@@ -16,6 +16,9 @@ public sealed class ExpensesController(
     CreateExpenseUseCase createUseCase,
     UpdateExpenseUseCase updateUseCase,
     DeleteExpenseUseCase deleteUseCase,
+    DeleteExpensesBatchUseCase deleteBatchUseCase,
+    PayExpensesBatchUseCase payBatchUseCase,
+    CancelExpensesBatchUseCase cancelBatchUseCase,
     SaveExpenseOrderUseCase saveOrderUseCase,
     IExpenseRepository expenseRepository,
     IUnitOfWork unitOfWork) : ApiControllerBase
@@ -25,6 +28,9 @@ public sealed class ExpensesController(
     private readonly CreateExpenseUseCase _createUseCase = createUseCase;
     private readonly UpdateExpenseUseCase _updateUseCase = updateUseCase;
     private readonly DeleteExpenseUseCase _deleteUseCase = deleteUseCase;
+    private readonly DeleteExpensesBatchUseCase _deleteBatchUseCase = deleteBatchUseCase;
+    private readonly PayExpensesBatchUseCase _payBatchUseCase = payBatchUseCase;
+    private readonly CancelExpensesBatchUseCase _cancelBatchUseCase = cancelBatchUseCase;
     private readonly SaveExpenseOrderUseCase _saveOrderUseCase = saveOrderUseCase;
     private readonly IExpenseRepository _expenseRepository = expenseRepository;
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
@@ -120,6 +126,39 @@ public sealed class ExpensesController(
         expense.MarkAsPartial();
         await _expenseRepository.UpdateAsync(expense, ct);
         await _unitOfWork.CommitAsync(ct);
+        return NoContent();
+    }
+
+    /// <summary>Exclui logicamente múltiplas despesas em lote.</summary>
+    [HttpDelete("batch")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> DeleteBatch(
+        [FromBody] BatchExpenseActionDto dto, CancellationToken ct)
+    {
+        await _deleteBatchUseCase.ExecuteAsync(dto, CurrentUserId, ct);
+        return NoContent();
+    }
+
+    /// <summary>Marca múltiplas despesas como pagas em lote. Data de pagamento = hoje (UTC).</summary>
+    [HttpPatch("batch/pay")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> PayBatch(
+        [FromBody] BatchExpenseActionDto dto, CancellationToken ct)
+    {
+        await _payBatchUseCase.ExecuteAsync(dto, CurrentUserId, ct);
+        return NoContent();
+    }
+
+    /// <summary>Marca múltiplas despesas como canceladas em lote.</summary>
+    [HttpPatch("batch/cancel")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> CancelBatch(
+        [FromBody] BatchExpenseActionDto dto, CancellationToken ct)
+    {
+        await _cancelBatchUseCase.ExecuteAsync(dto, CurrentUserId, ct);
         return NoContent();
     }
 
