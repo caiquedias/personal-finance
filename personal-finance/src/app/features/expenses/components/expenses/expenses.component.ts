@@ -83,6 +83,13 @@ export class ExpensesComponent implements OnInit {
   // Debounce para busca por descrição
   private descriptionDebounce: ReturnType<typeof setTimeout> | null = null;
 
+  // Seleção em lote
+  readonly selectedExpenseIds = signal<string[]>([]);
+  readonly allSelected = computed(() => {
+    const displayed = this.displayedExpenses();
+    return displayed.length > 0 && displayed.every(e => this.selectedExpenseIds().includes(e.id));
+  });
+
   // Drag and drop
   private draggedIndex: number | null = null;
   readonly pendingOrders = signal<ExpenseOrderItem[]>([]);
@@ -399,6 +406,72 @@ export class ExpensesComponent implements OnInit {
       next: () => {
         this.expenses.update(list => list.filter(e => e.id !== id));
         this.totalCount.update(n => n - 1);
+      }
+    });
+  }
+
+  // ── Seleção em lote ───────────────────────────────────────────────────────
+
+  isSelected(id: string): boolean {
+    return this.selectedExpenseIds().includes(id);
+  }
+
+  toggleSelect(id: string): void {
+    this.selectedExpenseIds.update(ids =>
+      ids.includes(id) ? ids.filter(x => x !== id) : [...ids, id]
+    );
+  }
+
+  toggleSelectAll(): void {
+    if (this.allSelected()) {
+      this.selectedExpenseIds.set([]);
+    } else {
+      this.selectedExpenseIds.set(this.displayedExpenses().map(e => e.id));
+    }
+  }
+
+  batchPay(): void {
+    const ids = this.selectedExpenseIds();
+    if (!ids.length) return;
+    const today = new Date().toISOString().split('T')[0];
+    this.api.batchPayExpenses(ids).subscribe({
+      next: () => {
+        this.expenses.update(list =>
+          list.map(e => ids.includes(e.id)
+            ? { ...e, paymentStatus: PaymentStatus.Paid, paymentDate: today }
+            : e
+          )
+        );
+        this.selectedExpenseIds.set([]);
+      }
+    });
+  }
+
+  batchCancel(): void {
+    const ids = this.selectedExpenseIds();
+    if (!ids.length) return;
+    this.api.batchCancelExpenses(ids).subscribe({
+      next: () => {
+        this.expenses.update(list =>
+          list.map(e => ids.includes(e.id)
+            ? { ...e, paymentStatus: PaymentStatus.Cancelled }
+            : e
+          )
+        );
+        this.selectedExpenseIds.set([]);
+      }
+    });
+  }
+
+  batchDelete(): void {
+    const ids = this.selectedExpenseIds();
+    if (!ids.length) return;
+    if (!confirm(`Confirma a exclusão de ${ids.length} despesa(s)?`)) return;
+    this.api.batchDeleteExpenses(ids).subscribe({
+      next: () => {
+        this.expenses.update(list => list.filter(e => !ids.includes(e.id)));
+        this.totalCount.update(n => n - ids.length);
+        this.selectedExpenseIds.set([]);
       }
     });
   }
