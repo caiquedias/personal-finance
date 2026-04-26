@@ -55,6 +55,20 @@ public sealed class ExpenseRepository : IExpenseRepository
         return Task.CompletedTask;
     }
 
+    public Task UpdateRangeAsync(IEnumerable<Expense> expenses, CancellationToken ct = default)
+    {
+        _context.Expenses.UpdateRange(expenses);
+        return Task.CompletedTask;
+    }
+
+    public async Task<IEnumerable<Expense>> GetByIdsAndUserAsync(
+        IReadOnlyList<Guid> ids,
+        Guid userId,
+        CancellationToken ct = default)
+        => await _context.Expenses
+               .Where(e => ids.Contains(e.Id) && e.UserId == userId)
+               .ToListAsync(ct);
+
     public async Task<(IEnumerable<Expense> Items, int TotalCount)> GetPagedByPeriodAsync(
         Guid          periodId,
         Guid          userId,
