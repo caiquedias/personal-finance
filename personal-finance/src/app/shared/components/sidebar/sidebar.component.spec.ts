@@ -77,17 +77,19 @@ describe('SidebarComponent', () => {
     });
 
     it('retorna SVG para ícone conhecido (grid)', () => {
-      const svg = component.getIcon('grid');
+      // getIcon retorna SafeHtml; extrai o conteúdo interno para comparação
+      const svg = (component.getIcon('grid') as any).changingThisBreaksApplicationSecurity as string;
       expect(svg).toContain('<svg');
     });
 
     it('retorna SVG para ícone settings', () => {
-      const svg = component.getIcon('settings');
+      const svg = (component.getIcon('settings') as any).changingThisBreaksApplicationSecurity as string;
       expect(svg).toContain('<svg');
     });
 
-    it('retorna string vazia para ícone desconhecido', () => {
-      expect(component.getIcon('unknown-icon')).toBe('');
+    it('retorna SafeHtml vazio para ícone desconhecido', () => {
+      const svg = (component.getIcon('unknown-icon') as any).changingThisBreaksApplicationSecurity as string;
+      expect(svg).toBe('');
     });
   });
 });
