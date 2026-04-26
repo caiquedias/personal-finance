@@ -1,0 +1,64 @@
+<div class="tweaks-backdrop" (click)="close.emit()"></div>
+
+<div class="tweaks-panel">
+  <div class="tweaks-header">
+    <span class="tweaks-title">Personalizar</span>
+    <button class="tweaks-close" (click)="close.emit()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Cor de destaque -->
+  <div class="tweaks-section">
+    <span class="tweaks-section-label">Cor de destaque</span>
+    <div class="accent-swatches">
+      @for (c of accentColors; track c.value) {
+        <button
+          class="accent-swatch"
+          [style.background]="c.value"
+          [class.active]="tweaks.accent() === c.value"
+          [title]="c.name"
+          (click)="setAccent(c.value)"
+        ></button>
+      }
+    </div>
+  </div>
+
+  <!-- Tema -->
+  <div class="tweaks-section">
+    <span class="tweaks-section-label">Aparência</span>
+    <button class="theme-toggle-row" (click)="theme.toggle()">
+      @if (theme.isDark()) {
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="5"/>
+          <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+        <span>Modo claro</span>
+      } @else {
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+        <span>Modo escuro</span>
+      }
+    </button>
+  </div>
+
+  <!-- Densidade -->
+  <div class="tweaks-section">
+    <span class="tweaks-section-label">Densidade</span>
+    <div class="density-options">
+      @for (d of densities; track d.value) {
+        <button
+          class="density-btn"
+          [class.active]="tweaks.density() === d.value"
+          (click)="setDensity(d.value)"
+        >{{ d.label }}</button>
+      }
+    </div>
+  </div>
+</div>

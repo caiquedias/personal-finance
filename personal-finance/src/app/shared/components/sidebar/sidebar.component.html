@@ -1,9 +1,24 @@
-<aside class="sidebar">
+<aside class="sidebar" [class.collapsed]="collapsed()">
   <!-- Logo -->
   <div class="sidebar-logo">
-    <span class="sidebar-logo-mark">₿</span>
-    <span class="sidebar-logo-text">Personal Finance</span>
+    <span class="sidebar-logo-mark">
+      <img src="coin.gif" alt="logo" class="sidebar-logo-img" />
+    </span>
+    <span class="sidebar-logo-text">Personal<br>Finance</span>
   </div>
+
+  <!-- Toggle collapse -->
+  <button class="sidebar-toggle" (click)="toggle()" [title]="collapsed() ? 'Expandir' : 'Recolher'">
+    @if (collapsed()) {
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+    } @else {
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+    }
+  </button>
 
   <!-- Nav -->
   <nav class="sidebar-nav">
@@ -13,26 +28,30 @@
         routerLinkActive="active"
         [routerLinkActiveOptions]="{ exact: item.route === '/' }"
         class="sidebar-item"
+        [title]="collapsed() ? item.label : ''"
       >
         <span class="sidebar-icon" [innerHTML]="getIcon(item.icon)"></span>
-        <span>{{ item.label }}</span>
+        <span class="sidebar-item-label">{{ item.label }}</span>
       </a>
     }
   </nav>
 
-  <!-- User info -->
+  <!-- Footer -->
   <div class="sidebar-footer">
-    <div class="sidebar-user">
-      <div class="sidebar-avatar">
-        {{ userInitials() }}
-      </div>
-      <div class="sidebar-user-info">
-        <span class="sidebar-user-name">{{ auth.currentUser()?.name }}</span>
-        <span class="sidebar-user-email">{{ auth.currentUser()?.email }}</span>
-      </div>
+    <!-- Avatar -->
+    <div class="sidebar-avatar" [title]="auth.currentUser()?.name ?? ''">
+      {{ userInitials() }}
     </div>
-    <button class="sidebar-logout" (click)="auth.logout()" title="Sair">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+
+    <!-- User info (hidden when collapsed) -->
+    <div class="sidebar-user-info">
+      <span class="sidebar-user-name">{{ auth.currentUser()?.name }}</span>
+      <span class="sidebar-user-email">{{ auth.currentUser()?.email }}</span>
+    </div>
+
+    <!-- Logout -->
+    <button class="sidebar-footer-btn sidebar-logout" (click)="auth.logout()" title="Sair">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
         <polyline points="16 17 21 12 16 7"/>
         <line x1="21" y1="12" x2="9" y2="12"/>
