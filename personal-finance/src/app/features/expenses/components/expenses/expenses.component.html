@@ -97,9 +97,20 @@
           </button>
         </div>
       }
+      @if (selectedExpenseIds().length > 0) {
+        <div class="batch-action-bar">
+          <span class="batch-count">{{ selectedExpenseIds().length }} selecionado(s)</span>
+          <button class="btn btn-success btn-sm" (click)="batchPay()">Pagar</button>
+          <button class="btn btn-secondary btn-sm" (click)="batchCancel()">Cancelar</button>
+          <button class="btn btn-danger btn-sm" (click)="batchDelete()">Excluir</button>
+        </div>
+      }
       <table class="table">
         <thead>
           <tr>
+            <th class="check-col">
+              <input type="checkbox" [checked]="allSelected()" (change)="toggleSelectAll()" />
+            </th>
             <th class="drag-col"></th>
             <th class="sortable" (click)="toggleSort('description')">
               Descrição {{ sortIcon('description') }}
@@ -132,7 +143,11 @@
               (dragstart)="onDragStart(i)"
               (dragover)="onDragOver($event)"
               (drop)="onDrop(i)"
+              [class.row-selected]="isSelected(expense.id)"
             >
+              <td class="check-col">
+                <input type="checkbox" [checked]="isSelected(expense.id)" (change)="toggleSelect(expense.id)" />
+              </td>
               <td class="drag-col">
                 <span class="drag-handle" title="Arrastar para reordenar">⠿</span>
               </td>
