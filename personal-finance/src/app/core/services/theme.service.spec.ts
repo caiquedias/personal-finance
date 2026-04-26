@@ -37,8 +37,11 @@ describe('ThemeService', () => {
         addEventListener: () => {}, removeEventListener: () => {},
         dispatchEvent: () => false,
       } as MediaQueryList;
-      // spyOn antes do configureTestingModule — signal é avaliado na instanciação
-      spyOn(window, 'matchMedia').and.returnValue(mql);
+      // Object.defineProperty necessário — matchMedia é read-only no Chrome Headless 147+
+      Object.defineProperty(window, 'matchMedia', {
+        writable: true, configurable: true,
+        value: jasmine.createSpy('matchMedia').and.returnValue(mql),
+      });
       TestBed.configureTestingModule({ providers: [ThemeService] });
       const svc = TestBed.inject(ThemeService);
       TestBed.flushEffects();
