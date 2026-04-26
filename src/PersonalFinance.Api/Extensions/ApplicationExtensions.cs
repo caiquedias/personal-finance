@@ -62,6 +62,7 @@ public static class ApplicationExtensions
         services.AddScoped<CreateExpenseUseCase>();
         services.AddScoped<UpdateExpenseUseCase>();
         services.AddScoped<DeleteExpenseUseCase>();
+        services.AddScoped<SaveExpenseOrderUseCase>();
 
         // ── Financial — Incomes ───────────────────────────────────────────────
         services.AddScoped<GetIncomesByPeriodUseCase>();

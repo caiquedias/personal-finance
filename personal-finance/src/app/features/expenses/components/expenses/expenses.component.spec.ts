@@ -27,7 +27,8 @@ describe('ExpensesComponent', () => {
   beforeEach(async () => {
     apiSpy = jasmine.createSpyObj('ApiService', [
       'getPeriods', 'getCategories', 'getExpensesByPeriod',
-      'createExpense', 'updateExpense', 'markExpenseAsPaid', 'deleteExpense'
+      'createExpense', 'updateExpense', 'markExpenseAsPaid', 'deleteExpense',
+      'saveExpenseOrder'
     ]);
     apiSpy.getPeriods.and.returnValue(of([PERIOD]));
     apiSpy.getCategories.and.returnValue(of([CATEGORY]));
@@ -171,6 +172,51 @@ describe('ExpensesComponent', () => {
       (window.confirm as jasmine.Spy).and.returnValue(false);
       component.deleteExpense('e-1');
       expect(apiSpy.deleteExpense).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('drag and drop', () => {
+    const EXPENSE_B: ExpenseResponse = { ...EXPENSE, id: 'e-2', description: 'Internet' };
+
+    beforeEach(() => {
+      component.expenses.set([EXPENSE, EXPENSE_B]);
+    });
+
+    it('onDrop reordena a lista de despesas', () => {
+      component.onDragStart(0);
+      component.onDrop(1);
+      expect(component.expenses()[0].id).toBe('e-2');
+      expect(component.expenses()[1].id).toBe('e-1');
+    });
+
+    it('onDrop popula pendingOrders', () => {
+      component.onDragStart(0);
+      component.onDrop(1);
+      expect(component.pendingOrders().length).toBe(2);
+      expect(component.hasPendingOrder()).toBeTrue();
+    });
+
+    it('onDrop não altera lista quando origem = destino', () => {
+      component.onDragStart(0);
+      component.onDrop(0);
+      expect(component.expenses()[0].id).toBe('e-1');
+      expect(component.pendingOrders().length).toBe(0);
+    });
+
+    it('saveOrder chama saveExpenseOrder e limpa pendingOrders', fakeAsync(() => {
+      apiSpy.saveExpenseOrder.and.returnValue(of(undefined));
+      component.onDragStart(0);
+      component.onDrop(1);
+      component.saveOrder();
+      tick();
+      expect(apiSpy.saveExpenseOrder).toHaveBeenCalled();
+      expect(component.pendingOrders().length).toBe(0);
+      expect(component.hasPendingOrder()).toBeFalse();
+    }));
+
+    it('saveOrder não faz nada quando pendingOrders está vazio', () => {
+      component.saveOrder();
+      expect(apiSpy.saveExpenseOrder).not.toHaveBeenCalled();
     });
   });
 

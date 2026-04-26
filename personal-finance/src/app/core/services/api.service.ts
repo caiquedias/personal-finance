@@ -5,7 +5,7 @@ import { environment } from '../../../environments/environment';
 import {
   CategoryResponse, CreateCategoryRequest, UpdateCategoryRequest,
   PeriodResponse, CreatePeriodRequest, PeriodSummary,
-  ExpenseResponse, CreateExpenseRequest, UpdateExpenseRequest, MarkAsPaidRequest,
+  ExpenseResponse, CreateExpenseRequest, UpdateExpenseRequest, MarkAsPaidRequest, ExpenseOrderItem,
   PagedResult, ExpenseFilterParams, IncomeFilterParams,
   IncomeResponse, CreateIncomeRequest,
   LookupItem,
@@ -109,6 +109,10 @@ export class ApiService {
 
   deleteExpense(id: string): Observable<void> {
     return this.http.delete<void>(`${this.base}/expenses/${id}`);
+  }
+
+  saveExpenseOrder(items: ExpenseOrderItem[]): Observable<void> {
+    return this.http.post<void>(`${this.base}/expenses/order`, items);
   }
 
   // ── Incomes ───────────────────────────────────────────────────────────────

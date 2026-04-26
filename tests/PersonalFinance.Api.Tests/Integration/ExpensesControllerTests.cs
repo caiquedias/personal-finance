@@ -215,5 +215,40 @@ namespace PersonalFinance.Api.Tests.Integration
             var getById = await client.GetAsync($"/api/v1/expenses/{id}");
             getById.StatusCode.Should().Be(HttpStatusCode.NotFound);
         }
+
+        [Fact(DisplayName = "POST /expenses/order deve retornar 204 e persistir ordenação")]
+        public async Task SaveOrder_ShouldReturn204()
+        {
+            var (client, pid, cid) = await SetupAsync();
+
+            var e1 = await client.PostAsJsonAsync("/api/v1/expenses", new
+            {
+                periodId = pid, categoryId = cid, sourceType = 2, fortnightType = 1,
+                description = "Despesa A", amount = 100, dueDate = "2026-08-10"
+            });
+            var id1 = (await e1.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetString()!;
+
+            var e2 = await client.PostAsJsonAsync("/api/v1/expenses", new
+            {
+                periodId = pid, categoryId = cid, sourceType = 2, fortnightType = 1,
+                description = "Despesa B", amount = 200, dueDate = "2026-08-11"
+            });
+            var id2 = (await e2.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetString()!;
+
+            var order = await client.PostAsJsonAsync("/api/v1/expenses/order", new[]
+            {
+                new { expenseId = id2, order = 0 },
+                new { expenseId = id1, order = 1 }
+            });
+            order.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        }
+
+        [Fact(DisplayName = "POST /expenses/order com lista vazia deve retornar 400")]
+        public async Task SaveOrder_WithEmptyList_ShouldReturn400()
+        {
+            var (client, _, _) = await SetupAsync();
+            var r = await client.PostAsJsonAsync("/api/v1/expenses/order", Array.Empty<object>());
+            r.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        }
     }
 }

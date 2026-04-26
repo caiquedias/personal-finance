@@ -135,6 +135,11 @@ export interface MarkAsPaidRequest {
   paymentDate: string;
 }
 
+export interface ExpenseOrderItem {
+  expenseId: string;
+  order: number;
+}
+
 // ── Pagination ────────────────────────────────────────────────────────────────
 
 export interface PagedResult<T> {
