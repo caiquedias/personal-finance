@@ -46,10 +46,17 @@ describe('HeaderComponent', () => {
     expect(component.subtitle()).toBe('Visão geral');
   });
 
-  it('theme.toggle() é chamado ao clicar no botão', () => {
+  it('tweaksOpen começa como false', () => {
     fixture.detectChanges();
-    const btn = fixture.nativeElement.querySelector('.theme-toggle');
+    expect(component.tweaksOpen()).toBeFalse();
+  });
+
+  it('clique no botão de tweaks alterna tweaksOpen', () => {
+    fixture.detectChanges();
+    const btn = fixture.nativeElement.querySelector('.header-tweaks-btn');
     btn?.click();
-    expect(themeSpy.toggle).toHaveBeenCalled();
+    expect(component.tweaksOpen()).toBeTrue();
+    btn?.click();
+    expect(component.tweaksOpen()).toBeFalse();
   });
 });
