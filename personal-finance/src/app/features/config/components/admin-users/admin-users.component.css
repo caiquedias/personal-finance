@@ -34,6 +34,7 @@
   cursor: pointer; font-size: 13px;
   display: flex; align-items: center; justify-content: center;
   transition: all var(--transition);
+  color: var(--terracotta);
 }
 .action-primary:hover { background: var(--color-info-bg);    border-color: var(--color-info);    }
 .action-success:hover { background: var(--color-success-bg); border-color: var(--sage2);         }

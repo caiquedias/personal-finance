@@ -157,7 +157,7 @@
   align-items: center;
   justify-content: center;
   transition: var(--t);
-  color: var(--text-subtle);
+  color: var(--terracotta);
   backdrop-filter: blur(24px);
 }
 

@@ -41,13 +41,13 @@
 
 .page-btn:hover:not(:disabled) {
   background: var(--surface-overlay);
-  border-color: var(--sage2);
-  color: var(--sage2);
+  border-color: var(--terracotta);
+  color: var(--terracotta);
 }
 
 .page-btn.active {
-  background: var(--sage2);
-  border-color: var(--sage2);
+  background: var(--terracotta);
+  border-color: var(--terracotta);
   color: #fff;
   font-weight: 600;
 }
