@@ -69,7 +69,7 @@
   z-index: 1;
 }
 
-.collapsed .sidebar-toggle { right: 50%; transform: translateX(50%); }
+.collapsed .sidebar-toggle { right: auto; left: 50%; transform: translateX(-50%); }
 
 .sidebar-toggle:hover {
   background: var(--v2-surface);
@@ -124,10 +124,25 @@
 
 .sidebar-item-label {
   opacity: 1;
-  transition: opacity 0.22s;
+  width: auto;
+  overflow: hidden;
+  transition: opacity 0.22s, width 0.22s;
 }
 
-.collapsed .sidebar-item-label { opacity: 0; }
+.collapsed .sidebar-item-label { opacity: 0; width: 0; }
+
+/* Collapsed: centraliza ícone no item */
+.collapsed .sidebar-nav { padding: 10px 4px; }
+
+.collapsed .sidebar-item {
+  justify-content: center;
+  padding: 10px 0;
+  gap: 0;
+}
+
+/* Collapsed: footer centralizado */
+.collapsed .sidebar-footer { justify-content: center; gap: 4px; flex-wrap: wrap; }
+.collapsed .sidebar-user-info { width: 0; flex: none; opacity: 0; overflow: hidden; }
 
 /* ── Footer ── */
 .sidebar-footer {
