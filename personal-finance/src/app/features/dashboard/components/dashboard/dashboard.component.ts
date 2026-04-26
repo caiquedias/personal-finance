@@ -183,19 +183,19 @@ export class DashboardComponent implements OnInit {
           `${params.name}<br/><b>R$ ${params.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</b> (${params.percent}%)`,
       },
       legend: {
-        orient: 'vertical',
-        right: 4,
-        top: 'center',
-        textStyle: { fontSize: 11, color: textColor },
+        orient: 'horizontal',
+        bottom: 4,
+        left: 'center',
+        textStyle: { fontSize: 10, color: textColor },
         icon: 'circle',
-        itemWidth: 8,
-        itemHeight: 8,
+        itemWidth: 7,
+        itemHeight: 7,
         itemGap: 10,
       },
       graphic: [{
         type: 'group',
         left: 'center',
-        top: 'center',
+        top: '36%',
         children: [
           {
             type: 'text',
@@ -223,8 +223,8 @@ export class DashboardComponent implements OnInit {
       }],
       series: [{
         type: 'pie',
-        radius: ['54%', '74%'],
-        center: ['36%', '50%'],
+        radius: ['50%', '68%'],
+        center: ['50%', '44%'],
         avoidLabelOverlap: false,
         label: { show: false },
         emphasis: {

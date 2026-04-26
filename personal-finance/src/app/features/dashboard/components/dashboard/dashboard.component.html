@@ -174,15 +174,15 @@
             @case ('chart2') {
               <div class="chart-header">
                 <h3 class="widget-title" style="margin-bottom:0">Despesas por categoria</h3>
-                <div class="segmented">
-                  @for (m of chart2AvailableMonths(); track m) {
-                    <button
-                      class="seg-btn"
-                      [class.active]="selectedMonth() === m"
-                      (click)="selectMonth(m)"
-                    >{{ monthName(m) }}</button>
+                <select
+                  class="month-select"
+                  [value]="selectedMonth()"
+                  (change)="selectMonth(+$any($event.target).value)"
+                >
+                  @for (name of MONTH_NAMES; track $index) {
+                    <option [value]="$index + 1">{{ name }}</option>
                   }
-                </div>
+                </select>
               </div>
               @if (loadingChart2()) {
                 <div class="chart-loading"><span class="spinner-v2"></span></div>
