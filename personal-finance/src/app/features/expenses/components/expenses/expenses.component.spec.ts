@@ -28,7 +28,7 @@ describe('ExpensesComponent', () => {
     apiSpy = jasmine.createSpyObj('ApiService', [
       'getPeriods', 'getCategories', 'getExpensesByPeriod',
       'createExpense', 'updateExpense', 'markExpenseAsPaid', 'deleteExpense',
-      'saveExpenseOrder'
+      'saveExpenseOrder', 'batchPayExpenses', 'batchCancelExpenses', 'batchDeleteExpenses'
     ]);
     apiSpy.getPeriods.and.returnValue(of([PERIOD]));
     apiSpy.getCategories.and.returnValue(of([CATEGORY]));
@@ -217,6 +217,77 @@ describe('ExpensesComponent', () => {
     it('saveOrder não faz nada quando pendingOrders está vazio', () => {
       component.saveOrder();
       expect(apiSpy.saveExpenseOrder).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('seleção em lote', () => {
+    const EXPENSE_B: ExpenseResponse = { ...EXPENSE, id: 'e-2', description: 'Internet' };
+
+    beforeEach(() => {
+      component.expenses.set([EXPENSE, EXPENSE_B]);
+    });
+
+    it('toggleSelect adiciona e remove id da seleção', () => {
+      component.toggleSelect('e-1');
+      expect(component.selectedExpenseIds()).toContain('e-1');
+      component.toggleSelect('e-1');
+      expect(component.selectedExpenseIds()).not.toContain('e-1');
+    });
+
+    it('toggleSelectAll seleciona todos os itens exibidos', () => {
+      component.toggleSelectAll();
+      expect(component.selectedExpenseIds().length).toBe(2);
+      expect(component.allSelected()).toBeTrue();
+    });
+
+    it('toggleSelectAll desmarca todos quando todos estão selecionados', () => {
+      component.selectedExpenseIds.set(['e-1', 'e-2']);
+      component.toggleSelectAll();
+      expect(component.selectedExpenseIds().length).toBe(0);
+    });
+
+    it('isSelected retorna true apenas para ids selecionados', () => {
+      component.selectedExpenseIds.set(['e-1']);
+      expect(component.isSelected('e-1')).toBeTrue();
+      expect(component.isSelected('e-2')).toBeFalse();
+    });
+
+    it('batchPay marca itens como Paid e limpa seleção', fakeAsync(() => {
+      apiSpy.batchPayExpenses.and.returnValue(of(undefined));
+      component.selectedExpenseIds.set(['e-1', 'e-2']);
+      component.batchPay();
+      tick();
+      expect(apiSpy.batchPayExpenses).toHaveBeenCalledWith(['e-1', 'e-2']);
+      expect(component.expenses().every(e => e.paymentStatus === PaymentStatus.Paid)).toBeTrue();
+      expect(component.selectedExpenseIds().length).toBe(0);
+    }));
+
+    it('batchCancel marca itens como Cancelled e limpa seleção', fakeAsync(() => {
+      apiSpy.batchCancelExpenses.and.returnValue(of(undefined));
+      component.selectedExpenseIds.set(['e-1']);
+      component.batchCancel();
+      tick();
+      expect(apiSpy.batchCancelExpenses).toHaveBeenCalledWith(['e-1']);
+      expect(component.expenses().find(e => e.id === 'e-1')?.paymentStatus).toBe(PaymentStatus.Cancelled);
+      expect(component.selectedExpenseIds().length).toBe(0);
+    }));
+
+    it('batchDelete remove itens da lista e limpa seleção', fakeAsync(() => {
+      spyOn(window, 'confirm').and.returnValue(true);
+      apiSpy.batchDeleteExpenses.and.returnValue(of(undefined));
+      component.selectedExpenseIds.set(['e-1', 'e-2']);
+      component.batchDelete();
+      tick();
+      expect(apiSpy.batchDeleteExpenses).toHaveBeenCalledWith(['e-1', 'e-2']);
+      expect(component.expenses().length).toBe(0);
+      expect(component.selectedExpenseIds().length).toBe(0);
+    }));
+
+    it('batchDelete não executa quando usuário cancela confirm', () => {
+      spyOn(window, 'confirm').and.returnValue(false);
+      component.selectedExpenseIds.set(['e-1']);
+      component.batchDelete();
+      expect(apiSpy.batchDeleteExpenses).not.toHaveBeenCalled();
     });
   });
 
