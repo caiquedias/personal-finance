@@ -36,5 +36,3 @@ jobs:
           git merge --ff-only origin/master || git merge -m "chore(ci): sync release ← master [skip ci]" origin/master
           git push origin release
 
-      - name: Trigger Render deploy
-        run: curl -s "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
