@@ -1,0 +1,42 @@
+<div class="tweaks-backdrop" (click)="close.emit()"></div>
+
+<div class="tweaks-panel">
+  <div class="tweaks-header">
+    <span class="tweaks-title">Personalizar</span>
+    <button class="tweaks-close" (click)="close.emit()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Cor de destaque -->
+  <div class="tweaks-section">
+    <span class="tweaks-section-label">Cor de destaque</span>
+    <div class="accent-swatches">
+      @for (c of accentColors; track c.value) {
+        <button
+          class="accent-swatch"
+          [style.background]="c.value"
+          [class.active]="tweaks.accent() === c.value"
+          [title]="c.name"
+          (click)="setAccent(c.value)"
+        ></button>
+      }
+    </div>
+  </div>
+
+  <!-- Densidade -->
+  <div class="tweaks-section">
+    <span class="tweaks-section-label">Densidade</span>
+    <div class="density-options">
+      @for (d of densities; track d.value) {
+        <button
+          class="density-btn"
+          [class.active]="tweaks.density() === d.value"
+          (click)="setDensity(d.value)"
+        >{{ d.label }}</button>
+      }
+    </div>
+  </div>
+</div>

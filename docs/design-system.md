@@ -160,4 +160,29 @@
 
 ---
 
+## Estratégia de migração CSS (Option C) — issues #126–#133
+
+As issues de layout são implementadas de forma gradual. Para evitar quebrar pages ainda não migradas, seguir esta convenção:
+
+### Tokens sem conflito — adicionar direto ao `:root`
+`--terracotta`, `--purple`, `--amber`, `--slate`, `--rose`, `--gold`, `--font-b`, `--font-d`, `--ease`, `--t`, `--text`, `--text-muted`, `--text-subtle`, `--radius-xs`, `--surface-solid`
+
+### Tokens conflitantes — usar prefixo `--v2-` até migração completa
+| Token design system | Nome transitório |
+|---------------------|-----------------|
+| `--bg`              | `--v2-bg`       |
+| `--sidebar-bg`      | `--v2-sidebar-bg` |
+| `--surface`         | `--v2-surface`  |
+| `--border`          | `--v2-border`   |
+| `--radius`          | `--v2-radius`   |
+| `--radius-sm`       | `--v2-radius-sm`|
+| `--shadow`          | `--v2-shadow`   |
+
+### Regra de uso
+- **Novos componentes** (issues #126–#133): usar `--v2-*` e tokens novos sem prefixo.
+- **Pages já migradas**: já usam `--v2-*`.
+- **Após todas as pages migrarem**: commit único renomeia `--v2-*` → nome canônico do design system.
+
+---
+
 *Referência: issue #105 — Refactory Layout Sistema*

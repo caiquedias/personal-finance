@@ -65,6 +65,32 @@
 
   /* Transições */
   --transition: 150ms ease;
+
+  /* ── Design system v2 — tokens novos (sem conflito) ── */
+  --terracotta:    #C4674A;
+  --purple:        #9E8BB5;
+  --amber:         #C4924A;
+  --slate:         #6B8CAD;
+  --rose:          #B57A9E;
+  --gold:          #D4B87A;
+  --font-b:        'Inter', sans-serif;
+  --font-d:        'DM Serif Display', serif;
+  --ease:          cubic-bezier(0.4, 0, 0.2, 1);
+  --t:             all 0.22s ease;
+  --text:          #3a2e22;
+  --text-muted:    #5c4e3c;
+  --text-subtle:   #8a7a68;
+  --radius-xs:     9px;
+  --surface-solid: #faf7f2;
+
+  /* ── Design system v2 — tokens conflitantes (prefixo --v2-) ── */
+  --v2-bg:         #f5f0e8;
+  --v2-sidebar-bg: #e4ddd1;
+  --v2-surface:    rgba(0,0,0,0.03);
+  --v2-border:     rgba(0,0,0,0.08);
+  --v2-radius:     18px;
+  --v2-radius-sm:  11px;
+  --v2-shadow:     0 4px 24px rgba(0,0,0,0.08);
 }
 
 /* ── Dark theme ────────────────────────────────────────────────────────────── */
@@ -114,4 +140,16 @@
   --sidebar-item-hover:   var(--bg3);
   --sidebar-item-active-bg: rgba(122, 170, 128, 0.12);
   --sidebar-item-active:  var(--sage);
+
+  /* ── Design system v2 — dark overrides ── */
+  --text:          #F0E8DC;
+  --text-muted:    #9A8E81;
+  --text-subtle:   #6A5E52;
+  --surface-solid: #1F1B17;
+
+  --v2-bg:         #1A1410;
+  --v2-sidebar-bg: #141210;
+  --v2-surface:    rgba(255,255,255,0.04);
+  --v2-border:     rgba(255,255,255,0.07);
+  --v2-shadow:     0 4px 24px rgba(0,0,0,0.32);
 }

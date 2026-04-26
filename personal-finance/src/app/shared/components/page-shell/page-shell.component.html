@@ -1,6 +1,6 @@
 <div class="shell">
-  <app-sidebar />
-  <main class="shell-main">
+  <app-sidebar (collapsedChange)="sidebarCollapsed.set($event)" />
+  <main class="shell-main" [class.collapsed]="sidebarCollapsed()">
     <router-outlet />
   </main>
 </div>
