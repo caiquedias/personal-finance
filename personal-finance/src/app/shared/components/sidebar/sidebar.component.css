@@ -46,12 +46,10 @@
   font-size: 0.9rem;
   font-weight: 600;
   color: var(--text);
-  white-space: nowrap;
-  /* min-width: 0 + overflow: hidden garantem que o texto não vaze para fora do padding-box */
   min-width: 0;
   overflow: hidden;
-  text-overflow: ellipsis;
   flex: 1;
+  line-height: 1.25;
   opacity: 1;
   transition: opacity 0.22s;
 }
