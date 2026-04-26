@@ -54,7 +54,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Deploy to Render
-        run: curl -s "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
+        run: curl -sf "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
 
       - name: Deploy to Vercel
-        run: curl -s "${{ secrets.VERCEL_DEPLOY_HOOK_URL }}"
+        run: curl -sf "${{ secrets.VERCEL_DEPLOY_HOOK_URL }}"
