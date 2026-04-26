@@ -90,9 +90,17 @@
     </div>
   } @else {
     <div class="table-wrap card">
+      @if (hasPendingOrder()) {
+        <div class="order-save-bar">
+          <button class="btn btn-primary btn-sm" (click)="saveOrder()" [disabled]="savingOrder()">
+            {{ savingOrder() ? 'Salvando...' : 'Salvar ordem' }}
+          </button>
+        </div>
+      }
       <table class="table">
         <thead>
           <tr>
+            <th class="drag-col"></th>
             <th class="sortable" (click)="toggleSort('description')">
               Descrição {{ sortIcon('description') }}
             </th>
@@ -118,8 +126,16 @@
           </tr>
         </thead>
         <tbody>
-          @for (expense of displayedExpenses(); track expense.id) {
-            <tr>
+          @for (expense of displayedExpenses(); track expense.id; let i = $index) {
+            <tr
+              draggable="true"
+              (dragstart)="onDragStart(i)"
+              (dragover)="onDragOver($event)"
+              (drop)="onDrop(i)"
+            >
+              <td class="drag-col">
+                <span class="drag-handle" title="Arrastar para reordenar">⠿</span>
+              </td>
               <td>
                 <div class="cell-primary">{{ expense.description }}</div>
                 @if (expense.notes) {

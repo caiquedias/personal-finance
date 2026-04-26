@@ -9,7 +9,7 @@ import { CurrencyBrlPipe } from '../../../../shared/pipes/currency-brl.pipe';
 import {
   ExpenseResponse, PeriodResponse, CategoryResponse,
   MONTH_NAMES, PAYMENT_STATUS_LABELS, FORTNIGHT_TYPE_LABELS, SOURCE_TYPE_LABELS,
-  PaymentStatus, SourceType, FortnightType
+  PaymentStatus, SourceType, FortnightType, ExpenseOrderItem
 } from '../../../../core/models/models';
 
 type SortCol = 'description' | 'category' | 'sourceType' | 'fortnightType' | 'dueDate' | 'amount' | 'paymentStatus';
@@ -82,6 +82,12 @@ export class ExpensesComponent implements OnInit {
 
   // Debounce para busca por descrição
   private descriptionDebounce: ReturnType<typeof setTimeout> | null = null;
+
+  // Drag and drop
+  private draggedIndex: number | null = null;
+  readonly pendingOrders = signal<ExpenseOrderItem[]>([]);
+  readonly savingOrder   = signal(false);
+  readonly hasPendingOrder = computed(() => this.pendingOrders().length > 0);
 
   /** Pré-seleção via query param: /expenses?periodId=xxx */
   readonly periodId = input<string>();
@@ -394,6 +400,45 @@ export class ExpensesComponent implements OnInit {
         this.expenses.update(list => list.filter(e => e.id !== id));
         this.totalCount.update(n => n - 1);
       }
+    });
+  }
+
+  // ── Drag and drop ─────────────────────────────────────────────────────────
+
+  onDragStart(index: number): void {
+    this.draggedIndex = index;
+  }
+
+  onDragOver(event: DragEvent): void {
+    event.preventDefault();
+  }
+
+  onDrop(targetIndex: number): void {
+    if (this.draggedIndex === null || this.draggedIndex === targetIndex) return;
+
+    this.expenses.update(list => {
+      const reordered = [...list];
+      const [moved] = reordered.splice(this.draggedIndex!, 1);
+      reordered.splice(targetIndex, 0, moved);
+      return reordered;
+    });
+
+    // Registra todos os items da lista atual com a nova ordem
+    const newOrders: ExpenseOrderItem[] = this.expenses().map((e, i) => ({ expenseId: e.id, order: i }));
+    this.pendingOrders.set(newOrders);
+    this.draggedIndex = null;
+  }
+
+  saveOrder(): void {
+    const items = this.pendingOrders();
+    if (!items.length) return;
+    this.savingOrder.set(true);
+    this.api.saveExpenseOrder(items).subscribe({
+      next: () => {
+        this.pendingOrders.set([]);
+        this.savingOrder.set(false);
+      },
+      error: () => this.savingOrder.set(false)
     });
   }
 

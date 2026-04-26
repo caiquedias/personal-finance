@@ -67,31 +67,41 @@ public sealed class ExpenseRepository : IExpenseRepository
         SourceType?    sourceType,
         CancellationToken ct = default)
     {
-        var query = _context.Expenses
+        var baseQuery = _context.Expenses
             .Where(e => e.PeriodId == periodId && e.UserId == userId);
 
         if (!string.IsNullOrWhiteSpace(description))
-            query = query.Where(e => e.Description.Contains(description));
+            baseQuery = baseQuery.Where(e => e.Description.Contains(description));
 
         if (categoryId.HasValue)
-            query = query.Where(e => e.CategoryId == categoryId.Value);
+            baseQuery = baseQuery.Where(e => e.CategoryId == categoryId.Value);
 
         if (paymentStatus.HasValue)
-            query = query.Where(e => e.PaymentStatus == paymentStatus.Value);
+            baseQuery = baseQuery.Where(e => e.PaymentStatus == paymentStatus.Value);
 
         if (fortnightType.HasValue)
-            query = query.Where(e => e.FortnightType == fortnightType.Value);
+            baseQuery = baseQuery.Where(e => e.FortnightType == fortnightType.Value);
 
         if (sourceType.HasValue)
-            query = query.Where(e => e.SourceType == sourceType.Value);
+            baseQuery = baseQuery.Where(e => e.SourceType == sourceType.Value);
 
-        var totalCount = await query.CountAsync(ct);
+        var totalCount = await baseQuery.CountAsync(ct);
 
-        var items = await query
-            .OrderBy(e => e.FortnightType)
-            .ThenBy(e => e.DueDate)
+        // LEFT JOIN com ExpenseOrders — ordena pelo campo Order quando disponível,
+        // itens sem ordem ficam ao final (ordenados por FortnightType/DueDate)
+        var joined = from e in baseQuery
+                     join eo in _context.ExpenseOrders on e.Id equals eo.ExpenseId into og
+                     from eo in og.DefaultIfEmpty()
+                     select new { Expense = e, Order = (int?)eo.Order };
+
+        var items = await joined
+            .OrderBy(x => x.Order == null ? 1 : 0)
+            .ThenBy(x => x.Order)
+            .ThenBy(x => x.Expense.FortnightType)
+            .ThenBy(x => x.Expense.DueDate)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
+            .Select(x => x.Expense)
             .ToListAsync(ct);
 
         return (items, totalCount);

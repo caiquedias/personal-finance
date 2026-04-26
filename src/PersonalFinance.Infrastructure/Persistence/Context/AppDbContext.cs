@@ -22,6 +22,7 @@ public sealed class AppDbContext : DbContext
     public DbSet<Category> Categories { get; set; } = default!;
     public DbSet<Period> Periods { get; set; } = default!;
     public DbSet<Expense> Expenses { get; set; } = default!;
+    public DbSet<ExpenseOrder> ExpenseOrders { get; set; } = default!;
     public DbSet<Income> Incomes { get; set; } = default!;
 
     // ── Lookup tables (seed) ──────────────────────────────────────────────────
@@ -42,6 +43,7 @@ public sealed class AppDbContext : DbContext
         modelBuilder.Entity<Category>().HasQueryFilter(e => e.DeletedAt == null);
         modelBuilder.Entity<Period>().HasQueryFilter(e => e.DeletedAt == null);
         modelBuilder.Entity<Expense>().HasQueryFilter(e => e.DeletedAt == null);
+        modelBuilder.Entity<ExpenseOrder>().HasQueryFilter(e => e.DeletedAt == null);
         modelBuilder.Entity<Income>().HasQueryFilter(e => e.DeletedAt == null);
     }
 

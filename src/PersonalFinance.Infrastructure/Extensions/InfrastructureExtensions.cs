@@ -40,6 +40,7 @@ public static class InfrastructureExtensions
         services.AddScoped<ICategoryRepository, CategoryRepository>();
         services.AddScoped<IPeriodRepository, PeriodRepository>();
         services.AddScoped<IExpenseRepository, ExpenseRepository>();
+        services.AddScoped<IExpenseOrderRepository, ExpenseOrderRepository>();
         services.AddScoped<IIncomeRepository, IncomeRepository>();
         services.AddScoped<IReportRepository, ReportRepository>();
 
