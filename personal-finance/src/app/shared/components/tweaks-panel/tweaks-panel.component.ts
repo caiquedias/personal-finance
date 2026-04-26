@@ -1,5 +1,6 @@
-import { Component, inject, output, signal, OnInit } from '@angular/core';
+import { Component, inject, output, OnInit } from '@angular/core';
 import { TweaksService } from '../../../core/services/tweaks.service';
+import { ThemeService } from '../../../core/services/theme.service';
 
 const ACCENT_COLORS = [
   { name: 'Terracotta', value: '#C4674A' },
@@ -20,6 +21,7 @@ export type Density = 'compact' | 'normal' | 'comfortable';
 })
 export class TweaksPanelComponent implements OnInit {
   readonly tweaks  = inject(TweaksService);
+  readonly theme   = inject(ThemeService);
   readonly close   = output<void>();
 
   readonly accentColors = ACCENT_COLORS;
