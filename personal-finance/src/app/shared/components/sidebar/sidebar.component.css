@@ -27,15 +27,19 @@
 .sidebar-logo-mark {
   width: 33px;
   height: 33px;
-  background: var(--terracotta);
-  color: #fff;
   border-radius: 11px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 700;
-  font-size: 14px;
   flex-shrink: 0;
+  overflow: hidden;
+}
+
+.sidebar-logo-img {
+  width: 33px;
+  height: 33px;
+  object-fit: contain;
+  image-rendering: pixelated; /* preserva o estilo pixel art */
 }
 
 .sidebar-logo-text {
@@ -43,6 +47,11 @@
   font-weight: 600;
   color: var(--text);
   white-space: nowrap;
+  /* min-width: 0 + overflow: hidden garantem que o texto não vaze para fora do padding-box */
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
   opacity: 1;
   transition: opacity 0.22s;
 }
