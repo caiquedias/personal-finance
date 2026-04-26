@@ -19,7 +19,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 18px 16px 14px;
+  padding: 16px 48px 14px 16px; /* padding-right reserva espaço para o toggle absoluto */
   border-bottom: 1px solid var(--v2-border);
   flex-shrink: 0;
 }
@@ -52,10 +52,11 @@
 /* ── Toggle ── */
 .sidebar-toggle {
   position: absolute;
-  top: 18px;
-  right: 10px;
-  width: 24px;
-  height: 24px;
+  /* expandido: extrema direita da logo area sem sobrepor texto */
+  top: 20px;
+  left: 160px; /* 198px sidebar - 28px btn - 10px gap */
+  width: 28px;
+  height: 28px;
   border: none;
   background: none;
   color: var(--text-muted);
@@ -63,13 +64,20 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 6px;
-  transition: var(--t);
-  flex-shrink: 0;
+  border-radius: 8px;
+  /* transição em top + left → animação suave nos dois eixos */
+  transition: top 0.34s var(--ease),
+              left 0.34s var(--ease),
+              background 0.22s,
+              color 0.22s;
   z-index: 1;
 }
 
-.collapsed .sidebar-toggle { right: auto; left: 50%; transform: translateX(-50%); }
+/* colapsado: abaixo do ₿, centralizado nos 64px */
+.collapsed .sidebar-toggle {
+  top: 72px;  /* ~65px altura logo + 7px gap */
+  left: 18px; /* (64px - 28px) / 2 */
+}
 
 .sidebar-toggle:hover {
   background: var(--v2-surface);
@@ -131,8 +139,8 @@
 
 .collapsed .sidebar-item-label { opacity: 0; width: 0; }
 
-/* Collapsed: centraliza ícone no item */
-.collapsed .sidebar-nav { padding: 10px 4px; }
+/* Collapsed: centraliza ícone no item + espaço para o toggle descido */
+.collapsed .sidebar-nav { padding: 48px 4px 10px; }
 
 .collapsed .sidebar-item {
   justify-content: center;
