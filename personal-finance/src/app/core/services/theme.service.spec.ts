@@ -31,17 +31,17 @@ describe('ThemeService', () => {
     });
 
     it('usa preferência do sistema quando localStorage está vazio', () => {
-      spyOn(window, 'matchMedia').and.returnValue({
-        matches: true,
-        media: '',
-        onchange: null,
-        addListener: () => {},
-        removeListener: () => {},
-        addEventListener: () => {},
-        removeEventListener: () => {},
+      const mql = {
+        matches: true, media: '', onchange: null,
+        addListener: () => {}, removeListener: () => {},
+        addEventListener: () => {}, removeEventListener: () => {},
         dispatchEvent: () => false,
-      } as MediaQueryList);
-      const svc = createService();
+      } as MediaQueryList;
+      // spyOn antes do configureTestingModule — signal é avaliado na instanciação
+      spyOn(window, 'matchMedia').and.returnValue(mql);
+      TestBed.configureTestingModule({ providers: [ThemeService] });
+      const svc = TestBed.inject(ThemeService);
+      TestBed.flushEffects();
       expect(svc.isDark()).toBeTrue();
     });
 
