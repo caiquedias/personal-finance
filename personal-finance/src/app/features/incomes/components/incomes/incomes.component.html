@@ -11,8 +11,7 @@
     <label class="field-label">Filtrar por período</label>
     <select
       #periodFilterSelect
-      class="input"
-      style="width:auto; min-width:180px"
+      class="input period-select"
       (change)="onPeriodFilter($event)"
     >
       <option value="">Selecione um período</option>
@@ -67,7 +66,7 @@
             <th class="sortable" (click)="toggleSort('description')">
               Descrição {{ sortIndicator('description') }}
             </th>
-            <th class="sortable" (click)="toggleSort('fortnightType')">
+            <th class="sortable col-hide-mobile" (click)="toggleSort('fortnightType')">
               Quinzena {{ sortIndicator('fortnightType') }}
             </th>
             <th class="sortable" (click)="toggleSort('receivedAt')">
@@ -88,7 +87,7 @@
                   <div class="cell-secondary">{{ income.notes }}</div>
                 }
               </td>
-              <td class="text-muted text-sm">{{ fortnightLabel(income.fortnightType) }}</td>
+              <td class="text-muted text-sm col-hide-mobile">{{ fortnightLabel(income.fortnightType) }}</td>
               <td class="text-muted text-sm">{{ formatDate(income.receivedAt) }}</td>
               <td class="amount-positive">{{ income.amount | currencyBrl }}</td>
               <td>
