@@ -1,4 +1,8 @@
-<aside class="sidebar" [class.collapsed]="collapsed()">
+@if (mobileOpen()) {
+  <div class="sidebar-mobile-backdrop" (click)="closeMobile.emit()"></div>
+}
+
+<aside class="sidebar" [class.collapsed]="collapsed()" [class.mobile-open]="mobileOpen()">
   <!-- Logo -->
   <div class="sidebar-logo">
     <span class="sidebar-logo-mark">

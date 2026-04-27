@@ -56,3 +56,13 @@
 
 .stat-card--info    .stat-card-value { color: var(--color-info); }
 .stat-card--info    .stat-card-icon  { background: var(--color-info-bg); color: var(--color-info); }
+
+@media (max-width: 767px) {
+  .stat-card {
+    padding: 14px 16px;
+  }
+
+  .stat-card-value {
+    font-size: 1.25rem;
+  }
+}
