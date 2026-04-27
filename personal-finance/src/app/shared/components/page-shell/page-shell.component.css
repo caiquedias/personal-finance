@@ -16,3 +16,31 @@
 .shell-main.collapsed {
   margin-left: 64px;
 }
+
+.mobile-menu-btn {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .shell-main {
+    margin-left: 0 !important;
+  }
+
+  .mobile-menu-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    top: 14px;
+    left: 14px;
+    z-index: 38;
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--v2-border);
+    border-radius: 10px;
+    background: var(--v2-sidebar-bg);
+    color: var(--text-muted);
+    cursor: pointer;
+    box-shadow: var(--v2-shadow);
+  }
+}

@@ -10,5 +10,6 @@ import { SidebarComponent } from '../sidebar/sidebar.component';
   styleUrls: ['./page-shell.component.css']
 })
 export class PageShellComponent {
-  readonly sidebarCollapsed = signal(false);
+  readonly sidebarCollapsed   = signal(false);
+  readonly mobileSidebarOpen  = signal(false);
 }
