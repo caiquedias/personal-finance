@@ -50,6 +50,8 @@ export class PeriodDetailComponent implements OnInit {
   readonly summary    = signal<PeriodSummary | null>(null);
   readonly categories = signal<CategoryResponse[]>([]);
 
+  readonly touchedCatId = signal<string | null>(null);
+
   // Mario modal
   readonly marioOpen    = signal(false);
   readonly marioTitle   = signal('');
@@ -398,6 +400,11 @@ export class PeriodDetailComponent implements OnInit {
 
   categoryColor(categoryId: string): string {
     return this.categories().find(c => c.id === categoryId)?.color ?? '#c8bfaf';
+  }
+
+  categoryIcon(categoryId: string): string | null {
+    const icon = this.categories().find(c => c.id === categoryId)?.icon ?? null;
+    return icon ? `data:image/png;base64,${icon}` : null;
   }
 
   statusLabel(status: PaymentStatus): string {
