@@ -85,7 +85,7 @@
 .lookup-name { font-size: 0.875rem; font-weight: 500; color: var(--ink); }
 .lookup-desc { font-size: 0.8125rem; color: var(--ink3); }
 
-.card-actions { display: flex; gap: 6px; align-items: center; padding-bottom: 63px;}
+.card-actions { display: flex; gap: 6px; align-items: center; }
 
 .action-btn {
   width: 28px; height: 28px; border: 1px solid var(--border);
@@ -127,4 +127,20 @@
   display: flex; justify-content: flex-end; gap: 8px;
   padding: 16px 24px;
   border-top: 1px solid var(--border);
+}
+
+/* ── Responsividade mobile ── */
+@media (max-width: 767px) {
+  .page-content { padding: 16px; gap: 16px; }
+
+  .tabs { flex-wrap: wrap; }
+  .tab { padding: 8px 12px; font-size: 0.8125rem; }
+
+  .form-row { flex-direction: column; }
+  .field, .field-wide { min-width: unset; width: 100%; }
+
+  .categories-grid { grid-template-columns: 1fr; }
+
+  .form-grid { grid-template-columns: 1fr; }
+  .field-full { grid-column: span 1; }
 }
