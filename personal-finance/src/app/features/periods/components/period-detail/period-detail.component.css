@@ -223,8 +223,8 @@
 }
 
 .category-dot--icon {
-  width: 24px;
-  height: 24px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   background: var(--cat-color, #c8bfaf);
   display: inline-flex;
@@ -235,8 +235,8 @@
 }
 
 .category-dot-img {
-  width: 14px;
-  height: 14px;
+  width: 20px;
+  height: 20px;
   object-fit: contain;
   display: block;
 }
@@ -404,4 +404,5 @@
 
   .category-dot-wrap    { display: inline-flex; }
   .category-name-desktop { display: none; }
+  td:has(.category-dot-wrap) { text-align: center; }
 }
