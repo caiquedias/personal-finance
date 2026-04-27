@@ -318,3 +318,27 @@
 .input-sm { padding: 6px 10px; font-size: 0.8125rem; }
 .field-label { font-size: 0.875rem; font-weight: 500; color: var(--ink2); }
 .text-muted { color: var(--ink3); }
+
+@media (max-width: 767px) {
+  .page-content { padding: 16px; gap: 16px; }
+
+  .summary-bar {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 16px;
+    gap: 12px;
+  }
+
+  .summary-divider { display: none; }
+
+  .summary-item {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .filters-grid { flex-direction: column; }
+  .filter-field { min-width: unset; }
+
+  .loading-state, .empty-state { padding: 32px; }
+}
