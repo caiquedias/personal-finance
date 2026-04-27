@@ -238,3 +238,25 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* ── Mobile ── */
+.sidebar-mobile-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 39;
+}
+
+@media (max-width: 767px) {
+  .sidebar {
+    transform: translateX(-100%);
+    transition: width 0.34s var(--ease), transform 0.3s var(--ease);
+    width: 198px !important;
+  }
+
+  .sidebar.mobile-open {
+    transform: translateX(0);
+  }
+
+  .sidebar-toggle { display: none; }
+}
