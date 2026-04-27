@@ -251,3 +251,15 @@
 }
 
 @keyframes spin { to { transform: rotate(360deg); } }
+
+@media (max-width: 767px) {
+  .page-content { padding: 16px; gap: 16px; }
+
+  .filter-controls { flex-direction: column; align-items: stretch; }
+  .filter-field { min-width: unset; }
+  .input-sm { min-width: unset; }
+
+  .periods-grid { grid-template-columns: 1fr; }
+
+  .loading-state, .empty-state { padding: 32px; }
+}
