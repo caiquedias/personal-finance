@@ -124,11 +124,14 @@ a:hover { color: var(--sage); }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .btn-primary {
-  background: var(--sage2);
+  background: var(--terracotta);
   color: #fff;
-  border-color: var(--sage2);
+  border-color: var(--terracotta);
 }
-.btn-primary:hover:not(:disabled) { background: var(--sage); border-color: var(--sage); }
+.btn-primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--terracotta) 82%, black);
+  border-color: color-mix(in srgb, var(--terracotta) 82%, black);
+}
 
 .btn-secondary {
   background: var(--surface-raised);
