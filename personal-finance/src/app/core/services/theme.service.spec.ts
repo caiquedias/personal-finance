@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { ThemeService } from './theme.service';
+import { ThemeService, MATCH_MEDIA_FN } from './theme.service';
 
 const THEME_KEY = 'pf_theme';
 
@@ -37,12 +37,13 @@ describe('ThemeService', () => {
         addEventListener: () => {}, removeEventListener: () => {},
         dispatchEvent: () => false,
       } as MediaQueryList;
-      // Object.defineProperty necessário — matchMedia é read-only no Chrome Headless 147+
-      Object.defineProperty(window, 'matchMedia', {
-        writable: true, configurable: true,
-        value: jasmine.createSpy('matchMedia').and.returnValue(mql),
+      const matchMediaSpy = jasmine.createSpy('matchMedia').and.returnValue(mql);
+      TestBed.configureTestingModule({
+        providers: [
+          ThemeService,
+          { provide: MATCH_MEDIA_FN, useValue: matchMediaSpy },
+        ],
       });
-      TestBed.configureTestingModule({ providers: [ThemeService] });
       const svc = TestBed.inject(ThemeService);
       TestBed.flushEffects();
       expect(svc.isDark()).toBeTrue();
