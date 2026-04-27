@@ -1,4 +1,4 @@
-import { Component, inject, computed, signal, output } from '@angular/core';
+import { Component, inject, computed, signal, input, output } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { AuthService } from '../../../core/auth/auth.service';
@@ -31,8 +31,10 @@ export class SidebarComponent {
   readonly auth      = inject(AuthService);
   private readonly sanitizer = inject(DomSanitizer);
 
-  readonly collapsed = signal(false);
+  readonly mobileOpen     = input<boolean>(false);
+  readonly collapsed      = signal(false);
   readonly collapsedChange = output<boolean>();
+  readonly closeMobile    = output<void>();
 
   readonly visibleItems = computed(() =>
     NAV_ITEMS.filter(item => !item.adminOnly || this.auth.isAdmin())
