@@ -26,9 +26,9 @@
           <tr>
             <th>Nome</th>
             <th>E-mail</th>
-            <th>Roles</th>
+            <th class="col-hide-mobile">Roles</th>
             <th>Status</th>
-            <th>Cadastro</th>
+            <th class="col-hide-mobile">Cadastro</th>
             <th>Ações</th>
           </tr>
         </thead>
@@ -37,7 +37,7 @@
             <tr [class.row-inactive]="!user.isActive">
               <td class="cell-primary">{{ user.name }}</td>
               <td class="text-muted text-sm">{{ user.email }}</td>
-              <td>
+              <td class="col-hide-mobile">
                 <div class="roles-wrap">
                   @for (role of user.roles; track role) {
                     <span class="badge" [class]="role === 'Admin' ? 'badge-warning' : 'badge-info'">{{ role }}</span>
@@ -49,7 +49,7 @@
                   {{ user.isActive ? 'Ativo' : 'Inativo' }}
                 </span>
               </td>
-              <td class="text-muted text-sm">{{ formatDate(user.createdAt) }}</td>
+              <td class="col-hide-mobile text-muted text-sm">{{ formatDate(user.createdAt) }}</td>
               <td>
                 <div class="row-actions">
                   <button class="action-btn action-primary" (click)="openEdit(user)" title="Editar">✏️</button>
