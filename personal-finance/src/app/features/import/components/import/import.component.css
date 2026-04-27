@@ -19,12 +19,12 @@
 
 .drop-zone:hover,
 .drop-zone.drag-over {
-  border-color: var(--sage2);
-  background: rgba(107, 143, 113, 0.04);
+  border-color: var(--terracotta);
+  background: color-mix(in srgb, var(--terracotta) 4%, transparent);
 }
 
 .drop-zone.has-file {
-  border-color: var(--sage2);
+  border-color: var(--terracotta);
   border-style: solid;
 }
 
@@ -36,8 +36,8 @@
 }
 
 .drop-icon { color: var(--ink3); margin-bottom: 4px; }
-.drop-zone.has-file .drop-icon  { color: var(--sage2); }
-.drop-zone.drag-over .drop-icon { color: var(--sage); }
+.drop-zone.has-file .drop-icon  { color: var(--terracotta); }
+.drop-zone.drag-over .drop-icon { color: var(--terracotta); }
 
 .drop-title    { font-size: 1rem; font-weight: 600; color: var(--ink); margin: 0; }
 .drop-subtitle { font-size: 0.875rem; color: var(--ink3); margin: 0; }
@@ -89,7 +89,7 @@
 }
 
 .progress-title { font-weight: 600; color: var(--ink); font-size: 0.9375rem; }
-.progress-pct   { font-weight: 700; color: var(--sage2); font-size: 1rem; }
+.progress-pct   { font-weight: 700; color: var(--terracotta); font-size: 1rem; }
 
 .progress-track {
   height: 8px;
@@ -101,7 +101,7 @@
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--sage2), var(--sage));
+  background: linear-gradient(90deg, var(--terracotta), color-mix(in srgb, var(--terracotta) 70%, white));
   border-radius: 4px;
   transition: width 0.3s ease;
 }

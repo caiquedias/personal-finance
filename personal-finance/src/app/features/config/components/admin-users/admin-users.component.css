@@ -76,7 +76,7 @@
 .loading-state { display: flex; align-items: center; justify-content: center; padding: 64px; }
 .spinner-lg {
   width: 32px; height: 32px; border: 3px solid var(--border);
-  border-top-color: var(--sage2); border-radius: 50%;
+  border-top-color: var(--terracotta); border-radius: 50%;
   animation: spin .8s linear infinite; display: block;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
