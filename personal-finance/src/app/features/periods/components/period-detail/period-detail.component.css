@@ -400,6 +400,8 @@
   .filters-grid { flex-direction: column; }
   .filter-field { min-width: unset; }
 
+  .col-hide-mobile { display: none; }
+
   .loading-state, .empty-state { padding: 32px; }
 
   .category-dot-wrap    { display: inline-flex; }

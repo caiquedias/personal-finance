@@ -158,8 +158,25 @@
                 }
               </td>
               <td>
-                <span class="category-dot" [style.background]="categoryColor(expense.categoryId)"></span>
-                {{ categoryName(expense.categoryId) }}
+                <span class="category-dot-wrap"
+                  [style.--cat-color]="categoryColor(expense.categoryId)"
+                  [class.touched]="touchedCatId() === expense.categoryId"
+                  (touchstart)="touchedCatId.set(expense.categoryId)"
+                  (touchend)="touchedCatId.set(null)"
+                >
+                  @if (categoryIcon(expense.categoryId)) {
+                    <span class="category-dot category-dot--icon">
+                      <img class="category-dot-img" [src]="categoryIcon(expense.categoryId)" [alt]="categoryName(expense.categoryId)" />
+                    </span>
+                  } @else {
+                    <span class="category-dot"></span>
+                  }
+                  <kbd class="category-kbd">{{ categoryName(expense.categoryId) }}</kbd>
+                </span>
+                <span class="category-name-desktop">
+                  <span class="category-dot" [style.background]="categoryColor(expense.categoryId)"></span>
+                  {{ categoryName(expense.categoryId) }}
+                </span>
               </td>
               <td class="text-muted text-sm col-hide-mobile">{{ sourceLabel(expense.sourceType) }}</td>
               <td class="text-muted text-sm col-hide-mobile">{{ fortnightLabel(expense.fortnightType) }}</td>
