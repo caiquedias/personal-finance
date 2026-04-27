@@ -9,7 +9,7 @@
   <!-- Filtro por período -->
   <div class="filter-row">
     <label class="field-label">Filtrar por período</label>
-    <select #periodFilterSelect class="input" style="width:auto; min-width:180px" (change)="onPeriodFilter($event)">
+    <select #periodFilterSelect class="input period-select" (change)="onPeriodFilter($event)">
       <option value="">Selecione um período</option>
       @for (p of periods(); track p.id) {
         <option [value]="p.id">{{ monthName(p.month) }}/{{ p.year }}</option>
@@ -118,10 +118,10 @@
             <th class="sortable" (click)="toggleSort('category')">
               Categoria {{ sortIcon('category') }}
             </th>
-            <th class="sortable" (click)="toggleSort('sourceType')">
+            <th class="sortable col-hide-mobile" (click)="toggleSort('sourceType')">
               Fonte {{ sortIcon('sourceType') }}
             </th>
-            <th class="sortable" (click)="toggleSort('fortnightType')">
+            <th class="sortable col-hide-mobile" (click)="toggleSort('fortnightType')">
               Quinzena {{ sortIcon('fortnightType') }}
             </th>
             <th class="sortable" (click)="toggleSort('dueDate')">
@@ -158,11 +158,28 @@
                 }
               </td>
               <td>
-                <span class="category-dot" [style.background]="categoryColor(expense.categoryId)"></span>
-                {{ categoryName(expense.categoryId) }}
+                <span class="category-dot-wrap"
+                  [style.--cat-color]="categoryColor(expense.categoryId)"
+                  [class.touched]="touchedCatId() === expense.categoryId"
+                  (touchstart)="touchedCatId.set(expense.categoryId)"
+                  (touchend)="touchedCatId.set(null)"
+                >
+                  @if (categoryIcon(expense.categoryId)) {
+                    <span class="category-dot category-dot--icon">
+                      <img class="category-dot-img" [src]="categoryIcon(expense.categoryId)" [alt]="categoryName(expense.categoryId)" />
+                    </span>
+                  } @else {
+                    <span class="category-dot"></span>
+                  }
+                  <kbd class="category-kbd">{{ categoryName(expense.categoryId) }}</kbd>
+                </span>
+                <span class="category-name-desktop">
+                  <span class="category-dot" [style.background]="categoryColor(expense.categoryId)"></span>
+                  {{ categoryName(expense.categoryId) }}
+                </span>
               </td>
-              <td class="text-muted text-sm">{{ sourceLabel(expense.sourceType) }}</td>
-              <td class="text-muted text-sm">{{ fortnightLabel(expense.fortnightType) }}</td>
+              <td class="text-muted text-sm col-hide-mobile">{{ sourceLabel(expense.sourceType) }}</td>
+              <td class="text-muted text-sm col-hide-mobile">{{ fortnightLabel(expense.fortnightType) }}</td>
               <td class="text-muted text-sm">{{ formatDate(expense.dueDate) }}</td>
               <td class="font-semibold">{{ expense.amount | currencyBrl }}</td>
               <td>

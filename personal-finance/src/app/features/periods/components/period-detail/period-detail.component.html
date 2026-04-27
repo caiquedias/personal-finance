@@ -149,8 +149,8 @@
               <tr>
                 <th class="sortable" (click)="toggleExpSort('description')">Descrição {{ expSortIcon('description') }}</th>
                 <th class="sortable" (click)="toggleExpSort('category')">Categoria {{ expSortIcon('category') }}</th>
-                <th class="sortable" (click)="toggleExpSort('sourceType')">Fonte {{ expSortIcon('sourceType') }}</th>
-                <th class="sortable" (click)="toggleExpSort('fortnightType')">Quinzena {{ expSortIcon('fortnightType') }}</th>
+                <th class="sortable col-hide-mobile" (click)="toggleExpSort('sourceType')">Fonte {{ expSortIcon('sourceType') }}</th>
+                <th class="sortable col-hide-mobile" (click)="toggleExpSort('fortnightType')">Quinzena {{ expSortIcon('fortnightType') }}</th>
                 <th class="sortable" (click)="toggleExpSort('dueDate')">Vencimento {{ expSortIcon('dueDate') }}</th>
                 <th class="sortable" (click)="toggleExpSort('amount')">Valor {{ expSortIcon('amount') }}</th>
                 <th class="sortable" (click)="toggleExpSort('paymentStatus')">Status {{ expSortIcon('paymentStatus') }}</th>
@@ -181,8 +181,8 @@
                       {{ categoryName(expense.categoryId) }}
                     </span>
                   </td>
-                  <td class="text-muted text-sm">{{ sourceLabel(expense.sourceType) }}</td>
-                  <td class="text-muted text-sm">{{ fortnightLabel(expense.fortnightType) }}</td>
+                  <td class="text-muted text-sm col-hide-mobile">{{ sourceLabel(expense.sourceType) }}</td>
+                  <td class="text-muted text-sm col-hide-mobile">{{ fortnightLabel(expense.fortnightType) }}</td>
                   <td class="text-muted text-sm">{{ formatDate(expense.dueDate) }}</td>
                   <td class="font-semibold">{{ expense.amount | currencyBrl }}</td>
                   <td>
