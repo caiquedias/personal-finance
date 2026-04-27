@@ -369,6 +369,13 @@
   display: block;
 }
 
+@media (max-width: 767px) {
+  .page-content { padding: 16px; gap: 16px; }
+  .kpi-card { padding: 16px; }
+  .kpi-value { font-size: 22px; }
+  .widget-card { padding: 16px; }
+}
+
 @keyframes spin    { to { transform: rotate(360deg); } }
 @keyframes fadeUp  {
   from { opacity: 0; transform: translateY(14px); }
