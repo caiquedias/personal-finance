@@ -53,6 +53,7 @@ export class ExpensesComponent implements OnInit {
 
   readonly periods    = signal<PeriodResponse[]>([]);
   readonly categories = signal<CategoryResponse[]>([]);
+  readonly touchedCatId = signal<string | null>(null);
 
   // Dados vindos da API (página atual)
   readonly expenses    = signal<ExpenseResponse[]>([]);
@@ -523,6 +524,11 @@ export class ExpensesComponent implements OnInit {
 
   categoryColor(categoryId: string): string {
     return this.categories().find(c => c.id === categoryId)?.color ?? '#c8bfaf';
+  }
+
+  categoryIcon(categoryId: string): string | null {
+    const icon = this.categories().find(c => c.id === categoryId)?.icon ?? null;
+    return icon ? `data:image/png;base64,${icon}` : null;
   }
 
   statusLabel(status: PaymentStatus): string     { return PAYMENT_STATUS_LABELS[status]; }
