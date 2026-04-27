@@ -288,6 +288,27 @@
 
 .row-selected { background: rgba(196,103,74,0.06) !important; }
 
+.period-select { width: auto; min-width: 180px; }
+
+/* ── Responsividade mobile ── */
+@media (max-width: 767px) {
+  .page-content { padding: 16px; gap: 16px; }
+
+  .filter-row { flex-wrap: wrap; }
+  .period-select { width: 100%; min-width: unset; }
+
+  .filters-grid { grid-template-columns: 1fr; }
+
+  .col-hide-mobile { display: none; }
+
+  .batch-action-bar { flex-wrap: wrap; }
+
+  .loading-state, .empty-state { padding: 32px; }
+
+  .modal-form-grid { grid-template-columns: 1fr; }
+  .field-full { grid-column: span 1; }
+}
+
 /* ── Animations ── */
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(14px); }
