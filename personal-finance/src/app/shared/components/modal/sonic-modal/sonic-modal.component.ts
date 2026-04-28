@@ -1,7 +1,4 @@
-import {
-  Component, input, output, OnInit, OnDestroy,
-  signal, HostListener
-} from '@angular/core';
+import { Component, input, output, HostListener } from '@angular/core';
 
 @Component({
   selector: 'app-sonic-modal',
@@ -10,15 +7,9 @@ import {
   styleUrls: ['./sonic-modal.component.css']
 })
 export class SonicModalComponent {
-  readonly title  = input<string>('');
-  readonly closed = output<void>();
-
-  // Padrão de blocos — 'l' = light, 'd' = dark
-  readonly blocks: ('l' | 'd')[] = [
-    'l','d','l','l','d','l','l','d','l','l','d','l',
-    'l','d','l','l','d','l','l','d','l','l','d','l',
-    'l','d','l','l','d','l',
-  ];
+  readonly title    = input<string>('');
+  readonly subtitle = input<string>('');
+  readonly closed   = output<void>();
 
   @HostListener('document:keydown.escape')
   onEscape(): void {

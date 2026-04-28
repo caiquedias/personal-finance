@@ -76,6 +76,37 @@ export class IncomesComponent implements OnInit {
   readonly modalOpen   = signal(false);
   readonly modalMode   = signal<'create' | 'edit'>('create');
 
+  // Ring animation — campo de valor
+  private _ringId = 0;
+  readonly rings    = signal<{ id: number; x: number }[]>([]);
+  readonly sparkles = signal<{ id: number; x: number; y: string }[]>([]);
+
+  incrementAmount(): void {
+    const cur = this.form.get('amount')?.value ?? 0;
+    this.form.get('amount')?.setValue(Math.round((cur + 10) * 100) / 100);
+    this._spawnRing();
+  }
+
+  decrementAmount(): void {
+    const cur = this.form.get('amount')?.value ?? 0;
+    const next = Math.max(0, Math.round((cur - 10) * 100) / 100);
+    this.form.get('amount')?.setValue(next);
+    this._spawnRing();
+  }
+
+  private _spawnRing(): void {
+    const id = ++this._ringId;
+    const x  = 20 + Math.random() * 140;
+    this.rings.update(r => [...r, { id, x }]);
+    this.sparkles.update(s => [
+      ...s,
+      { id: id * 100 + 1, x: x - 10 + Math.random() * 20, y: '30%' },
+      { id: id * 100 + 2, x: x - 20 + Math.random() * 40, y: '60%' },
+    ]);
+    setTimeout(() => this.rings.update(r => r.filter(ring => ring.id !== id)), 900);
+    setTimeout(() => this.sparkles.update(s => s.filter(sp => sp.id !== id * 100 + 1 && sp.id !== id * 100 + 2)), 500);
+  }
+
   private editingId: string | null = null;
   selectedPeriodId: string | null = null;
 
