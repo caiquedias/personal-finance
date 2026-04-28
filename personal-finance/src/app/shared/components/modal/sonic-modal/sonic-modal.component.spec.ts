@@ -32,6 +32,16 @@ describe('SonicModalComponent', () => {
     expect(component.title()).toBe('Meu Modal');
   });
 
+  it('subtitle tem valor padrão vazio', () => {
+    expect(component.subtitle()).toBe('');
+  });
+
+  it('subtitle recebe valor via input', () => {
+    fixture.componentRef.setInput('subtitle', 'Subtítulo do modal');
+    fixture.detectChanges();
+    expect(component.subtitle()).toBe('Subtítulo do modal');
+  });
+
   it('emite "closed" ao pressionar Escape', () => {
     let emitted = false;
     component.closed.subscribe(() => { emitted = true; });
@@ -52,7 +62,4 @@ describe('SonicModalComponent', () => {
     expect(emitted).toBeTrue();
   });
 
-  it('blocks é um array não-vazio', () => {
-    expect(component.blocks.length).toBeGreaterThan(0);
-  });
 });

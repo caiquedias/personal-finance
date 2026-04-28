@@ -134,6 +134,7 @@
   <div class="modal-center" @modalAnim>
     <app-sonic-modal
       [title]="modalMode() === 'create' ? 'Nova Receita' : 'Editar Receita'"
+      [subtitle]="modalMode() === 'create' ? 'Registre uma nova entrada' : 'Edite os dados da receita'"
       (closed)="closeModal()"
     >
       <form [formGroup]="form" (ngSubmit)="onSubmit()">
@@ -171,15 +172,39 @@
 
           <div class="field">
             <label class="field-label">Valor (R$) *</label>
-            <input
-              type="number"
-              formControlName="amount"
-              class="input"
-              [class.error]="showError('amount')"
-              placeholder="0,00"
-              step="0.01"
-              min="0.01"
-            />
+            <div class="value-wrap">
+              @for (ring of rings(); track ring.id) {
+                <img class="ring-bounce" [style.left.px]="ring.x" src="ring.gif" alt="" />
+              }
+              @for (sp of sparkles(); track sp.id) {
+                <div class="sparkle" [style.left.px]="sp.x" [style.top]="sp.y">
+                  <svg width="14" height="14" viewBox="0 0 16 16">
+                    <path d="M8 0 L9 7 L16 8 L9 9 L8 16 L7 9 L0 8 L7 7 Z" fill="#F5C842" opacity="0.9" />
+                  </svg>
+                </div>
+              }
+              <input
+                type="number"
+                formControlName="amount"
+                class="input"
+                [class.error]="showError('amount')"
+                placeholder="0,00"
+                step="0.01"
+                min="0.01"
+              />
+              <div class="value-arrows">
+                <button type="button" class="value-arrow" (click)="incrementAmount()" title="Aumentar">
+                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                    <polyline points="2,7 5,3 8,7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+                <button type="button" class="value-arrow" (click)="decrementAmount()" title="Diminuir">
+                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                    <polyline points="2,3 5,7 8,3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
             @if (showError('amount')) { <span class="field-error">Valor inválido</span> }
           </div>
 
