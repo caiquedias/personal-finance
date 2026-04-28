@@ -1,117 +1,142 @@
-:host { display: block; }
+/* SVG tile Green Hill Zone — reutilizado em bordas e cantos */
+:host {
+  display: block;
+}
 
 .sonic-modal-wrap {
   background: var(--surface-raised);
-  border-radius: 0;
   box-shadow: var(--shadow-modal),
               4px 4px 0 #1a0e00,
               -1px -1px 0 #1a0e00;
   min-width: 480px;
-  max-width: 600px;
+  max-width: 560px;
   width: 100%;
-  overflow: hidden;
   position: relative;
+  overflow: visible;
 }
 
-.sonic-border {
-  height: 28px;
-  overflow: hidden;
-  background: #1a0e00;
-}
-
-.sonic-border--top    { border-bottom: 2px solid #1a0e00; }
-.sonic-border--bottom { border-top: 2px solid #1a0e00; }
-
-.sonic-blocks {
-  display: flex;
-  height: 100%;
-  gap: 2px;
-  padding: 2px;
-}
-
-.sonic-block {
-  flex: 1;
-  height: 100%;
-  background: linear-gradient(
-    135deg,
-    #c8722a 0%,
-    #d4892f 30%,
-    #b85e20 70%,
-    #a04e18 100%
-  );
-  border: 1px solid #1a0e00;
-  border-radius: 1px;
-  position: relative;
-  box-shadow: inset 1px 1px 0 rgba(255,200,120,0.35),
-              inset -1px -1px 0 rgba(0,0,0,0.4);
-}
-
-.sonic-block--dark {
-  background: linear-gradient(
-    135deg,
-    #7a3a0e 0%,
-    #8c4510 30%,
-    #6a2e08 70%,
-    #5a2406 100%
-  );
-  box-shadow: inset 1px 1px 0 rgba(180,100,50,0.2),
-              inset -1px -1px 0 rgba(0,0,0,0.6);
-}
-
-.sonic-block::after {
-  content: '';
+/* ── Tile SVG compartilhado ─────────────────────────────── */
+.sonic-border,
+.sonic-corner {
   position: absolute;
-  bottom: 3px;
-  left: 8%;
-  right: 8%;
-  height: 1px;
-  background: rgba(255, 220, 160, 0.2);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Crect width='23' height='23' fill='%23C47832'/%3E%3Crect width='23' height='3' fill='%23F5B84A'/%3E%3Crect x='0' y='3' width='3' height='18' fill='%23E09840'/%3E%3Crect y='20' width='23' height='3' fill='%23562E08'/%3E%3Crect x='20' y='3' width='3' height='17' fill='%237A4418'/%3E%3Crect x='4' y='4' width='8' height='5' fill='%23ECA84A' opacity='0.55'/%3E%3Crect x='23' y='0' width='1' height='24' fill='%23281004'/%3E%3Crect x='0' y='23' width='24' height='1' fill='%23281004'/%3E%3C/svg%3E");
+  background-size: 24px 24px;
+  z-index: 10;
 }
 
-.sonic-modal-body {
-  padding: 0;
+/* ── Bordas horizontais ──────────────────────────────────── */
+.sonic-border--top,
+.sonic-border--bottom {
+  left: -24px;
+  right: -24px;
+  height: 24px;
+  background-repeat: repeat-x;
+}
+.sonic-border--top    { top: -24px; }
+.sonic-border--bottom { bottom: -24px; }
+
+/* ── Bordas verticais ────────────────────────────────────── */
+.sonic-border--left,
+.sonic-border--right {
+  top: 0;
+  bottom: 0;
+  width: 24px;
+  background-repeat: repeat-y;
+}
+.sonic-border--left  { left: -24px; }
+.sonic-border--right { right: -24px; }
+
+/* ── Cantos ──────────────────────────────────────────────── */
+.sonic-corner {
+  width: 24px;
+  height: 24px;
+  background-repeat: no-repeat;
+  z-index: 11;
+}
+.sonic-corner--tl { top: -24px;    left: -24px; }
+.sonic-corner--tr { top: -24px;    right: -24px; }
+.sonic-corner--bl { bottom: -24px; left: -24px; }
+.sonic-corner--br { bottom: -24px; right: -24px; }
+
+/* ── Inner wrapper ───────────────────────────────────────── */
+.sonic-modal-inner {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  max-height: 92vh;
+  border: 1px solid rgba(255, 255, 255, 0.09);
 }
 
+/* ── Header ──────────────────────────────────────────────── */
 .sonic-modal-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 24px 12px;
+  padding: 20px 24px 16px;
   border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, transparent 100%);
+}
+
+.sonic-modal-header-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
 }
 
 .sonic-modal-title {
-  font-size: 1.0625rem;
+  font-family: 'Playfair Display', 'DM Serif Display', Georgia, serif;
+  font-size: 1.375rem;
   font-weight: 600;
   color: var(--ink);
   margin: 0;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.sonic-modal-subtitle {
+  font-size: 0.75rem;
+  color: var(--ink3);
+  margin: 0;
+  letter-spacing: 0.03em;
 }
 
 .sonic-modal-close {
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid var(--border);
-  background: var(--surface-raised);
-  border-radius: var(--radius);
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 50%;
   cursor: pointer;
   color: var(--ink3);
-  transition: all var(--transition);
+  transition: background var(--transition), color var(--transition);
   flex-shrink: 0;
 }
 
 .sonic-modal-close:hover {
-  background: var(--color-danger-bg);
-  border-color: var(--rust);
-  color: var(--rust);
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--ink);
 }
 
+/* ── Content slot ────────────────────────────────────────── */
 .sonic-modal-content {
   padding: 20px 24px 24px;
+  overflow-y: auto;
+  flex: 1;
 }
 
+/* ── Responsivo ──────────────────────────────────────────── */
 @media (max-width: 560px) {
-  .sonic-modal-wrap { min-width: 0; width: calc(100vw - 32px); }
+  .sonic-modal-wrap {
+    min-width: 0;
+    width: calc(100vw - 80px); /* 32px margens + 24px bordas cada lado */
+  }
+
+  .sonic-modal-title {
+    font-size: 1.125rem;
+    white-space: normal;
+  }
 }
