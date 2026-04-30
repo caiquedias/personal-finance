@@ -14,49 +14,14 @@
   @if (tab() === 'categories') {
     <div class="section-header">
       <span class="section-title">Suas categorias</span>
-      <button class="btn btn-primary btn-sm" (click)="showCatForm.update(v => !v)">
-        {{ showCatForm() ? 'Cancelar' : '+ Nova categoria' }}
-      </button>
+      <button class="btn btn-primary btn-sm" (click)="showCatForm.set(true)">+ Nova categoria</button>
     </div>
-
-    @if (showCatForm()) {
-      <div class="form-card">
-        <form [formGroup]="catForm" (ngSubmit)="onCreateCategory()">
-          <div class="form-row">
-            <div class="field">
-              <label class="field-label">Nome *</label>
-              <input formControlName="name" class="input" placeholder="Ex: Moradia" />
-            </div>
-            <div class="field">
-              <label class="field-label">Cor *</label>
-              <div class="color-input-wrap">
-                <input type="color" formControlName="color" class="color-picker" />
-                <input formControlName="color" class="input" placeholder="#1E4D2B" maxlength="7" />
-              </div>
-            </div>
-            <div class="field">
-              <label class="field-label">Ícone</label>
-              <input formControlName="icon" class="input" placeholder="home, car..." />
-            </div>
-            <div class="form-actions">
-              <button type="submit" class="btn btn-primary btn-sm" [disabled]="loadingCat()">
-                {{ loadingCat() ? 'Salvando...' : 'Criar' }}
-              </button>
-            </div>
-          </div>
-          @if (catError()) {
-            <div class="form-error">{{ catError() }}</div>
-          }
-        </form>
-      </div>
-    }
 
     <div class="categories-grid">
       @for (cat of categories(); track cat.id) {
         <div class="category-card">
           <div class="category-color" [style.background]="cat.color">
-            @if(cat.icon)
-            {
+            @if (cat.icon) {
               <div class="category-icon-container">
                 <img [src]="getIcon(cat)" />
               </div>
@@ -76,8 +41,6 @@
                   <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                 </svg>
               </button>
-            }
-            @if (!cat.isGlobal || auth.isAdmin()) {
               <button class="action-btn action-danger" title="Excluir" (click)="deleteCategory(cat.id, cat.isGlobal)">✕</button>
             }
           </div>
@@ -91,31 +54,9 @@
     <div class="section-header">
       <span class="section-title">Status de pagamento</span>
       @if (auth.isAdmin()) {
-        <button class="btn btn-primary btn-sm" (click)="showPayForm.update(v => !v)">
-          {{ showPayForm() ? 'Cancelar' : '+ Novo status' }}
-        </button>
+        <button class="btn btn-primary btn-sm" (click)="showPayForm.set(true)">+ Novo status</button>
       }
     </div>
-
-    @if (showPayForm() && auth.isAdmin()) {
-      <div class="form-card">
-        <form [formGroup]="payForm" (ngSubmit)="onCreatePaymentStatus()">
-          <div class="form-row">
-            <div class="field">
-              <label class="field-label">Nome *</label>
-              <input formControlName="name" class="input" placeholder="Ex: Parcelado" />
-            </div>
-            <div class="field field-wide">
-              <label class="field-label">Descrição *</label>
-              <input formControlName="description" class="input" placeholder="Descreva o status..." />
-            </div>
-            <div class="form-actions">
-              <button type="submit" class="btn btn-primary btn-sm" [disabled]="loadingLookup()">Criar</button>
-            </div>
-          </div>
-        </form>
-      </div>
-    }
 
     <div class="lookup-list">
       @for (item of paymentStatuses(); track item.id) {
@@ -150,27 +91,9 @@
     <div class="section-header">
       <span class="section-title">Tipos de fonte</span>
       @if (auth.isAdmin()) {
-        <button class="btn btn-primary btn-sm" (click)="showSrcForm.update(v => !v)">
-          {{ showSrcForm() ? 'Cancelar' : '+ Novo tipo' }}
-        </button>
+        <button class="btn btn-primary btn-sm" (click)="showSrcForm.set(true)">+ Novo tipo</button>
       }
     </div>
-
-    @if (showSrcForm() && auth.isAdmin()) {
-      <div class="form-card">
-        <form [formGroup]="srcForm" (ngSubmit)="onCreateSourceType()">
-          <div class="form-row">
-            <div class="field field-wide">
-              <label class="field-label">Nome *</label>
-              <input formControlName="name" class="input" placeholder="Ex: Empresarial" />
-            </div>
-            <div class="form-actions">
-              <button type="submit" class="btn btn-primary btn-sm">Criar</button>
-            </div>
-          </div>
-        </form>
-      </div>
-    }
 
     <div class="lookup-list">
       @for (item of sourceTypes(); track item.id) {
@@ -200,27 +123,9 @@
     <div class="section-header">
       <span class="section-title">Tipos de quinzena</span>
       @if (auth.isAdmin()) {
-        <button class="btn btn-primary btn-sm" (click)="showFnForm.update(v => !v)">
-          {{ showFnForm() ? 'Cancelar' : '+ Novo tipo' }}
-        </button>
+        <button class="btn btn-primary btn-sm" (click)="showFnForm.set(true)">+ Novo tipo</button>
       }
     </div>
-
-    @if (showFnForm() && auth.isAdmin()) {
-      <div class="form-card">
-        <form [formGroup]="fnForm" (ngSubmit)="onCreateFortnightType()">
-          <div class="form-row">
-            <div class="field field-wide">
-              <label class="field-label">Nome *</label>
-              <input formControlName="name" class="input" placeholder="Ex: Third" />
-            </div>
-            <div class="form-actions">
-              <button type="submit" class="btn btn-primary btn-sm">Criar</button>
-            </div>
-          </div>
-        </form>
-      </div>
-    }
 
     <div class="lookup-list">
       @for (item of fortnightTypes(); track item.id) {
@@ -246,6 +151,110 @@
   }
 
 </div>
+
+<!-- MODAL CRIAR CATEGORIA -->
+@if (showCatForm()) {
+  <div class="modal-overlay" @backdropAnim (click)="showCatForm.set(false)"></div>
+  <div class="modal-center" @modalAnim>
+    <app-sonic-modal title="Nova Categoria" subtitle="Preencha os dados da categoria" (closed)="showCatForm.set(false)">
+      <form [formGroup]="catForm" (ngSubmit)="onCreateCategory()" class="modal-form">
+        <div class="form-grid">
+          <div class="field field-full">
+            <label class="field-label">Nome *</label>
+            <input formControlName="name" class="input" placeholder="Ex: Moradia" />
+          </div>
+          <div class="field">
+            <label class="field-label">Cor *</label>
+            <div class="color-input-wrap">
+              <input type="color" formControlName="color" class="color-picker" />
+              <input formControlName="color" class="input" placeholder="#1E4D2B" maxlength="7" />
+            </div>
+          </div>
+          <div class="field">
+            <label class="field-label">Ícone</label>
+            <input formControlName="icon" class="input" placeholder="home, car..." />
+          </div>
+        </div>
+        @if (catError()) {
+          <div class="form-error" style="margin: 0 24px">{{ catError() }}</div>
+        }
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost btn-sm" (click)="showCatForm.set(false)">Cancelar</button>
+          <button type="submit" class="btn btn-primary btn-sm" [disabled]="loadingCat()">
+            {{ loadingCat() ? 'Salvando...' : 'Criar' }}
+          </button>
+        </div>
+      </form>
+    </app-sonic-modal>
+  </div>
+}
+
+<!-- MODAL CRIAR STATUS DE PAGAMENTO -->
+@if (showPayForm()) {
+  <div class="modal-overlay" @backdropAnim (click)="showPayForm.set(false)"></div>
+  <div class="modal-center" @modalAnim>
+    <app-sonic-modal title="Novo Status de Pagamento" subtitle="Preencha os dados do status" (closed)="showPayForm.set(false)">
+      <form [formGroup]="payForm" (ngSubmit)="onCreatePaymentStatus()" class="modal-form">
+        <div class="form-grid">
+          <div class="field field-full">
+            <label class="field-label">Nome *</label>
+            <input formControlName="name" class="input" placeholder="Ex: Parcelado" />
+          </div>
+          <div class="field field-full">
+            <label class="field-label">Descrição *</label>
+            <input formControlName="description" class="input" placeholder="Descreva o status..." />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost btn-sm" (click)="showPayForm.set(false)">Cancelar</button>
+          <button type="submit" class="btn btn-primary btn-sm" [disabled]="loadingLookup()">Criar</button>
+        </div>
+      </form>
+    </app-sonic-modal>
+  </div>
+}
+
+<!-- MODAL CRIAR TIPO DE FONTE -->
+@if (showSrcForm()) {
+  <div class="modal-overlay" @backdropAnim (click)="showSrcForm.set(false)"></div>
+  <div class="modal-center" @modalAnim>
+    <app-sonic-modal title="Novo Tipo de Fonte" subtitle="Preencha o nome do tipo" (closed)="showSrcForm.set(false)">
+      <form [formGroup]="srcForm" (ngSubmit)="onCreateSourceType()" class="modal-form">
+        <div class="form-grid">
+          <div class="field field-full">
+            <label class="field-label">Nome *</label>
+            <input formControlName="name" class="input" placeholder="Ex: Empresarial" />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost btn-sm" (click)="showSrcForm.set(false)">Cancelar</button>
+          <button type="submit" class="btn btn-primary btn-sm">Criar</button>
+        </div>
+      </form>
+    </app-sonic-modal>
+  </div>
+}
+
+<!-- MODAL CRIAR TIPO DE QUINZENA -->
+@if (showFnForm()) {
+  <div class="modal-overlay" @backdropAnim (click)="showFnForm.set(false)"></div>
+  <div class="modal-center" @modalAnim>
+    <app-sonic-modal title="Novo Tipo de Quinzena" subtitle="Preencha o nome do tipo" (closed)="showFnForm.set(false)">
+      <form [formGroup]="fnForm" (ngSubmit)="onCreateFortnightType()" class="modal-form">
+        <div class="form-grid">
+          <div class="field field-full">
+            <label class="field-label">Nome *</label>
+            <input formControlName="name" class="input" placeholder="Ex: Third" />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost btn-sm" (click)="showFnForm.set(false)">Cancelar</button>
+          <button type="submit" class="btn btn-primary btn-sm">Criar</button>
+        </div>
+      </form>
+    </app-sonic-modal>
+  </div>
+}
 
 <!-- MODAL DE EDIÇÃO -->
 @if (modalOpen()) {
@@ -273,7 +282,7 @@
             </div>
           </div>
           @if (modalError()) {
-            <div class="form-error">{{ modalError() }}</div>
+            <div class="form-error" style="margin: 0 24px">{{ modalError() }}</div>
           }
           <div class="modal-footer">
             <button type="button" class="btn btn-ghost btn-sm" (click)="closeModal()">Cancelar</button>
@@ -299,7 +308,7 @@
             }
           </div>
           @if (modalError()) {
-            <div class="form-error">{{ modalError() }}</div>
+            <div class="form-error" style="margin: 0 24px">{{ modalError() }}</div>
           }
           <div class="modal-footer">
             <button type="button" class="btn btn-ghost btn-sm" (click)="closeModal()">Cancelar</button>
