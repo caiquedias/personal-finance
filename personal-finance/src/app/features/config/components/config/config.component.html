@@ -20,7 +20,7 @@
     </div>
 
     @if (showCatForm()) {
-      <div class="card form-card">
+      <div class="form-card">
         <form [formGroup]="catForm" (ngSubmit)="onCreateCategory()">
           <div class="form-row">
             <div class="field">
@@ -53,7 +53,7 @@
 
     <div class="categories-grid">
       @for (cat of categories(); track cat.id) {
-        <div class="category-card card">
+        <div class="category-card">
           <div class="category-color" [style.background]="cat.color">
             @if(cat.icon)
             {
@@ -98,7 +98,7 @@
     </div>
 
     @if (showPayForm() && auth.isAdmin()) {
-      <div class="card form-card">
+      <div class="form-card">
         <form [formGroup]="payForm" (ngSubmit)="onCreatePaymentStatus()">
           <div class="form-row">
             <div class="field">
@@ -117,7 +117,7 @@
       </div>
     }
 
-    <div class="lookup-list card">
+    <div class="lookup-list">
       @for (item of paymentStatuses(); track item.id) {
         <div class="lookup-item">
           <div class="lookup-info">
@@ -157,7 +157,7 @@
     </div>
 
     @if (showSrcForm() && auth.isAdmin()) {
-      <div class="card form-card">
+      <div class="form-card">
         <form [formGroup]="srcForm" (ngSubmit)="onCreateSourceType()">
           <div class="form-row">
             <div class="field field-wide">
@@ -172,7 +172,7 @@
       </div>
     }
 
-    <div class="lookup-list card">
+    <div class="lookup-list">
       @for (item of sourceTypes(); track item.id) {
         <div class="lookup-item">
           <span class="lookup-name">{{ item.name }}</span>
@@ -207,7 +207,7 @@
     </div>
 
     @if (showFnForm() && auth.isAdmin()) {
-      <div class="card form-card">
+      <div class="form-card">
         <form [formGroup]="fnForm" (ngSubmit)="onCreateFortnightType()">
           <div class="form-row">
             <div class="field field-wide">
@@ -222,7 +222,7 @@
       </div>
     }
 
-    <div class="lookup-list card">
+    <div class="lookup-list">
       @for (item of fortnightTypes(); track item.id) {
         <div class="lookup-item">
           <span class="lookup-name">{{ item.name }}</span>
