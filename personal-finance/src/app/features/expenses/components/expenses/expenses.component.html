@@ -1,3 +1,7 @@
+@for (b of bursts(); track b.id) {
+  <app-sonic-ring-burst [origin]="b.origin" (done)="removeBurst(b.id)" />
+}
+
 <app-header title="Despesas" subtitle="Gerencie seus lançamentos de despesas">
   <button class="btn btn-primary btn-sm" (click)="openCreateModal()">
     + Nova despesa
@@ -190,7 +194,7 @@
               <td>
                 <div class="row-actions">
                   @if (expense.paymentStatus === PaymentStatus.Pending || expense.paymentStatus === PaymentStatus.Partial) {
-                    <button class="action-btn action-success" (click)="markAsPaid(expense)" title="Marcar como pago">
+                    <button class="action-btn action-success" (click)="markAsPaid($event, expense)" title="Marcar como pago">
                       ✓
                     </button>
                   }

@@ -143,16 +143,35 @@ describe('ExpensesComponent', () => {
   });
 
   describe('markAsPaid()', () => {
+    const mockEvent = (left = 0, top = 0, width = 28, height = 28) =>
+      ({ currentTarget: { getBoundingClientRect: () => ({ left, top, width, height }) } } as unknown as MouseEvent);
+
     it('atualiza paymentStatus para Paid na lista', fakeAsync(() => {
       component.expenses.set([EXPENSE]);
       apiSpy.markExpenseAsPaid.and.returnValue(of(undefined));
 
-      component.markAsPaid(EXPENSE);
+      component.markAsPaid(mockEvent(), EXPENSE);
       tick();
 
       const updated = component.expenses().find(e => e.id === 'e-1');
       expect(updated?.paymentStatus).toBe(PaymentStatus.Paid);
     }));
+
+    it('adiciona burst ao signal bursts', () => {
+      apiSpy.markExpenseAsPaid.and.returnValue(of(undefined));
+      component.markAsPaid(mockEvent(100, 200, 28, 28), EXPENSE);
+      expect(component.bursts().length).toBe(1);
+      expect(component.bursts()[0].origin.x).toBe(114);
+      expect(component.bursts()[0].origin.y).toBe(214);
+    });
+  });
+
+  describe('removeBurst()', () => {
+    it('remove burst do signal pelo id', () => {
+      component.bursts.set([{ id: 1, origin: { x: 100, y: 200 } }]);
+      component.removeBurst(1);
+      expect(component.bursts().length).toBe(0);
+    });
   });
 
   describe('deleteExpense()', () => {
