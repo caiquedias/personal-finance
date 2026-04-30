@@ -17,50 +17,69 @@
     <div class="loading-state"><span class="spinner-lg"></span></div>
   } @else {
 
-    <!-- Resumo compacto -->
+    <!-- KPI cards -->
     @if (summary()) {
-      <div class="summary-bar card">
-        <div class="summary-item">
-          <span class="summary-label">
-            Receitas
+      <div class="summary-bar">
+
+        <div class="kpi-card">
+          <div class="kpi-header">
+            <span class="kpi-dot" style="background:var(--olive);box-shadow:0 0 8px rgba(123,140,95,0.5)"></span>
+            <span class="kpi-label">Receitas</span>
             <button class="mario-q" (click)="openMario('receitas')" title="Detalhes de Receitas">?</button>
-          </span>
-          <span class="summary-value success">{{ summary()!.totalIncome | currencyBrl }}</span>
+          </div>
+          <div class="kpi-value kpi-value--olive">{{ summary()!.totalIncome | currencyBrl }}</div>
+          <div class="kpi-bar" style="background:linear-gradient(to right,rgba(123,140,95,0.7),rgba(123,140,95,0.1))"></div>
         </div>
-        <div class="summary-divider"></div>
-        <div class="summary-item">
-          <span class="summary-label">
-            Despesas
+
+        <div class="kpi-card">
+          <div class="kpi-header">
+            <span class="kpi-dot" style="background:var(--terracotta);box-shadow:0 0 8px rgba(196,103,74,0.5)"></span>
+            <span class="kpi-label">Despesas</span>
             <button class="mario-q" (click)="openMario('despesas')" title="Detalhes de Despesas">?</button>
-          </span>
-          <span class="summary-value danger">{{ summary()!.totalExpense | currencyBrl }}</span>
+          </div>
+          <div class="kpi-value kpi-value--terra">{{ summary()!.totalExpense | currencyBrl }}</div>
+          <div class="kpi-bar" style="background:linear-gradient(to right,rgba(196,103,74,0.7),rgba(196,103,74,0.1))"></div>
         </div>
-        <div class="summary-divider"></div>
-        <div class="summary-item">
-          <span class="summary-label">
-            Pago
+
+        <div class="kpi-card">
+          <div class="kpi-header">
+            <span class="kpi-dot" style="background:var(--olive);box-shadow:0 0 8px rgba(123,140,95,0.5)"></span>
+            <span class="kpi-label">Pago</span>
             <button class="mario-q" (click)="openMario('pago')" title="Detalhes de Pago">?</button>
-          </span>
-          <span class="summary-value">{{ summary()!.totalPaid | currencyBrl }}</span>
+          </div>
+          <div class="kpi-value kpi-value--olive">{{ summary()!.totalPaid | currencyBrl }}</div>
+          <div class="kpi-bar" style="background:linear-gradient(to right,rgba(123,140,95,0.7),rgba(123,140,95,0.1))"></div>
         </div>
-        <div class="summary-divider"></div>
-        <div class="summary-item">
-          <span class="summary-label">
-            A pagar
+
+        <div class="kpi-card">
+          <div class="kpi-header">
+            <span class="kpi-dot" style="background:var(--amber);box-shadow:0 0 8px rgba(196,146,74,0.5)"></span>
+            <span class="kpi-label">A pagar</span>
             <button class="mario-q" (click)="openMario('apagar')" title="Detalhes de A pagar">?</button>
-          </span>
-          <span class="summary-value warning">{{ summary()!.totalOwed | currencyBrl }}</span>
+          </div>
+          <div class="kpi-value kpi-value--amber">{{ summary()!.totalOwed | currencyBrl }}</div>
+          <div class="kpi-bar" style="background:linear-gradient(to right,rgba(196,146,74,0.7),rgba(196,146,74,0.1))"></div>
         </div>
-        <div class="summary-divider"></div>
-        <div class="summary-item">
-          <span class="summary-label">
-            Saldo
+
+        <div class="kpi-card">
+          <div class="kpi-header">
+            <span class="kpi-dot"
+              [style.background]="summary()!.balance >= 0 ? 'var(--olive)' : 'var(--terracotta)'"
+              [style.box-shadow]="summary()!.balance >= 0 ? '0 0 8px rgba(123,140,95,0.5)' : '0 0 8px rgba(196,103,74,0.5)'"
+            ></span>
+            <span class="kpi-label">Saldo</span>
             <button class="mario-q" (click)="openMario('saldo')" title="Detalhes do Saldo">?</button>
-          </span>
-          <span class="summary-value" [class]="summary()!.balance >= 0 ? 'success' : 'danger'">
-            {{ summary()!.balance | currencyBrl: true }}
-          </span>
+          </div>
+          <div class="kpi-value"
+            [class]="summary()!.balance >= 0 ? 'kpi-value--olive' : 'kpi-value--terra'"
+          >{{ summary()!.balance | currencyBrl: true }}</div>
+          <div class="kpi-bar"
+            [style.background]="summary()!.balance >= 0
+              ? 'linear-gradient(to right,rgba(123,140,95,0.7),rgba(123,140,95,0.1))'
+              : 'linear-gradient(to right,rgba(196,103,74,0.7),rgba(196,103,74,0.1))'"
+          ></div>
         </div>
+
       </div>
     }
 
@@ -83,12 +102,12 @@
       </div>
 
       <!-- Filtros externos -->
-      <div class="external-filters card">
+      <div class="external-filters">
         <div class="filters-grid">
           <div class="filter-field">
             <label class="field-label">Descrição</label>
             <input
-              class="input input-sm"
+              class="input-sm"
               placeholder="Buscar..."
               [value]="expDesc()"
               (input)="onExpDescChange($event)"
@@ -96,7 +115,7 @@
           </div>
           <div class="filter-field">
             <label class="field-label">Categoria</label>
-            <select class="input input-sm" (change)="onExpCategoryChange($event)">
+            <select class="input-sm" (change)="onExpCategoryChange($event)">
               <option value="">Todas</option>
               @for (c of categories(); track c.id) {
                 <option [value]="c.id">{{ c.name }}</option>
@@ -105,7 +124,7 @@
           </div>
           <div class="filter-field">
             <label class="field-label">Status</label>
-            <select class="input input-sm" (change)="onExpStatusChange($event)">
+            <select class="input-sm" (change)="onExpStatusChange($event)">
               <option value="">Todos</option>
               <option [value]="PaymentStatus.Pending">Pendente</option>
               <option [value]="PaymentStatus.Paid">Pago</option>
@@ -115,7 +134,7 @@
           </div>
           <div class="filter-field">
             <label class="field-label">Quinzena</label>
-            <select class="input input-sm" (change)="onExpFortnightChange($event)">
+            <select class="input-sm" (change)="onExpFortnightChange($event)">
               <option value="">Ambas</option>
               <option [value]="FortnightType.First">1ª Quinzena</option>
               <option [value]="FortnightType.Second">2ª Quinzena</option>
@@ -123,7 +142,7 @@
           </div>
           <div class="filter-field">
             <label class="field-label">Fonte</label>
-            <select class="input input-sm" (change)="onExpSourceTypeChange($event)">
+            <select class="input-sm" (change)="onExpSourceTypeChange($event)">
               <option value="">Todas</option>
               <option [value]="SourceType.Personal">Própria</option>
               <option [value]="SourceType.Parental">Parental</option>
@@ -143,7 +162,7 @@
           <a routerLink="/expenses" class="btn btn-primary btn-sm">Adicionar despesa</a>
         </div>
       } @else {
-        <div class="table-wrap card">
+        <div class="table-wrap">
           <table class="table">
             <thead>
               <tr>
@@ -214,12 +233,12 @@
       </div>
 
       <!-- Filtros externos -->
-      <div class="external-filters card">
+      <div class="external-filters">
         <div class="filters-grid">
           <div class="filter-field">
             <label class="field-label">Descrição</label>
             <input
-              class="input input-sm"
+              class="input-sm"
               placeholder="Buscar..."
               [value]="incDesc()"
               (input)="onIncDescChange($event)"
@@ -227,7 +246,7 @@
           </div>
           <div class="filter-field">
             <label class="field-label">Quinzena</label>
-            <select class="input input-sm" (change)="onIncFortnightChange($event)">
+            <select class="input-sm" (change)="onIncFortnightChange($event)">
               <option value="">Ambas</option>
               <option [value]="FortnightType.First">1ª Quinzena</option>
               <option [value]="FortnightType.Second">2ª Quinzena</option>
@@ -247,7 +266,7 @@
           <a routerLink="/incomes" class="btn btn-primary btn-sm">Adicionar receita</a>
         </div>
       } @else {
-        <div class="table-wrap card">
+        <div class="table-wrap">
           <table class="table">
             <thead>
               <tr>
