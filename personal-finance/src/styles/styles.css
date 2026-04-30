@@ -78,6 +78,16 @@ a:hover { color: var(--sage); }
 .badge-info    { background: var(--color-info-bg);    color: var(--color-info);    }
 .badge-neutral { background: var(--bg3); color: var(--ink3); }
 
+/* ── color-scheme — form controls acompanham o tema ── */
+:root { color-scheme: light; }
+.dark { color-scheme: dark; }
+
+/* ── Select options — cores explícitas cross-browser ── */
+select option {
+  background-color: var(--surface-solid);
+  color: var(--text);
+}
+
 /* ── Inputs ──────────────────────────────────────────────────────────────── */
 .input {
   width: 100%;
