@@ -2,6 +2,8 @@
   min-height: 100vh;
   display: grid;
   grid-template-columns: 1fr 1fr;
+  background: var(--v2-bg);
+  font-family: var(--font-b);
 }
 
 @media (max-width: 768px) {
@@ -13,8 +15,8 @@
 
 /* ── Aside ── */
 .login-aside {
-  background: var(--bg3);
-  border-right: 1px solid var(--border);
+  background: var(--v2-sidebar-bg);
+  border-right: 1px solid var(--v2-border);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -23,6 +25,7 @@
 
 .login-aside-inner {
   max-width: 320px;
+  animation: fadeUp 0.5s var(--ease) 0.05s both;
 }
 
 .login-brand {
@@ -35,35 +38,36 @@
 .login-brand-mark {
   width: 44px;
   height: 44px;
-  background: var(--sage2);
+  background: var(--terracotta);
   color: #fff;
-  border-radius: var(--radius-lg);
+  border-radius: var(--v2-radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 20px;
   font-weight: 700;
+  box-shadow: 0 2px 12px rgba(196,103,74,0.28);
 }
 
 .login-brand-name {
   font-size: 1.125rem;
   font-weight: 600;
-  color: var(--ink);
+  color: var(--text);
 }
 
 .login-quote {
   font-size: 1.25rem;
   font-weight: 500;
-  color: var(--ink);
+  color: var(--text);
   line-height: 1.5;
   margin: 0 0 12px;
   font-style: italic;
-  border-left: 3px solid var(--sage);
+  border-left: 3px solid var(--terracotta);
   padding-left: 16px;
 }
 
 .login-quote-author {
-  color: var(--ink3);
+  color: var(--text-muted);
   font-size: 0.875rem;
   padding-left: 19px;
 }
@@ -74,12 +78,19 @@
   align-items: center;
   justify-content: center;
   padding: 48px 24px;
-  background: var(--bg);
+  background: var(--v2-bg);
 }
 
 .login-card {
   width: 100%;
-  max-width: 400px;
+  max-width: 420px;
+  background: var(--v2-surface);
+  backdrop-filter: blur(24px);
+  border-radius: var(--v2-radius);
+  border: 1px solid var(--v2-border);
+  box-shadow: var(--v2-shadow);
+  padding: 40px;
+  animation: fadeUp 0.5s var(--ease) 0.1s both;
 }
 
 .login-header {
@@ -87,8 +98,16 @@
 }
 
 .login-header h1 {
+  font-family: var(--font-d);
   font-size: 1.75rem;
+  font-weight: 500;
+  color: var(--text);
   margin-bottom: 6px;
+}
+
+.login-header .subtitle {
+  font-size: 0.875rem;
+  color: var(--text-muted);
 }
 
 /* ── Formulário ── */
@@ -107,7 +126,7 @@
 .field-label {
   font-size: 0.875rem;
   font-weight: 500;
-  color: var(--ink2);
+  color: var(--text-muted);
 }
 
 .field-error {
@@ -130,14 +149,15 @@
   transform: translateY(-50%);
   background: none;
   border: none;
-  color: var(--ink3);
+  color: var(--text-muted);
   cursor: pointer;
   padding: 4px;
   display: flex;
   align-items: center;
+  transition: var(--t);
 }
 
-.input-suffix:hover { color: var(--ink); }
+.input-suffix:hover { color: var(--text); }
 
 .login-error {
   display: flex;
@@ -146,7 +166,7 @@
   padding: 10px 14px;
   background: var(--color-danger-bg);
   color: var(--color-danger);
-  border-radius: var(--radius);
+  border-radius: var(--v2-radius-sm);
   font-size: 0.875rem;
 }
 
@@ -154,7 +174,17 @@
   margin-top: 20px;
   text-align: center;
   font-size: 0.875rem;
-  color: var(--ink3);
+  color: var(--text-muted);
+}
+
+.login-register a {
+  color: var(--terracotta);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.login-register a:hover {
+  text-decoration: underline;
 }
 
 .spinner {
