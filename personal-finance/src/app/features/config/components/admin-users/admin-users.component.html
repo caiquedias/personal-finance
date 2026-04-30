@@ -1,8 +1,8 @@
 <app-header title="Usuários" subtitle="Gerenciamento de usuários do sistema" />
 
 <div class="page-content">
-  <!-- Filtros externos -->
-  <div class="filters-bar card">
+  <!-- Filtros -->
+  <div class="filters-bar">
     <div class="filters-row">
       <input class="input filter-input" type="text" placeholder="Nome"   [(ngModel)]="nameFilter"   />
       <input class="input filter-input" type="text" placeholder="E-mail" [(ngModel)]="emailFilter"  />
@@ -11,16 +11,16 @@
         <option value="true">Ativo</option>
         <option value="false">Inativo</option>
       </select>
-      <button class="btn btn-primary"   (click)="applyFilters()">Filtrar</button>
-      <button class="btn btn-secondary" (click)="clearFilters()">Limpar</button>
-      <button class="btn btn-primary" style="margin-left: auto" (click)="openCreate()">+ Novo Usuário</button>
+      <button class="btn btn-primary btn-sm"   (click)="applyFilters()">Filtrar</button>
+      <button class="btn btn-ghost btn-sm" (click)="clearFilters()">Limpar</button>
+      <button class="btn btn-primary btn-sm" style="margin-left: auto" (click)="openCreate()">+ Novo Usuário</button>
     </div>
   </div>
 
   @if (loading()) {
     <div class="loading-state"><span class="spinner-lg"></span></div>
   } @else {
-    <div class="table-wrap card">
+    <div class="table-wrap">
       <table class="table">
         <thead>
           <tr>
@@ -80,32 +80,33 @@
     @if (showCreateModal()) {
       <div class="modal-overlay" @backdropAnim (click)="showCreateModal.set(false)"></div>
       <div class="modal-center" @modalAnim>
-        <div class="modal-card card" (click)="$event.stopPropagation()">
-          <h3 class="modal-title">Novo Usuário</h3>
+        <app-sonic-modal title="Novo Usuário" subtitle="Preencha os dados do novo usuário" (closed)="showCreateModal.set(false)">
           <form [formGroup]="createForm" (ngSubmit)="onCreateUser()">
-            <div class="field" style="margin-bottom: 14px">
-              <label class="field-label">Nome *</label>
-              <input type="text" formControlName="name" class="input" placeholder="Nome completo" />
+            <div class="modal-form">
+              <div class="field">
+                <label class="field-label">Nome *</label>
+                <input type="text" formControlName="name" class="input" placeholder="Nome completo" />
+              </div>
+              <div class="field">
+                <label class="field-label">E-mail *</label>
+                <input type="email" formControlName="email" class="input" placeholder="email@exemplo.com" />
+              </div>
+              <div class="field">
+                <label class="field-label">Senha *</label>
+                <input type="password" formControlName="password" class="input" placeholder="Mínimo 8 caracteres" />
+              </div>
+              @if (createError()) {
+                <div class="form-error">{{ createError() }}</div>
+              }
             </div>
-            <div class="field" style="margin-bottom: 14px">
-              <label class="field-label">E-mail *</label>
-              <input type="email" formControlName="email" class="input" placeholder="email@exemplo.com" />
-            </div>
-            <div class="field" style="margin-bottom: 14px">
-              <label class="field-label">Senha *</label>
-              <input type="password" formControlName="password" class="input" placeholder="Mínimo 8 caracteres" />
-            </div>
-            @if (createError()) {
-              <div class="form-error">{{ createError() }}</div>
-            }
             <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" (click)="showCreateModal.set(false)">Cancelar</button>
-              <button type="submit" class="btn btn-primary" [disabled]="loadingAction()">
+              <button type="button" class="btn btn-ghost btn-sm" (click)="showCreateModal.set(false)">Cancelar</button>
+              <button type="submit" class="btn btn-primary btn-sm" [disabled]="loadingAction()">
                 {{ loadingAction() ? 'Salvando...' : 'Criar' }}
               </button>
             </div>
           </form>
-        </div>
+        </app-sonic-modal>
       </div>
     }
 
@@ -113,40 +114,41 @@
     @if (showEditModal()) {
       <div class="modal-overlay" @backdropAnim (click)="showEditModal.set(false)"></div>
       <div class="modal-center" @modalAnim>
-        <div class="modal-card card" (click)="$event.stopPropagation()">
-          <h3 class="modal-title">Editar — {{ selectedUser()?.email }}</h3>
+        <app-sonic-modal title="Editar Usuário" [subtitle]="selectedUser()?.email ?? ''" (closed)="showEditModal.set(false)">
           <form [formGroup]="editForm" (ngSubmit)="onUpdateUser()">
-            <div class="field" style="margin-bottom: 14px">
-              <label class="field-label">Nome *</label>
-              <input type="text" formControlName="name" class="input" />
-            </div>
-            <div class="field" style="margin-bottom: 16px">
-              <label class="field-label">Roles</label>
-              <div class="roles-edit">
-                @for (role of availableRoles; track role.id) {
-                  <label class="role-check">
-                    <input
-                      type="checkbox"
-                      [checked]="selectedUser()?.roles?.includes(role.name)"
-                      (change)="onRoleToggle(role.id, role.name, $event)"
-                      [disabled]="loadingAction()"
-                    />
-                    {{ role.name }}
-                  </label>
-                }
+            <div class="modal-form">
+              <div class="field">
+                <label class="field-label">Nome *</label>
+                <input type="text" formControlName="name" class="input" />
               </div>
+              <div class="field">
+                <label class="field-label">Roles</label>
+                <div class="roles-edit">
+                  @for (role of availableRoles; track role.id) {
+                    <label class="role-check">
+                      <input
+                        type="checkbox"
+                        [checked]="selectedUser()?.roles?.includes(role.name)"
+                        (change)="onRoleToggle(role.id, role.name, $event)"
+                        [disabled]="loadingAction()"
+                      />
+                      {{ role.name }}
+                    </label>
+                  }
+                </div>
+              </div>
+              @if (editError()) {
+                <div class="form-error">{{ editError() }}</div>
+              }
             </div>
-            @if (editError()) {
-              <div class="form-error">{{ editError() }}</div>
-            }
             <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" (click)="showEditModal.set(false)">Cancelar</button>
-              <button type="submit" class="btn btn-primary" [disabled]="loadingAction()">
+              <button type="button" class="btn btn-ghost btn-sm" (click)="showEditModal.set(false)">Cancelar</button>
+              <button type="submit" class="btn btn-primary btn-sm" [disabled]="loadingAction()">
                 {{ loadingAction() ? 'Salvando...' : 'Salvar' }}
               </button>
             </div>
           </form>
-        </div>
+        </app-sonic-modal>
       </div>
     }
 
@@ -154,24 +156,25 @@
     @if (showResetModal()) {
       <div class="modal-overlay" @backdropAnim (click)="showResetModal.set(false)"></div>
       <div class="modal-center" @modalAnim>
-        <div class="modal-card card" (click)="$event.stopPropagation()">
-          <h3 class="modal-title">Resetar senha — {{ selectedUser()?.name }}</h3>
+        <app-sonic-modal title="Resetar Senha" [subtitle]="selectedUser()?.name ?? ''" (closed)="showResetModal.set(false)">
           <form [formGroup]="resetForm" (ngSubmit)="onResetPassword()">
-            <div class="field" style="margin-bottom: 16px">
-              <label class="field-label">Nova senha *</label>
-              <input type="password" formControlName="newPassword" class="input" placeholder="Mínimo 8 caracteres" />
+            <div class="modal-form">
+              <div class="field">
+                <label class="field-label">Nova senha *</label>
+                <input type="password" formControlName="newPassword" class="input" placeholder="Mínimo 8 caracteres" />
+              </div>
+              @if (resetError()) {
+                <div class="form-error">{{ resetError() }}</div>
+              }
             </div>
-            @if (resetError()) {
-              <div class="form-error">{{ resetError() }}</div>
-            }
             <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" (click)="showResetModal.set(false)">Cancelar</button>
-              <button type="submit" class="btn btn-primary" [disabled]="loadingAction()">
+              <button type="button" class="btn btn-ghost btn-sm" (click)="showResetModal.set(false)">Cancelar</button>
+              <button type="submit" class="btn btn-primary btn-sm" [disabled]="loadingAction()">
                 {{ loadingAction() ? 'Salvando...' : 'Salvar' }}
               </button>
             </div>
           </form>
-        </div>
+        </app-sonic-modal>
       </div>
     }
   }
