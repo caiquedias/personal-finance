@@ -260,7 +260,7 @@
 
 .table tbody tr:hover { background: rgba(255,255,255,0.03); }
 
-.cell-primary { color: var(--text); font-weight: 500; }
+.cell-primary   { color: var(--text); font-weight: 500; }
 
 .category-dot {
   display: inline-block;
@@ -344,16 +344,6 @@
   padding: 64px;
   color: var(--text-muted);
   font-size: 13px;
-}
-
-.spinner-v2 {
-  width: 28px;
-  height: 28px;
-  border: 2.5px solid var(--v2-border);
-  border-top-color: var(--terracotta);
-  border-radius: 50%;
-  animation: spin .8s linear infinite;
-  display: block;
 }
 
 .spinner-lg {
