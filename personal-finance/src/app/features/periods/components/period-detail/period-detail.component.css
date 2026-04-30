@@ -232,6 +232,7 @@
   width: 100%;
   border-collapse: collapse;
   font-size: 0.875rem;
+  font-family: var(--font-b);
 }
 
 .table th {
@@ -272,8 +273,8 @@
 
 .text-sm      { font-size: 0.8125rem; }
 .text-muted   { color: var(--text-muted); }
-.font-semibold { font-weight: 600; color: var(--text); }
-.success-text  { color: var(--olive); }
+.font-semibold { font-family: var(--font-d); font-weight: 500; color: var(--text); }
+.success-text  { font-family: var(--font-d); color: var(--olive); }
 
 /* ── Categoria: dot + ícone + kbd tooltip ── */
 .category-dot-wrap {
