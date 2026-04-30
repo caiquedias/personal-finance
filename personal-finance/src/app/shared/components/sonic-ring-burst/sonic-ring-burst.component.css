@@ -1,0 +1,12 @@
+.ring-burst-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+.ring-burst-item {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  filter: drop-shadow(0 0 4px rgba(245, 194, 24, 0.8));
+}
