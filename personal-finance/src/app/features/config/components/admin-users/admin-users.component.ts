@@ -5,6 +5,7 @@ import { animate, style, transition, trigger } from '@angular/animations';
 import { ApiService } from '../../../../core/services/api.service';
 import { HeaderComponent } from '../../../../shared/components/header/header.component';
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
+import { SonicModalComponent } from '../../../../shared/components/modal/sonic-modal/sonic-modal.component';
 import { AdminUserResponse } from '../../../../core/models/models';
 
 const AVAILABLE_ROLES = [
@@ -15,7 +16,7 @@ const AVAILABLE_ROLES = [
 @Component({
   selector: 'app-admin-users',
   standalone: true,
-  imports: [HeaderComponent, ReactiveFormsModule, FormsModule, PaginationComponent],
+  imports: [HeaderComponent, ReactiveFormsModule, FormsModule, PaginationComponent, SonicModalComponent],
   templateUrl: './admin-users.component.html',
   styleUrls: ['./admin-users.component.css'],
   animations: [
