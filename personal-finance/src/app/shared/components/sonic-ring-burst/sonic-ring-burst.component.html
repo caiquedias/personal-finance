@@ -1,0 +1,16 @@
+<div class="ring-burst-overlay">
+  @for (ring of rings(); track ring.id) {
+    @if (ring.opacity >= 0) {
+      <img
+        class="ring-burst-item"
+        src="/ring.gif"
+        alt=""
+        [style.left.px]="ring.x"
+        [style.top.px]="ring.y"
+        [style.width.px]="ring.size"
+        [style.height.px]="ring.size"
+        [style.opacity]="ring.opacity"
+      />
+    }
+  }
+</div>

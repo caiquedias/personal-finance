@@ -6,6 +6,7 @@ import { HeaderComponent } from '../../../../shared/components/header/header.com
 import { SonicModalComponent } from '../../../../shared/components/modal/sonic-modal/sonic-modal.component';
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
 import { CurrencyBrlPipe } from '../../../../shared/pipes/currency-brl.pipe';
+import { SonicRingBurstComponent } from '../../../../shared/components/sonic-ring-burst/sonic-ring-burst.component';
 import {
   ExpenseResponse, PeriodResponse, CategoryResponse,
   MONTH_NAMES, PAYMENT_STATUS_LABELS, FORTNIGHT_TYPE_LABELS, SOURCE_TYPE_LABELS,
@@ -17,7 +18,7 @@ type SortCol = 'description' | 'category' | 'sourceType' | 'fortnightType' | 'du
 @Component({
   selector: 'app-expenses',
   standalone: true,
-  imports: [HeaderComponent, CurrencyBrlPipe, ReactiveFormsModule, SonicModalComponent, PaginationComponent],
+  imports: [HeaderComponent, CurrencyBrlPipe, ReactiveFormsModule, SonicModalComponent, PaginationComponent, SonicRingBurstComponent],
   templateUrl: './expenses.component.html',
   styleUrls: ['./expenses.component.css'],
   animations: [
@@ -95,6 +96,10 @@ export class ExpensesComponent implements OnInit {
   private _ringId = 0;
   readonly rings    = signal<{ id: number; x: number }[]>([]);
   readonly sparkles = signal<{ id: number; x: number; y: string }[]>([]);
+
+  // Sonic ring burst — animação de pagamento
+  private _burstId = 0;
+  readonly bursts = signal<{ id: number; origin: { x: number; y: number } }[]>([]);
 
   incrementAmount(): void {
     const cur = this.form.get('amount')?.value ?? 0;
@@ -418,7 +423,15 @@ export class ExpensesComponent implements OnInit {
     }
   }
 
-  markAsPaid(expense: ExpenseResponse): void {
+  markAsPaid(event: MouseEvent, expense: ExpenseResponse): void {
+    const btn  = event.currentTarget as HTMLElement;
+    const rect = btn.getBoundingClientRect();
+    const id   = ++this._burstId;
+    this.bursts.update(b => [...b, {
+      id,
+      origin: { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 },
+    }]);
+
     const today = new Date().toISOString().split('T')[0];
     this.api.markExpenseAsPaid(expense.id, { paymentDate: today }).subscribe({
       next: () => {
@@ -430,6 +443,10 @@ export class ExpensesComponent implements OnInit {
         );
       }
     });
+  }
+
+  removeBurst(id: number): void {
+    this.bursts.update(b => b.filter(x => x.id !== id));
   }
 
   deleteExpense(id: string): void {
