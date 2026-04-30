@@ -10,8 +10,8 @@
 
   <!-- Formulário de criação -->
   @if (showForm()) {
-    <div class="card form-card">
-      <h3 style="margin-bottom: 20px; font-size: 1rem;">Novo período</h3>
+    <div class="form-card">
+      <h3 style="margin-bottom: 20px; font-size: 1rem; color: var(--text);">Novo período</h3>
       <form [formGroup]="form" (ngSubmit)="onSubmit()" class="form-row">
         <div class="field">
           <label class="field-label">Mês</label>
@@ -61,11 +61,11 @@
 
   <!-- Barra de filtros -->
   @if (!loadingList() && periods().length > 0) {
-    <div class="filter-bar card">
+    <div class="filter-bar">
       <div class="filter-controls">
         <div class="filter-field">
           <label class="filter-label">Ano</label>
-          <select class="input input-sm" [value]="selectedYear() ?? ''" (change)="setYear($any($event.target).value)">
+          <select class="input-sm" [value]="selectedYear() ?? ''" (change)="setYear($any($event.target).value)">
             <option value="">Todos</option>
             @for (y of availableYears(); track y) {
               <option [value]="y">{{ y }}</option>
@@ -75,7 +75,7 @@
 
         <div class="filter-field">
           <label class="filter-label">De</label>
-          <select class="input input-sm" [value]="monthFrom() ?? ''" (change)="setMonthFrom($any($event.target).value)">
+          <select class="input-sm" [value]="monthFrom() ?? ''" (change)="setMonthFrom($any($event.target).value)">
             <option value="">--</option>
             @for (m of monthsShort; track m.value) {
               <option [value]="m.value">{{ m.label }}</option>
@@ -85,7 +85,7 @@
 
         <div class="filter-field">
           <label class="filter-label">Até</label>
-          <select class="input input-sm" [value]="monthTo() ?? ''" (change)="setMonthTo($any($event.target).value)">
+          <select class="input-sm" [value]="monthTo() ?? ''" (change)="setMonthTo($any($event.target).value)">
             <option value="">--</option>
             @for (m of monthsShort; track m.value) {
               <option [value]="m.value">{{ m.label }}</option>
@@ -95,20 +95,20 @@
 
         <div class="filter-field">
           <label class="filter-label">Status</label>
-          <select class="input input-sm" [value]="filterStatus()" (change)="setStatus($any($event.target).value)">
+          <select class="input-sm" [value]="filterStatus()" (change)="setStatus($any($event.target).value)">
             <option value="all">Todos</option>
             <option value="active">Ativo</option>
             <option value="inactive">Inativo</option>
           </select>
         </div>
 
-        <button class="btn btn-ghost btn-sm filter-clear" (click)="clearFilters()">Limpar</button>
+        <button class="filter-clear" (click)="clearFilters()">Limpar</button>
       </div>
 
       <p class="filter-count">
         {{ filteredPeriods().length }} período(s) encontrado(s)
         @if (totalPages() > 1) {
-          <span class="filter-page">— página {{ currentPage() }} de {{ totalPages() }}</span>
+          — página {{ currentPage() }} de {{ totalPages() }}
         }
       </p>
     </div>
@@ -117,7 +117,7 @@
   <!-- Lista de períodos -->
   @if (loadingList()) {
     <div class="loading-state">
-      <span class="spinner-lg"></span>
+      <span class="spinner-v2"></span>
     </div>
   } @else if (periods().length === 0) {
     <div class="empty-state">
@@ -129,12 +129,12 @@
   } @else if (filteredPeriods().length === 0) {
     <div class="empty-state">
       <p>Nenhum período corresponde aos filtros selecionados.</p>
-      <button class="btn btn-ghost btn-sm" (click)="clearFilters()">Limpar filtros</button>
+      <button class="filter-clear" (click)="clearFilters()">Limpar filtros</button>
     </div>
   } @else {
     <div class="periods-grid">
       @for (period of paginatedPeriods(); track period.id) {
-        <div class="period-card card" [class.inactive]="!period.isActive">
+        <div class="period-card" [class.inactive]="!period.isActive">
 
           <!-- Cabeçalho do card -->
           <div class="period-card-header">
