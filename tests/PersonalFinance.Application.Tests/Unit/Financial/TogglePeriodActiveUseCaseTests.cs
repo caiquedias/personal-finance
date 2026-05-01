@@ -32,7 +32,7 @@ public class TogglePeriodActiveUseCaseTests
         await _sut.ExecuteAsync(PeriodId, UserId);
 
         period.IsActive.Should().BeFalse();
-        period.IsDeleted.Should().BeTrue();
+        period.IsDeleted.Should().BeFalse();
         _uow.Verify(u => u.CommitAsync(default), Times.Once);
     }
 
@@ -40,7 +40,7 @@ public class TogglePeriodActiveUseCaseTests
     public async Task Execute_InactivePeriod_ShouldReactivate()
     {
         var period = Period.Create(UserId, 2026, 4);
-        period.SoftDelete();
+        period.Deactivate();
         _periodRepo.Setup(r => r.GetByIdAndUserAsync(PeriodId, UserId, default))
                    .ReturnsAsync(period);
 

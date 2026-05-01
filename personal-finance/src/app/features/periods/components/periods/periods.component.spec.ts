@@ -20,8 +20,9 @@ describe('PeriodsComponent', () => {
 
   beforeEach(async () => {
     apiSpy = jasmine.createSpyObj('ApiService', [
-      'getPeriods', 'createPeriod', 'togglePeriodActive', 'deletePeriod'
+      'getPeriods', 'createPeriod', 'togglePeriodActive', 'deletePeriod', 'getRecurringExpenses'
     ]);
+    apiSpy.getRecurringExpenses.and.returnValue(of([]));
     apiSpy.getPeriods.and.returnValue(of(MOCK_PERIODS));
 
     await TestBed.configureTestingModule({
