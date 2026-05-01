@@ -31,10 +31,11 @@ public sealed class TogglePeriodActiveUseCase
                 "Período não encontrado ou sem permissão de acesso.");
 
         if (period.IsActive)
-            period.SoftDelete();
+            period.Deactivate();
         else
             period.Reactivate();
 
+        await _periodRepository.UpdateAsync(period, ct);
         await _unitOfWork.CommitAsync(ct);
     }
 }
