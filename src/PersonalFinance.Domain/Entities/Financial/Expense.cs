@@ -48,6 +48,12 @@ public sealed class Expense : EntityBase
     /// <summary>Observações livres. Nullable.</summary>
     public string? Notes { get; private set; }
 
+    /// <summary>Indica se a despesa deve ser replicada em novos períodos.</summary>
+    public bool IsRecurring { get; private set; }
+
+    /// <summary>Referência à despesa original quando replicada de outro período. Nullable.</summary>
+    public Guid? SourceExpenseId { get; private set; }
+
     // ── EF Core ───────────────────────────────────────────────────────────────
     private Expense() { }
 
@@ -64,7 +70,9 @@ public sealed class Expense : EntityBase
         decimal amount,
         DateOnly dueDate,
         DateOnly? paymentDate,
-        string? notes)
+        string? notes,
+        bool isRecurring = false,
+        Guid? sourceExpenseId = null)
     {
         ValidateId(periodId,   "O PeriodId da despesa é obrigatório.");
         ValidateId(userId,     "O UserId da despesa é obrigatório.");
@@ -74,17 +82,19 @@ public sealed class Expense : EntityBase
 
         return new Expense
         {
-            PeriodId      = periodId,
-            UserId        = userId,
-            CategoryId    = categoryId,
-            SourceType    = sourceType,
-            FortnightType = fortnightType,
-            PaymentStatus = paymentStatus,
-            Description   = description.Trim(),
-            Amount        = amount,
-            DueDate       = dueDate,
-            PaymentDate   = paymentDate,
-            Notes         = notes?.Trim()
+            PeriodId        = periodId,
+            UserId          = userId,
+            CategoryId      = categoryId,
+            SourceType      = sourceType,
+            FortnightType   = fortnightType,
+            PaymentStatus   = paymentStatus,
+            Description     = description.Trim(),
+            Amount          = amount,
+            DueDate         = dueDate,
+            PaymentDate     = paymentDate,
+            Notes           = notes?.Trim(),
+            IsRecurring     = isRecurring,
+            SourceExpenseId = sourceExpenseId
         };
     }
 
@@ -140,7 +150,8 @@ public sealed class Expense : EntityBase
         string description,
         decimal amount,
         DateOnly dueDate,
-        string? notes)
+        string? notes,
+        bool isRecurring = false)
     {
         ValidateId(categoryId, "O CategoryId da despesa é obrigatório.");
         ValidateDescription(description);
@@ -153,6 +164,7 @@ public sealed class Expense : EntityBase
         Amount        = amount;
         DueDate       = dueDate;
         Notes         = notes?.Trim();
+        IsRecurring   = isRecurring;
         SetUpdatedAt();
     }
 

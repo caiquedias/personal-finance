@@ -1,16 +1,33 @@
 import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
+import { trigger, style, animate, transition } from '@angular/animations';
 import { ApiService } from '../../../../core/services/api.service';
 import { HeaderComponent } from '../../../../shared/components/header/header.component';
-import { PeriodResponse, MONTH_NAMES } from '../../../../core/models/models';
+import { RecurringExpensesModalComponent } from '../../../../shared/components/modal/recurring-expenses-modal/recurring-expenses-modal.component';
+import { PeriodResponse, RecurringExpenseResponse, MONTH_NAMES } from '../../../../core/models/models';
 
 @Component({
   selector: 'app-periods',
   standalone: true,
-  imports: [HeaderComponent, RouterLink, ReactiveFormsModule],
+  imports: [HeaderComponent, RouterLink, ReactiveFormsModule, RecurringExpensesModalComponent],
   templateUrl: './periods.component.html',
   styleUrls: ['./periods.component.css'],
+  animations: [
+    trigger('backdropAnim', [
+      transition(':enter', [style({ opacity: 0 }), animate('200ms ease', style({ opacity: 1 }))]),
+      transition(':leave', [animate('180ms ease', style({ opacity: 0 }))])
+    ]),
+    trigger('modalAnim', [
+      transition(':enter', [
+        style({ opacity: 0, transform: 'scale(0.88) translateY(-16px)' }),
+        animate('260ms cubic-bezier(0.34,1.56,0.64,1)', style({ opacity: 1, transform: 'scale(1) translateY(0)' }))
+      ]),
+      transition(':leave', [
+        animate('180ms ease-in', style({ opacity: 0, transform: 'scale(0.93) translateY(10px)' }))
+      ])
+    ])
+  ]
 })
 export class PeriodsComponent implements OnInit {
   private readonly api = inject(ApiService);
@@ -24,6 +41,12 @@ export class PeriodsComponent implements OnInit {
   readonly apiError      = signal<string | null>(null);
   readonly actionLoading = signal<string | null>(null);
   readonly actionError   = signal<string | null>(null);
+
+  // ── Modal de despesas recorrentes ─────────────────────────────────────────
+  readonly recurringModalOpen     = signal(false);
+  readonly recurringExpenses      = signal<RecurringExpenseResponse[]>([]);
+  readonly recurringTargetPeriodId = signal<string | null>(null);
+  readonly recurringLoading       = signal(false);
 
   // ── Filtros ───────────────────────────────────────────────────────────────
   readonly selectedYear = signal<number | null>(new Date().getFullYear());
@@ -124,6 +147,7 @@ export class PeriodsComponent implements OnInit {
         this.periods.update(list => [p, ...list]);
         this.cancelForm();
         this.loading.set(false);
+        this.openRecurringModal(p.id);
       },
       error: err => {
         this.apiError.set(err.error?.message ?? 'Erro ao criar período.');
@@ -183,5 +207,36 @@ export class PeriodsComponent implements OnInit {
 
   monthName(month: number): string {
     return MONTH_NAMES[month - 1];
+  }
+
+  openRecurringModal(periodId: string): void {
+    this.api.getRecurringExpenses(periodId).subscribe({
+      next: expenses => {
+        if (expenses.length === 0) return;
+        this.recurringExpenses.set(expenses);
+        this.recurringTargetPeriodId.set(periodId);
+        this.recurringModalOpen.set(true);
+      }
+    });
+  }
+
+  closeRecurringModal(): void {
+    this.recurringModalOpen.set(false);
+    this.recurringExpenses.set([]);
+    this.recurringTargetPeriodId.set(null);
+  }
+
+  onReplicateExpenses(expenseIds: string[]): void {
+    const periodId = this.recurringTargetPeriodId();
+    if (!periodId) return;
+
+    this.recurringLoading.set(true);
+    this.api.replicateExpenses(periodId, expenseIds).subscribe({
+      next: () => {
+        this.recurringLoading.set(false);
+        this.closeRecurringModal();
+      },
+      error: () => this.recurringLoading.set(false)
+    });
   }
 }

@@ -226,6 +226,16 @@
     }
   }
 
+  <!-- Modal de despesas recorrentes -->
+  @if (recurringModalOpen()) {
+    <app-recurring-expenses-modal
+      [expenses]="recurringExpenses()"
+      [loading]="recurringLoading()"
+      (replicate)="onReplicateExpenses($event)"
+      (closed)="closeRecurringModal()"
+    />
+  }
+
   <!-- Feedback de erro de ação -->
   @if (actionError()) {
     <div class="action-error">

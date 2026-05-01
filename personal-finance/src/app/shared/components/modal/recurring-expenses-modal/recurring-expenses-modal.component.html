@@ -1,0 +1,57 @@
+<div class="modal-overlay" @backdropAnim (click)="closed.emit()"></div>
+<div class="modal-center" @modalAnim>
+  <app-sonic-modal title="Despesas Recorrentes" (closed)="closed.emit()">
+
+    @if (expenses().length === 0) {
+      <p class="empty-text">Nenhuma despesa recorrente encontrada no período anterior.</p>
+    } @else {
+      <div class="select-all-row">
+        <label class="expense-item">
+          <input
+            type="checkbox"
+            class="expense-checkbox"
+            [checked]="allSelected()"
+            (change)="toggleAll()"
+          />
+          <span class="select-all-label">Selecionar todas</span>
+        </label>
+      </div>
+
+      <ul class="expense-list">
+        @for (expense of expenses(); track expense.id) {
+          <li
+            class="expense-item"
+            [class.selected]="isSelected(expense.id)"
+            (click)="toggle(expense.id)"
+          >
+            <input
+              type="checkbox"
+              class="expense-checkbox"
+              [checked]="isSelected(expense.id)"
+              (click)="$event.stopPropagation()"
+              (change)="toggle(expense.id)"
+            />
+            <div class="expense-info">
+              <span class="expense-description">{{ expense.description }}</span>
+              @if (expense.notes) {
+                <span class="expense-notes">{{ expense.notes }}</span>
+              }
+            </div>
+            <span class="expense-amount">R$ {{ expense.amount | number: '1.2-2' }}</span>
+          </li>
+        }
+      </ul>
+
+      <div class="modal-footer">
+        <button
+          class="btn btn-primary"
+          [disabled]="selectedIds().size === 0 || loading()"
+          (click)="onReplicate()"
+        >
+          {{ loading() ? 'Replicando...' : 'Replicar Despesas' }}
+        </button>
+      </div>
+    }
+
+  </app-sonic-modal>
+</div>
