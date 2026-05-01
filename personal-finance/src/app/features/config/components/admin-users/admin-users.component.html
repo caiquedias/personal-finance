@@ -4,17 +4,17 @@
   <!-- Filtros -->
   <div class="filters-bar">
     <div class="filters-row">
-      <input class="input filter-input" type="text" placeholder="Nome"   [(ngModel)]="nameFilter"   />
-      <input class="input filter-input" type="text" placeholder="E-mail" [(ngModel)]="emailFilter"  />
-      <select class="input filter-select" [(ngModel)]="statusFilter">
-        <option value="">Todos</option>
-        <option value="true">Ativo</option>
-        <option value="false">Inativo</option>
-      </select>
-      <button class="btn btn-primary btn-sm"   (click)="applyFilters()">Filtrar</button>
-      <button class="btn btn-ghost btn-sm" (click)="clearFilters()">Limpar</button>
+      <button class="btn btn-secondary btn-sm" (click)="filterOpen.update(v => !v)">
+        Filtros{{ nameFilter || emailFilter || statusFilter ? ' ●' : '' }}
+      </button>
       <button class="btn btn-primary btn-sm" style="margin-left: auto" (click)="openCreate()">+ Novo Usuário</button>
     </div>
+    <app-filter-modal
+      [fields]="filterFields"
+      [open]="filterOpen()"
+      (apply)="onFilterApply($event)"
+      (clear)="onFilterClear()"
+    />
   </div>
 
   @if (loading()) {

@@ -101,63 +101,19 @@
     <!-- ── Despesas ── -->
     @if (activeTab() === 'expenses') {
       <div class="tab-shortcut">
-        <a routerLink="/expenses" [queryParams]="{ periodId: id() }" class="btn btn-purple btn-sm">
+        <button class="btn btn-secondary btn-sm" (click)="expFilterOpen.update(v => !v)">
+          Filtros{{ expHasFilters() ? ' ●' : '' }}
+        </button>
+        <a routerLink="/expenses" [queryParams]="{ periodId: id() }" class="btn btn-purple btn-sm" style="margin-left: auto">
           Ir para Despesas →
         </a>
       </div>
-
-      <!-- Filtros externos -->
-      <div class="external-filters">
-        <div class="filters-grid">
-          <div class="filter-field">
-            <label class="field-label">Descrição</label>
-            <input
-              class="input-sm"
-              placeholder="Buscar..."
-              [value]="expDesc()"
-              (input)="onExpDescChange($event)"
-            />
-          </div>
-          <div class="filter-field">
-            <label class="field-label">Categoria</label>
-            <select class="input-sm" (change)="onExpCategoryChange($event)">
-              <option value="">Todas</option>
-              @for (c of categories(); track c.id) {
-                <option [value]="c.id">{{ c.name }}</option>
-              }
-            </select>
-          </div>
-          <div class="filter-field">
-            <label class="field-label">Status</label>
-            <select class="input-sm" (change)="onExpStatusChange($event)">
-              <option value="">Todos</option>
-              <option [value]="PaymentStatus.Pending">Pendente</option>
-              <option [value]="PaymentStatus.Paid">Pago</option>
-              <option [value]="PaymentStatus.Partial">Parcial</option>
-              <option [value]="PaymentStatus.Cancelled">Cancelado</option>
-            </select>
-          </div>
-          <div class="filter-field">
-            <label class="field-label">Quinzena</label>
-            <select class="input-sm" (change)="onExpFortnightChange($event)">
-              <option value="">Ambas</option>
-              <option [value]="FortnightType.First">1ª Quinzena</option>
-              <option [value]="FortnightType.Second">2ª Quinzena</option>
-            </select>
-          </div>
-          <div class="filter-field">
-            <label class="field-label">Fonte</label>
-            <select class="input-sm" (change)="onExpSourceTypeChange($event)">
-              <option value="">Todas</option>
-              <option [value]="SourceType.Personal">Própria</option>
-              <option [value]="SourceType.Parental">Parental</option>
-            </select>
-          </div>
-        </div>
-        @if (expHasFilters()) {
-          <button class="btn-clear-filters" (click)="clearExpFilters()">Limpar filtros</button>
-        }
-      </div>
+      <app-filter-modal
+        [fields]="expFilterFields()"
+        [open]="expFilterOpen()"
+        (apply)="onExpFilterApply($event)"
+        (clear)="onExpFilterClear()"
+      />
 
       @if (expLoadingList()) {
         <div class="loading-state"><span class="spinner-lg"></span></div>
@@ -232,36 +188,19 @@
     <!-- ── Receitas ── -->
     @if (activeTab() === 'incomes') {
       <div class="tab-shortcut">
-        <a routerLink="/incomes" [queryParams]="{ periodId: id() }" class="btn btn-purple btn-sm">
+        <button class="btn btn-secondary btn-sm" (click)="incFilterOpen.update(v => !v)">
+          Filtros{{ incHasFilters() ? ' ●' : '' }}
+        </button>
+        <a routerLink="/incomes" [queryParams]="{ periodId: id() }" class="btn btn-purple btn-sm" style="margin-left: auto">
           Ir para Receitas →
         </a>
       </div>
-
-      <!-- Filtros externos -->
-      <div class="external-filters">
-        <div class="filters-grid">
-          <div class="filter-field">
-            <label class="field-label">Descrição</label>
-            <input
-              class="input-sm"
-              placeholder="Buscar..."
-              [value]="incDesc()"
-              (input)="onIncDescChange($event)"
-            />
-          </div>
-          <div class="filter-field">
-            <label class="field-label">Quinzena</label>
-            <select class="input-sm" (change)="onIncFortnightChange($event)">
-              <option value="">Ambas</option>
-              <option [value]="FortnightType.First">1ª Quinzena</option>
-              <option [value]="FortnightType.Second">2ª Quinzena</option>
-            </select>
-          </div>
-        </div>
-        @if (incHasFilters()) {
-          <button class="btn-clear-filters" (click)="clearIncFilters()">Limpar filtros</button>
-        }
-      </div>
+      <app-filter-modal
+        [fields]="incFilterFields()"
+        [open]="incFilterOpen()"
+        (apply)="onIncFilterApply($event)"
+        (clear)="onIncFilterClear()"
+      />
 
       @if (incLoadingList()) {
         <div class="loading-state"><span class="spinner-lg"></span></div>
