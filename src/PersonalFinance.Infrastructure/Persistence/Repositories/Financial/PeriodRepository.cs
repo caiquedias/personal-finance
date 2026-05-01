@@ -52,6 +52,12 @@ public sealed class PeriodRepository : IPeriodRepository
     public async Task AddAsync(Period period, CancellationToken ct = default)
         => await _context.Periods.AddAsync(period, ct);
 
+    public Task UpdateAsync(Period period, CancellationToken ct = default)
+    {
+        _context.Periods.Update(period);
+        return Task.CompletedTask;
+    }
+
     public async Task<bool> ExistsByIdAndUserAsync(
     Guid id, Guid userId, CancellationToken ct = default)
     => await _context.Periods

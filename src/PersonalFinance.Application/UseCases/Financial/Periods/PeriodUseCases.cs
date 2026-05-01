@@ -31,12 +31,22 @@ public sealed class CreatePeriodUseCase
         CreatePeriodDto dto,
         CancellationToken ct = default)
     {
-        var exists = await _periodRepository
-            .ExistsAsync(dto.UserId, dto.Year, dto.Month, ct);
+        var existing = await _periodRepository
+            .GetByUserYearMonthAsync(dto.UserId, dto.Year, dto.Month, ct);
 
-        if (exists)
-            throw new DomainException(
-                $"Já existe um período para {dto.Month:D2}/{dto.Year}.");
+        if (existing is not null)
+        {
+            // Período ativo — rejeita duplicata
+            if (!existing.IsDeleted)
+                throw new DomainException(
+                    $"Já existe um período para {dto.Month:D2}/{dto.Year}.");
+
+            // Período soft-deleted — restaura em vez de criar novo
+            existing.Reactivate();
+            await _periodRepository.UpdateAsync(existing, ct);
+            await _unitOfWork.CommitAsync(ct);
+            return ToDto(existing);
+        }
 
         var period = Period.Create(dto.UserId, dto.Year, dto.Month);
 
