@@ -143,6 +143,14 @@ export class PeriodDetailComponent implements OnInit {
     return `${MONTH_NAMES[s.month - 1]} ${s.year}`;
   });
 
+  readonly monthAbbr = computed(() => {
+    const s = this.summary();
+    if (!s) return '';
+    return MONTH_NAMES[s.month - 1].slice(0, 3);
+  });
+
+  readonly year = computed(() => this.summary()?.year ?? null);
+
   // Exposição de enums para o template
   readonly PaymentStatus  = PaymentStatus;
   readonly FortnightType  = FortnightType;

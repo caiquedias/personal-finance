@@ -7,10 +7,15 @@
     <img class="pswitch-icon" src="icons/readonly-indicator.png" width="22" height="22" alt="Somente leitura" />
     <span class="readonly-tooltip">Tela apenas para consulta/visualização</span>
   </span>
-  <a routerLink="/periods" class="btn btn-secondary btn-sm">← Períodos</a>
+  <a routerLink="/periods" class="btn btn-secondary btn-sm period-back-link">← Períodos</a>
   <a routerLink="/expenses" class="btn btn-primary btn-sm">+ Despesa</a>
   <a routerLink="/incomes" class="btn btn-ghost btn-sm">+ Receita</a>
 </app-header>
+
+<div class="period-header-mobile">
+  <span class="month-abbr">{{ monthAbbr() }}</span>
+  <span class="year">{{ year() }}</span>
+</div>
 
 <div class="page-content">
   @if (loading()) {
