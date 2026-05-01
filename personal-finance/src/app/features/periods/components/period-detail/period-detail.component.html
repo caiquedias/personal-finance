@@ -101,12 +101,12 @@
     <!-- ── Despesas ── -->
     @if (activeTab() === 'expenses') {
       <div class="tab-shortcut">
-        <a routerLink="/expenses" [queryParams]="{ periodId: id() }" class="btn btn-purple btn-sm">
-          Ir para Despesas →
-        </a>
         <button class="btn btn-secondary btn-sm" (click)="expFilterOpen.update(v => !v)">
           Filtros{{ expHasFilters() ? ' ●' : '' }}
         </button>
+        <a routerLink="/expenses" [queryParams]="{ periodId: id() }" class="btn btn-purple btn-sm" style="margin-left: auto">
+          Ir para Despesas →
+        </a>
       </div>
       <app-filter-modal
         [fields]="expFilterFields()"
@@ -188,12 +188,12 @@
     <!-- ── Receitas ── -->
     @if (activeTab() === 'incomes') {
       <div class="tab-shortcut">
-        <a routerLink="/incomes" [queryParams]="{ periodId: id() }" class="btn btn-purple btn-sm">
-          Ir para Receitas →
-        </a>
         <button class="btn btn-secondary btn-sm" (click)="incFilterOpen.update(v => !v)">
           Filtros{{ incHasFilters() ? ' ●' : '' }}
         </button>
+        <a routerLink="/incomes" [queryParams]="{ periodId: id() }" class="btn btn-purple btn-sm" style="margin-left: auto">
+          Ir para Receitas →
+        </a>
       </div>
       <app-filter-modal
         [fields]="incFilterFields()"
