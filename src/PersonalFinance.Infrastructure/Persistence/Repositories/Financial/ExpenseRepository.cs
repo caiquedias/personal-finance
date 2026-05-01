@@ -122,7 +122,35 @@ public sealed class ExpenseRepository : IExpenseRepository
     }
 
     public async Task<bool> HasExpensesByCategoryAsync(
-    Guid categoryId, CancellationToken ct = default)
-    => await _context.Expenses
-           .AnyAsync(e => e.CategoryId == categoryId, ct);
+        Guid categoryId, CancellationToken ct = default)
+        => await _context.Expenses
+               .AnyAsync(e => e.CategoryId == categoryId, ct);
+
+    public async Task<IEnumerable<Expense>> GetRecurringExpensesFromLastPeriodAsync(
+        Guid userId, Guid excludePeriodId, CancellationToken ct = default)
+    {
+        // Busca o período mais recente do usuário (excluindo o período recém-criado)
+        var lastPeriod = await _context.Periods
+            .Where(p => p.UserId == userId && p.Id != excludePeriodId)
+            .OrderByDescending(p => p.Year)
+            .ThenByDescending(p => p.Month)
+            .FirstOrDefaultAsync(ct);
+
+        if (lastPeriod is null)
+            return [];
+
+        return await _context.Expenses
+            .Where(e => e.PeriodId == lastPeriod.Id && e.UserId == userId && e.IsRecurring)
+            .OrderBy(e => e.FortnightType)
+            .ThenBy(e => e.DueDate)
+            .ToListAsync(ct);
+    }
+
+    public async Task<bool> HasReplicatedExpenseAsync(
+        Guid sourceExpenseId, Guid targetPeriodId, CancellationToken ct = default)
+        => await _context.Expenses
+               .AnyAsync(e => e.SourceExpenseId == sourceExpenseId && e.PeriodId == targetPeriodId, ct);
+
+    public async Task AddRangeAsync(IEnumerable<Expense> expenses, CancellationToken ct = default)
+        => await _context.Expenses.AddRangeAsync(expenses, ct);
 }

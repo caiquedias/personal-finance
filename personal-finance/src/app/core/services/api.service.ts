@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
   CategoryResponse, CreateCategoryRequest, UpdateCategoryRequest,
-  PeriodResponse, CreatePeriodRequest, PeriodSummary,
+  PeriodResponse, CreatePeriodRequest, PeriodSummary, RecurringExpenseResponse,
   ExpenseResponse, CreateExpenseRequest, UpdateExpenseRequest, MarkAsPaidRequest, ExpenseOrderItem,
   PagedResult, ExpenseFilterParams, IncomeFilterParams,
   IncomeResponse, CreateIncomeRequest,
@@ -67,6 +67,14 @@ export class ApiService {
 
   getPeriodSummary(id: string): Observable<PeriodSummary> {
     return this.http.get<PeriodSummary>(`${this.base}/periods/${id}/summary`);
+  }
+
+  getRecurringExpenses(periodId: string): Observable<RecurringExpenseResponse[]> {
+    return this.http.get<RecurringExpenseResponse[]>(`${this.base}/periods/${periodId}/recurring-expenses`);
+  }
+
+  replicateExpenses(periodId: string, expenseIds: string[]): Observable<void> {
+    return this.http.post<void>(`${this.base}/periods/${periodId}/replicate-expenses`, expenseIds);
   }
 
   // ── Expenses ──────────────────────────────────────────────────────────────
