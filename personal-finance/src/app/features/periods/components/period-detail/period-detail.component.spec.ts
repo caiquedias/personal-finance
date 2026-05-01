@@ -122,6 +122,44 @@ describe('PeriodDetailComponent', () => {
     }));
   });
 
+  describe('monthAbbr computed', () => {
+    it('retorna string vazia sem summary', () => {
+      expect(component.monthAbbr()).toBe('');
+    });
+
+    it('retorna "Abr" para mês 4', fakeAsync(() => {
+      fixture.detectChanges();
+      tick();
+      expect(component.monthAbbr()).toBe('Abr');
+    }));
+
+    it('retorna "Dez" para mês 12', fakeAsync(() => {
+      apiSpy.getPeriodSummary.and.returnValue(of({ ...SUMMARY, month: 12 }));
+      fixture.detectChanges();
+      tick();
+      expect(component.monthAbbr()).toBe('Dez');
+    }));
+
+    it('retorna "Jan" para mês 1', fakeAsync(() => {
+      apiSpy.getPeriodSummary.and.returnValue(of({ ...SUMMARY, month: 1 }));
+      fixture.detectChanges();
+      tick();
+      expect(component.monthAbbr()).toBe('Jan');
+    }));
+  });
+
+  describe('year computed', () => {
+    it('retorna null sem summary', () => {
+      expect(component.year()).toBeNull();
+    });
+
+    it('retorna o ano do summary', fakeAsync(() => {
+      fixture.detectChanges();
+      tick();
+      expect(component.year()).toBe(2024);
+    }));
+  });
+
   describe('openMario()', () => {
     beforeEach(fakeAsync(() => {
       fixture.detectChanges();
