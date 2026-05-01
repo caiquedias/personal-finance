@@ -7,6 +7,9 @@ import { SonicModalComponent } from '../../../../shared/components/modal/sonic-m
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
 import { CurrencyBrlPipe } from '../../../../shared/pipes/currency-brl.pipe';
 import { SonicRingBurstComponent } from '../../../../shared/components/sonic-ring-burst/sonic-ring-burst.component';
+import { FilterModalComponent } from '../../../../shared/components/filter-modal/filter-modal.component';
+import { FilterButtonComponent } from '../../../../shared/components/filter-modal/filter-button.component';
+import { FilterFieldConfig } from '../../../../shared/components/filter-modal/filter-field-config';
 import {
   ExpenseResponse, PeriodResponse, CategoryResponse,
   MONTH_NAMES, PAYMENT_STATUS_LABELS, FORTNIGHT_TYPE_LABELS, SOURCE_TYPE_LABELS,
@@ -18,7 +21,7 @@ type SortCol = 'description' | 'category' | 'sourceType' | 'fortnightType' | 'du
 @Component({
   selector: 'app-expenses',
   standalone: true,
-  imports: [HeaderComponent, CurrencyBrlPipe, ReactiveFormsModule, SonicModalComponent, PaginationComponent, SonicRingBurstComponent],
+  imports: [HeaderComponent, CurrencyBrlPipe, ReactiveFormsModule, SonicModalComponent, PaginationComponent, SonicRingBurstComponent, FilterModalComponent, FilterButtonComponent],
   templateUrl: './expenses.component.html',
   styleUrls: ['./expenses.component.css'],
   animations: [
@@ -82,9 +85,6 @@ export class ExpensesComponent implements OnInit {
   private editingId: string | null = null;
   selectedPeriodId: string | null = null;
 
-  // Debounce para busca por descrição
-  private descriptionDebounce: ReturnType<typeof setTimeout> | null = null;
-
   // Seleção em lote
   readonly selectedExpenseIds = signal<string[]>([]);
   readonly allSelected = computed(() => {
@@ -137,11 +137,31 @@ export class ExpensesComponent implements OnInit {
   readonly periodId = input<string>();
   @ViewChild('periodFilterSelect') periodFilterSelect!: ElementRef<HTMLSelectElement>;
 
-  /** Verifica se há algum filtro ativo */
-  readonly hasActiveFilters = computed(() =>
-    !!this.filterDescription() || !!this.filterCategoryId() ||
-    this.filterStatus() != null || this.filterFortnightType() != null ||
-    this.filterSourceType() != null);
+  readonly filterOpen = signal(false);
+
+  readonly activeFilterCount = computed(() =>
+    (this.filterDescription() ? 1 : 0) +
+    (this.filterCategoryId() ? 1 : 0) +
+    (this.filterStatus() != null ? 1 : 0) +
+    (this.filterFortnightType() != null ? 1 : 0) +
+    (this.filterSourceType() != null ? 1 : 0)
+  );
+
+  readonly filterFields = computed<FilterFieldConfig[]>(() => [
+    { key: 'description',   label: 'Descrição', type: 'text',   value: this.filterDescription() },
+    { key: 'categoryId',    label: 'Categoria',  type: 'select',
+      options: [{ value: '', label: 'Todas' }, ...this.categories().map(c => ({ value: c.id, label: c.name }))],
+      value: this.filterCategoryId() },
+    { key: 'sourceType',    label: 'Fonte',      type: 'select',
+      options: [{ value: '', label: 'Todas' }, { value: SourceType.Parental, label: 'Parental' }, { value: SourceType.Personal, label: 'Própria' }],
+      value: this.filterSourceType() ?? '' },
+    { key: 'paymentStatus', label: 'Status',     type: 'select',
+      options: [{ value: '', label: 'Todos' }, { value: PaymentStatus.Pending, label: 'Pendente' }, { value: PaymentStatus.Paid, label: 'Pago' }, { value: PaymentStatus.Partial, label: 'Parcial' }, { value: PaymentStatus.Cancelled, label: 'Cancelado' }],
+      value: this.filterStatus() ?? '' },
+    { key: 'fortnightType', label: 'Quinzena',   type: 'select',
+      options: [{ value: '', label: 'Ambas' }, { value: FortnightType.First, label: '1ª Quinzena' }, { value: FortnightType.Second, label: '2ª Quinzena' }],
+      value: this.filterFortnightType() ?? '' },
+  ]);
 
   /** Aplica ordenação client-side sobre os itens da página atual */
   readonly displayedExpenses = computed<ExpenseResponse[]>(() => {
@@ -273,44 +293,20 @@ export class ExpensesComponent implements OnInit {
 
   // ── Filtros externos ──────────────────────────────────────────────────────
 
-  onFilterDescriptionChange(event: Event): void {
-    const val = (event.target as HTMLInputElement).value;
-    this.filterDescription.set(val);
-    if (this.descriptionDebounce) clearTimeout(this.descriptionDebounce);
-    this.descriptionDebounce = setTimeout(() => {
-      this.currentPage.set(1);
-      this.loadPage();
-    }, 350);
-  }
-
-  onFilterCategoryChange(event: Event): void {
-    this.filterCategoryId.set((event.target as HTMLSelectElement).value);
+  onApplyFilters(values: Record<string, unknown>): void {
+    this.filterDescription.set((values['description'] as string) || '');
+    this.filterCategoryId.set((values['categoryId'] as string) || '');
+    const status = values['paymentStatus'];
+    this.filterStatus.set(status !== '' && status != null ? Number(status) as PaymentStatus : null);
+    const fortnight = values['fortnightType'];
+    this.filterFortnightType.set(fortnight !== '' && fortnight != null ? Number(fortnight) as FortnightType : null);
+    const source = values['sourceType'];
+    this.filterSourceType.set(source !== '' && source != null ? Number(source) as SourceType : null);
     this.currentPage.set(1);
     this.loadPage();
   }
 
-  onFilterStatusChange(event: Event): void {
-    const val = (event.target as HTMLSelectElement).value;
-    this.filterStatus.set(val ? Number(val) as PaymentStatus : null);
-    this.currentPage.set(1);
-    this.loadPage();
-  }
-
-  onFilterFortnightChange(event: Event): void {
-    const val = (event.target as HTMLSelectElement).value;
-    this.filterFortnightType.set(val ? Number(val) as FortnightType : null);
-    this.currentPage.set(1);
-    this.loadPage();
-  }
-
-  onFilterSourceTypeChange(event: Event): void {
-    const val = (event.target as HTMLSelectElement).value;
-    this.filterSourceType.set(val ? Number(val) as SourceType : null);
-    this.currentPage.set(1);
-    this.loadPage();
-  }
-
-  clearFilters(): void {
+  onClearFilters(): void {
     this.filterDescription.set('');
     this.filterCategoryId.set('');
     this.filterStatus.set(null);

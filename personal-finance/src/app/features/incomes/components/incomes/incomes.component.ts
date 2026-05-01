@@ -9,6 +9,9 @@ import { HeaderComponent } from '../../../../shared/components/header/header.com
 import { SonicModalComponent } from '../../../../shared/components/modal/sonic-modal/sonic-modal.component';
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
 import { CurrencyBrlPipe } from '../../../../shared/pipes/currency-brl.pipe';
+import { FilterModalComponent } from '../../../../shared/components/filter-modal/filter-modal.component';
+import { FilterButtonComponent } from '../../../../shared/components/filter-modal/filter-button.component';
+import { FilterFieldConfig } from '../../../../shared/components/filter-modal/filter-field-config';
 import {
   IncomeResponse, PeriodResponse,
   MONTH_NAMES, FORTNIGHT_TYPE_LABELS, FortnightType
@@ -21,7 +24,7 @@ type SortCol = 'description' | 'fortnightType' | 'receivedAt' | 'amount';
   standalone: true,
   imports: [
     HeaderComponent, CurrencyBrlPipe, ReactiveFormsModule,
-    SonicModalComponent, PaginationComponent
+    SonicModalComponent, PaginationComponent, FilterModalComponent, FilterButtonComponent
   ],
   templateUrl: './incomes.component.html',
   styleUrls: ['./incomes.component.css'],
@@ -110,14 +113,23 @@ export class IncomesComponent implements OnInit {
   private editingId: string | null = null;
   selectedPeriodId: string | null = null;
 
-  private descriptionDebounce: ReturnType<typeof setTimeout> | null = null;
-
   /** Pré-seleção via query param: /incomes?periodId=xxx */
   readonly periodId = input<string>();
   @ViewChild('periodFilterSelect') periodFilterSelect!: ElementRef<HTMLSelectElement>;
 
-  readonly hasActiveFilters = computed(() =>
-    !!this.filterDescription() || this.filterFortnightType() != null);
+  readonly filterOpen = signal(false);
+
+  readonly activeFilterCount = computed(() =>
+    (this.filterDescription() ? 1 : 0) +
+    (this.filterFortnightType() != null ? 1 : 0)
+  );
+
+  readonly filterFields = computed<FilterFieldConfig[]>(() => [
+    { key: 'description',   label: 'Descrição', type: 'text',   value: this.filterDescription() },
+    { key: 'fortnightType', label: 'Quinzena',   type: 'select',
+      options: [{ value: '', label: 'Ambas' }, { value: FortnightType.First, label: '1ª Quinzena' }, { value: FortnightType.Second, label: '2ª Quinzena' }],
+      value: this.filterFortnightType() ?? '' },
+  ]);
 
   readonly displayedIncomes = computed<IncomeResponse[]>(() => {
     const col = this.sortCol();
@@ -279,24 +291,15 @@ export class IncomesComponent implements OnInit {
 
   // ── Filtros externos ──────────────────────────────────────────────────────
 
-  onFilterDescriptionChange(event: Event): void {
-    const val = (event.target as HTMLInputElement).value;
-    this.filterDescription.set(val);
-    if (this.descriptionDebounce) clearTimeout(this.descriptionDebounce);
-    this.descriptionDebounce = setTimeout(() => {
-      this.currentPage.set(1);
-      this.loadPage();
-    }, 350);
-  }
-
-  onFilterFortnightChange(event: Event): void {
-    const val = (event.target as HTMLSelectElement).value;
-    this.filterFortnightType.set(val ? Number(val) as FortnightType : null);
+  onApplyFilters(values: Record<string, unknown>): void {
+    this.filterDescription.set((values['description'] as string) || '');
+    const fortnight = values['fortnightType'];
+    this.filterFortnightType.set(fortnight !== '' && fortnight != null ? Number(fortnight) as FortnightType : null);
     this.currentPage.set(1);
     this.loadPage();
   }
 
-  clearFilters(): void {
+  onClearFilters(): void {
     this.filterDescription.set('');
     this.filterFortnightType.set(null);
     this.currentPage.set(1);
