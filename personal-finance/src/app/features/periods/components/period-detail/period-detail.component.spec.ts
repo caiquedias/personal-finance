@@ -232,6 +232,102 @@ describe('PeriodDetailComponent', () => {
     });
   });
 
+  describe('expFilterFields computed', () => {
+    beforeEach(fakeAsync(() => { fixture.detectChanges(); tick(); }));
+
+    it('retorna 5 campos', () => {
+      expect(component.expFilterFields().length).toBe(5);
+    });
+
+    it('campo description reflete expDesc', () => {
+      component.expDesc.set('teste');
+      const field = component.expFilterFields().find(f => f.key === 'description')!;
+      expect(field.value).toBe('teste');
+    });
+
+    it('campo categoryId inclui categorias carregadas', () => {
+      const field = component.expFilterFields().find(f => f.key === 'categoryId')!;
+      expect(field.options?.some(o => o.label === 'Moradia')).toBeTrue();
+    });
+  });
+
+  describe('incFilterFields computed', () => {
+    it('retorna 2 campos', () => {
+      expect(component.incFilterFields().length).toBe(2);
+    });
+
+    it('campo description reflete incDesc', () => {
+      component.incDesc.set('sal');
+      const field = component.incFilterFields().find(f => f.key === 'description')!;
+      expect(field.value).toBe('sal');
+    });
+  });
+
+  describe('onExpFilterApply()', () => {
+    beforeEach(fakeAsync(() => { fixture.detectChanges(); tick(); }));
+
+    it('aplica filtros, fecha painel e recarrega despesas', fakeAsync(() => {
+      component.expFilterOpen.set(true);
+      component.onExpFilterApply({ description: 'aluguel', categoryId: 'cat-1', paymentStatus: '1', fortnightType: '1', sourceType: '1' });
+      tick();
+      expect(component.expDesc()).toBe('aluguel');
+      expect(component.expCategoryId()).toBe('cat-1');
+      expect(component.expStatus()).toBe(1);
+      expect(component.expFortnight()).toBe(1);
+      expect(component.expSourceType()).toBe(1);
+      expect(component.expFilterOpen()).toBeFalse();
+      expect(apiSpy.getExpensesByPeriod).toHaveBeenCalled();
+    }));
+
+    it('valores vazios limpam filtros de enum', fakeAsync(() => {
+      component.expStatus.set(1 as any);
+      component.onExpFilterApply({ description: '', categoryId: '', paymentStatus: '', fortnightType: '', sourceType: '' });
+      tick();
+      expect(component.expStatus()).toBeNull();
+      expect(component.expFortnight()).toBeNull();
+      expect(component.expSourceType()).toBeNull();
+    }));
+  });
+
+  describe('onExpFilterClear()', () => {
+    beforeEach(fakeAsync(() => { fixture.detectChanges(); tick(); }));
+
+    it('limpa filtros e fecha painel', fakeAsync(() => {
+      component.expDesc.set('x');
+      component.expFilterOpen.set(true);
+      component.onExpFilterClear();
+      tick();
+      expect(component.expDesc()).toBe('');
+      expect(component.expFilterOpen()).toBeFalse();
+    }));
+  });
+
+  describe('onIncFilterApply()', () => {
+    beforeEach(fakeAsync(() => { fixture.detectChanges(); tick(); }));
+
+    it('aplica filtros e recarrega receitas', fakeAsync(() => {
+      component.onIncFilterApply({ description: 'sal', fortnightType: '2' });
+      tick();
+      expect(component.incDesc()).toBe('sal');
+      expect(component.incFortnight()).toBe(2);
+      expect(component.incFilterOpen()).toBeFalse();
+      expect(apiSpy.getIncomesByPeriod).toHaveBeenCalled();
+    }));
+  });
+
+  describe('onIncFilterClear()', () => {
+    beforeEach(fakeAsync(() => { fixture.detectChanges(); tick(); }));
+
+    it('limpa filtros e fecha painel', fakeAsync(() => {
+      component.incDesc.set('x');
+      component.incFilterOpen.set(true);
+      component.onIncFilterClear();
+      tick();
+      expect(component.incDesc()).toBe('');
+      expect(component.incFilterOpen()).toBeFalse();
+    }));
+  });
+
   describe('helpers', () => {
     beforeEach(fakeAsync(() => { fixture.detectChanges(); tick(); }));
 

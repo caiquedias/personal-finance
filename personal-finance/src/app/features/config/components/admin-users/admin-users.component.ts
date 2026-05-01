@@ -1,11 +1,12 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
-import { FormsModule } from '@angular/forms';
 import { animate, style, transition, trigger } from '@angular/animations';
 import { ApiService } from '../../../../core/services/api.service';
 import { HeaderComponent } from '../../../../shared/components/header/header.component';
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
 import { SonicModalComponent } from '../../../../shared/components/modal/sonic-modal/sonic-modal.component';
+import { FilterModalComponent } from '../../../../shared/components/filter-modal/filter-modal.component';
+import { FilterFieldConfig } from '../../../../shared/components/filter-modal/filter-field-config';
 import { AdminUserResponse } from '../../../../core/models/models';
 
 const AVAILABLE_ROLES = [
@@ -16,7 +17,7 @@ const AVAILABLE_ROLES = [
 @Component({
   selector: 'app-admin-users',
   standalone: true,
-  imports: [HeaderComponent, ReactiveFormsModule, FormsModule, PaginationComponent, SonicModalComponent],
+  imports: [HeaderComponent, ReactiveFormsModule, PaginationComponent, SonicModalComponent, FilterModalComponent],
   templateUrl: './admin-users.component.html',
   styleUrls: ['./admin-users.component.css'],
   animations: [
@@ -49,6 +50,8 @@ export class AdminUsersComponent implements OnInit {
   readonly currentPage    = signal(1);
   readonly pageSize       = signal(20);
 
+  readonly filterOpen = signal(false);
+
   readonly showCreateModal = signal(false);
   readonly showEditModal   = signal(false);
   readonly showResetModal  = signal(false);
@@ -60,6 +63,15 @@ export class AdminUsersComponent implements OnInit {
   nameFilter   = '';
   emailFilter  = '';
   statusFilter = '';
+
+  get filterFields(): FilterFieldConfig[] {
+    return [
+      { key: 'name',   label: 'Nome',   type: 'text',   value: this.nameFilter },
+      { key: 'email',  label: 'E-mail', type: 'text',   value: this.emailFilter },
+      { key: 'status', label: 'Status', type: 'select', value: this.statusFilter,
+        options: [{ value: '', label: 'Todos' }, { value: 'true', label: 'Ativo' }, { value: 'false', label: 'Inativo' }] },
+    ];
+  }
 
   readonly createForm = this.fb.group({
     name:     ['', [Validators.required]],
@@ -97,6 +109,19 @@ export class AdminUsersComponent implements OnInit {
   clearFilters(): void {
     this.nameFilter = ''; this.emailFilter = ''; this.statusFilter = '';
     this.currentPage.set(1); this.load();
+  }
+
+  onFilterApply(values: Record<string, unknown>): void {
+    this.nameFilter   = (values['name']   as string) ?? '';
+    this.emailFilter  = (values['email']  as string) ?? '';
+    this.statusFilter = (values['status'] as string) ?? '';
+    this.filterOpen.set(false);
+    this.applyFilters();
+  }
+
+  onFilterClear(): void {
+    this.filterOpen.set(false);
+    this.clearFilters();
   }
 
   onPageChange(page: number): void { this.currentPage.set(page); this.load(); }
