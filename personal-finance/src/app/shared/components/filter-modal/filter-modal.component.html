@@ -1,0 +1,48 @@
+@if (open()) {
+  <div class="filter-panel" @panelAnim>
+    <div class="filter-fields-grid">
+      @for (field of fields(); track field.key) {
+        <div class="filter-field">
+          <label class="field-label">{{ field.label }}</label>
+
+          @if (field.type === 'text') {
+            <input
+              class="input input-sm"
+              [value]="getStringValue(field.key)"
+              (input)="setValue(field.key, $any($event.target).value)"
+            />
+          } @else if (field.type === 'select') {
+            <select
+              class="input input-sm"
+              (change)="setValue(field.key, $any($event.target).value)"
+            >
+              @for (opt of field.options; track opt.value) {
+                <option [value]="opt.value" [selected]="getStringValue(field.key) == opt.value">
+                  {{ opt.label }}
+                </option>
+              }
+            </select>
+          } @else if (field.type === 'multiSelect') {
+            <div class="multiselect-options">
+              @for (opt of field.options; track opt.value) {
+                <label class="checkbox-label">
+                  <input
+                    type="checkbox"
+                    [checked]="isChecked(field.key, opt.value)"
+                    (change)="toggleMultiValue(field.key, opt.value)"
+                  />
+                  {{ opt.label }}
+                </label>
+              }
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+    <div class="filter-actions">
+      <button type="button" class="btn-clear-filters" (click)="onClear()">Limpar</button>
+      <button type="button" class="btn btn-primary btn-sm" (click)="onApply()">Aplicar</button>
+    </div>
+  </div>
+}
