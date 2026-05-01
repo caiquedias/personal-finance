@@ -37,7 +37,7 @@ describe('FilterModalComponent', () => {
   describe('render dinâmico de campos', () => {
     it('renderiza campo text', async () => {
       await setup([TEXT_FIELD]);
-      const input = fixture.nativeElement.querySelector('input[type!=checkbox]');
+      const input = fixture.nativeElement.querySelector('input:not([type=checkbox])');
       expect(input).toBeTruthy();
     });
 
@@ -98,13 +98,13 @@ describe('FilterModalComponent', () => {
   describe('emissão de clear', () => {
     it('emite clear e reseta draftValues para vazio', async () => {
       await setup([TEXT_FIELD, SELECT_FIELD]);
-      const cleared: void[] = [];
-      component.clear.subscribe(() => cleared.push());
+      let clearCount = 0;
+      component.clear.subscribe(() => clearCount++);
 
       component.setValue('description', 'abc');
       component.onClear();
 
-      expect(cleared.length).toBe(1);
+      expect(clearCount).toBe(1);
       expect(component.getStringValue('description')).toBe('');
       expect(component.getStringValue('status')).toBe('');
     });
