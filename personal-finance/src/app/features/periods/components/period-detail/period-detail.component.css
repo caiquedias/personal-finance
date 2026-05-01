@@ -434,6 +434,32 @@
 
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* ── Header mobile alternativo ── */
+.period-header-mobile {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 18px 16px 8px;
+  line-height: 1.1;
+}
+
+.period-header-mobile .month-abbr {
+  font-family: var(--font-d);
+  font-size: 2rem;
+  font-weight: 600;
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.period-header-mobile .year {
+  font-family: var(--font-b);
+  font-size: 0.875rem;
+  color: var(--text-subtle);
+  font-weight: 500;
+}
+
 /* ── Responsividade ── */
 @media (max-width: 1100px) {
   .summary-bar { grid-template-columns: repeat(3, 1fr); }
@@ -454,6 +480,11 @@
   .category-dot-wrap    { display: inline-flex; }
   .category-name-desktop { display: none; }
   td:has(.category-dot-wrap) { text-align: center; }
+}
+
+@media (max-width: 568px) {
+  app-header, .period-back-link { display: none; }
+  .period-header-mobile { display: flex; }
 }
 
 @media (max-width: 480px) {
