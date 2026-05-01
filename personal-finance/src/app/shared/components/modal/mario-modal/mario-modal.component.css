@@ -92,8 +92,7 @@
   .mario-box {
     min-width: 0;
     width: calc(100vw - 32px);
-    height: auto;
-    min-height: 280px;
+    height: 360px;
     font-size: 0.55rem;
     padding: 20px 20px 56px;
   }
