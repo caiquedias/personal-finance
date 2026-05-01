@@ -202,6 +202,7 @@ export class ExpensesComponent implements OnInit {
     fortnightType: [FortnightType.First],
     notes:         [''],
     status:        [PaymentStatus.Pending],
+    isRecurring:   [false],
   });
 
   ngOnInit(): void {
@@ -267,6 +268,7 @@ export class ExpensesComponent implements OnInit {
       fortnightType: expense.fortnightType,
       notes:         expense.notes ?? '',
       status:        expense.paymentStatus,
+      isRecurring:   expense.isRecurring,
     });
     this.modalOpen.set(true);
   }
@@ -365,6 +367,7 @@ export class ExpensesComponent implements OnInit {
         sourceType:    Number(v.sourceType) as SourceType,
         fortnightType: Number(v.fortnightType) as FortnightType,
         notes:         v.notes || undefined,
+        isRecurring:   v.isRecurring ?? false,
       }).subscribe({
         next: () => {
           this.closeModal();
@@ -392,6 +395,7 @@ export class ExpensesComponent implements OnInit {
         fortnightType,
         notes:         v.notes || undefined,
         status,
+        isRecurring:   v.isRecurring ?? false,
       }).subscribe({
         next: () => {
           this.expenses.update(list =>
@@ -404,7 +408,9 @@ export class ExpensesComponent implements OnInit {
                   sourceType,
                   fortnightType,
                   paymentStatus: status,
-                  notes:         v.notes || null }
+                  notes: v.notes || null,
+                  isRecurring:   v.isRecurring ?? false
+              }
               : e
             )
           );

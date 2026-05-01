@@ -29,7 +29,8 @@ public sealed record CreateExpenseDto(
     string        Description,
     decimal       Amount,
     DateOnly      DueDate,
-    string?       Notes = null
+    string?       Notes = null,
+    bool          IsRecurring = false
 );
 
 public sealed record UpdateExpenseDto(
@@ -42,7 +43,8 @@ public sealed record UpdateExpenseDto(
     decimal       Amount,
     DateOnly      DueDate,
     string?       Notes,
-    PaymentStatus Status
+    PaymentStatus Status,
+    bool          IsRecurring = false
 );
 
 public sealed record ExpenseResponseDto(
@@ -58,7 +60,21 @@ public sealed record ExpenseResponseDto(
     DateOnly      DueDate,
     DateOnly?     PaymentDate,
     string?       Notes,
-    bool          IsActive
+    bool          IsActive,
+    bool          IsRecurring
+);
+
+public sealed record RecurringExpenseDto(
+    Guid    Id,
+    string  Description,
+    string? Notes,
+    decimal Amount
+);
+
+public sealed record ReplicateExpensesDto(
+    Guid             UserId,
+    Guid             TargetPeriodId,
+    IReadOnlyList<Guid> ExpenseIds
 );
 
 public sealed record ExpenseFilterDto(

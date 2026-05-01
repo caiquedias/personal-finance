@@ -107,6 +107,14 @@ export interface ExpenseResponse {
   paymentDate:    string | null;
   notes:          string | null;
   isActive:       boolean;
+  isRecurring:    boolean;
+}
+
+export interface RecurringExpenseResponse {
+  id:          string;
+  description: string;
+  notes:       string | null;
+  amount:      number;
 }
 
 export interface CreateExpenseRequest {
@@ -118,6 +126,7 @@ export interface CreateExpenseRequest {
   amount:        number;
   dueDate:       string;
   notes?:        string;
+  isRecurring?:  boolean;
 }
 
 export interface UpdateExpenseRequest {
@@ -129,6 +138,7 @@ export interface UpdateExpenseRequest {
   dueDate:       string;
   notes?:        string;
   status:        PaymentStatus;
+  isRecurring?:  boolean;
 }
 
 export interface MarkAsPaidRequest {
