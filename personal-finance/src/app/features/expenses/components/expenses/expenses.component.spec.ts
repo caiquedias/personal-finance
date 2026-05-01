@@ -16,7 +16,7 @@ const EXPENSE: ExpenseResponse = {
   id: 'e-1', periodId: 'p-1', userId: 'u', categoryId: 'cat-1', description: 'Aluguel',
   amount: 1000, dueDate: '2024-04-05T00:00:00', paymentStatus: PaymentStatus.Pending,
   paymentDate: null, sourceType: SourceType.Personal, fortnightType: FortnightType.First,
-  notes: null, isActive: true,
+  notes: null, isActive: true, isRecurring: false,
 };
 
 describe('ExpensesComponent', () => {

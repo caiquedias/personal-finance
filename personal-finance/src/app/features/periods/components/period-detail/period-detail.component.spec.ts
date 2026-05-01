@@ -38,6 +38,7 @@ const EXPENSE: ExpenseResponse = {
   fortnightType:  FortnightType.First,
   notes:          null,
   isActive:       true,
+  isRecurring:    false,
 };
 
 const INCOME: IncomeResponse = {
