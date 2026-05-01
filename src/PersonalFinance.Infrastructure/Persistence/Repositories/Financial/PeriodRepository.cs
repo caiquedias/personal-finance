@@ -44,12 +44,19 @@ public sealed class PeriodRepository : IPeriodRepository
         Guid userId, int year, int month,
         CancellationToken ct = default)
         => await _context.Periods
+               .IgnoreQueryFilters()
                .AnyAsync(p => p.UserId == userId &&
                               p.Year   == year    &&
                               p.Month  == month, ct);
 
     public async Task AddAsync(Period period, CancellationToken ct = default)
         => await _context.Periods.AddAsync(period, ct);
+
+    public Task UpdateAsync(Period period, CancellationToken ct = default)
+    {
+        _context.Periods.Update(period);
+        return Task.CompletedTask;
+    }
 
     public async Task<bool> ExistsByIdAndUserAsync(
     Guid id, Guid userId, CancellationToken ct = default)

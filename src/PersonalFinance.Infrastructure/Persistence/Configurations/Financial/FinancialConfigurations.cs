@@ -140,6 +140,16 @@ public sealed class ExpenseConfiguration : IEntityTypeConfiguration<Expense>
                .HasColumnType("nvarchar(500)")
                .IsRequired(false);
 
+        builder.Property(e => e.IsRecurring)
+               .HasColumnName("IsRecurring")
+               .HasColumnType("bit")
+               .IsRequired();
+
+        builder.Property(e => e.SourceExpenseId)
+               .HasColumnName("SourceExpenseId")
+               .HasColumnType("uniqueidentifier")
+               .IsRequired(false);
+
         // CHECK constraint — valor sempre positivo
         builder.ToTable(t => t.HasCheckConstraint(
             "CK_Expense_Amount", "[Amount] > 0"));
@@ -158,6 +168,11 @@ public sealed class ExpenseConfiguration : IEntityTypeConfiguration<Expense>
         builder.HasOne<Category>()
                .WithMany()
                .HasForeignKey(e => e.CategoryId)
+               .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne<Expense>()
+               .WithMany()
+               .HasForeignKey(e => e.SourceExpenseId)
                .OnDelete(DeleteBehavior.Restrict);
 
         // Índices

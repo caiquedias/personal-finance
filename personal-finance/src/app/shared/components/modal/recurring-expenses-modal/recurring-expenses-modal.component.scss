@@ -1,0 +1,121 @@
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 200;
+}
+
+.modal-center {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 201;
+  padding: 48px 24px;
+  pointer-events: none;
+
+  > * { pointer-events: auto; }
+}
+
+.empty-text {
+  color: var(--ink3);
+  font-size: 0.875rem;
+  text-align: center;
+  padding: 8px 0 16px;
+}
+
+.select-all-row {
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 4px;
+}
+
+.select-all-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--ink2);
+  cursor: pointer;
+}
+
+.expense-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.expense-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background 0.15s, border-color 0.15s;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  &.selected {
+    background: rgba(var(--accent-rgb, 99, 102, 241), 0.08);
+    border-color: rgba(var(--accent-rgb, 99, 102, 241), 0.2);
+  }
+}
+
+.expense-checkbox {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  cursor: pointer;
+  accent-color: var(--accent, #6366f1);
+}
+
+.expense-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.expense-description {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--ink);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.expense-notes {
+  font-size: 0.75rem;
+  color: var(--ink3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.expense-amount {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--ink2);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 16px;
+  margin-top: 12px;
+  border-top: 1px solid var(--border);
+}

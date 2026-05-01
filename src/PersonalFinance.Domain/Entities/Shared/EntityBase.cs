@@ -36,6 +36,15 @@ public abstract class EntityBase
     }
 
     /// <summary>
+    /// Desativa o registro sem excluí-lo logicamente (DeletedAt permanece null).
+    /// </summary>
+    public void Deactivate()
+    {
+        IsActive = false;
+        SetUpdatedAt();
+    }
+
+    /// <summary>
     /// Reativa um registro previamente excluído logicamente.
     /// Limpa DeletedAt e seta IsActive = true.
     /// </summary>

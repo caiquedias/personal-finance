@@ -64,7 +64,8 @@ public sealed class CreateExpenseUseCase
             amount:        dto.Amount,
             dueDate:       dto.DueDate,
             paymentDate:   null,
-            notes:         dto.Notes
+            notes:         dto.Notes,
+            isRecurring:   dto.IsRecurring
         );
 
         await _expenseRepository.AddAsync(expense, ct);
@@ -77,7 +78,7 @@ public sealed class CreateExpenseUseCase
         new(e.Id, e.PeriodId, e.UserId, e.CategoryId,
             e.SourceType, e.FortnightType, e.PaymentStatus,
             e.Description, e.Amount, e.DueDate, e.PaymentDate,
-            e.Notes, e.IsActive);
+            e.Notes, e.IsActive, e.IsRecurring);
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -132,7 +133,8 @@ public sealed class UpdateExpenseUseCase
             description:   dto.Description,
             amount:        dto.Amount,
             dueDate:       dto.DueDate,
-            notes:         dto.Notes
+            notes:         dto.Notes,
+            isRecurring:   dto.IsRecurring
         );
 
         if (dto.Status != expense.PaymentStatus)

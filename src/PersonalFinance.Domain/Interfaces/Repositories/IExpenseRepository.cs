@@ -47,4 +47,16 @@ public interface IExpenseRepository
     /// Usado pelo DeleteCategoryUseCase para impedir exclusão com dependências.
     /// </summary>
     Task<bool> HasExpensesByCategoryAsync(Guid categoryId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Retorna as despesas recorrentes do período mais recente do usuário (excluindo o período informado).
+    /// </summary>
+    Task<IEnumerable<Expense>> GetRecurringExpensesFromLastPeriodAsync(Guid userId, Guid excludePeriodId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Verifica se já existe uma despesa replicada a partir da despesa origem no período destino.
+    /// </summary>
+    Task<bool> HasReplicatedExpenseAsync(Guid sourceExpenseId, Guid targetPeriodId, CancellationToken ct = default);
+
+    Task AddRangeAsync(IEnumerable<Expense> expenses, CancellationToken ct = default);
 }

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using PersonalFinance.Application.DTOs.Financial;
+using PersonalFinance.Application.UseCases.Financial.Expenses;
 using PersonalFinance.Application.UseCases.Financial.Periods;
 
 namespace PersonalFinance.Api.Controllers.V1;
@@ -7,27 +8,33 @@ namespace PersonalFinance.Api.Controllers.V1;
 [Route("api/v1/periods")]
 public sealed class PeriodsController : ApiControllerBase
 {
-    private readonly GetPeriodsByUserUseCase  _getListUseCase;
-    private readonly GetPeriodByIdUseCase     _getByIdUseCase;
-    private readonly CreatePeriodUseCase      _createUseCase;
-    private readonly GetPeriodSummaryUseCase  _summaryUseCase;
-    private readonly TogglePeriodActiveUseCase _toggleUseCase;
-    private readonly DeletePeriodUseCase      _deleteUseCase;
+    private readonly GetPeriodsByUserUseCase                  _getListUseCase;
+    private readonly GetPeriodByIdUseCase                     _getByIdUseCase;
+    private readonly CreatePeriodUseCase                      _createUseCase;
+    private readonly GetPeriodSummaryUseCase                  _summaryUseCase;
+    private readonly TogglePeriodActiveUseCase                _toggleUseCase;
+    private readonly DeletePeriodUseCase                      _deleteUseCase;
+    private readonly GetRecurringExpensesFromLastPeriodUseCase _recurringUseCase;
+    private readonly ReplicateExpensesUseCase                 _replicateUseCase;
 
     public PeriodsController(
-        GetPeriodsByUserUseCase   getListUseCase,
-        GetPeriodByIdUseCase      getByIdUseCase,
-        CreatePeriodUseCase       createUseCase,
-        GetPeriodSummaryUseCase   summaryUseCase,
-        TogglePeriodActiveUseCase toggleUseCase,
-        DeletePeriodUseCase       deleteUseCase)
+        GetPeriodsByUserUseCase                   getListUseCase,
+        GetPeriodByIdUseCase                      getByIdUseCase,
+        CreatePeriodUseCase                       createUseCase,
+        GetPeriodSummaryUseCase                   summaryUseCase,
+        TogglePeriodActiveUseCase                 toggleUseCase,
+        DeletePeriodUseCase                       deleteUseCase,
+        GetRecurringExpensesFromLastPeriodUseCase  recurringUseCase,
+        ReplicateExpensesUseCase                  replicateUseCase)
     {
-        _getListUseCase = getListUseCase;
-        _getByIdUseCase = getByIdUseCase;
-        _createUseCase  = createUseCase;
-        _summaryUseCase = summaryUseCase;
-        _toggleUseCase  = toggleUseCase;
-        _deleteUseCase  = deleteUseCase;
+        _getListUseCase   = getListUseCase;
+        _getByIdUseCase   = getByIdUseCase;
+        _createUseCase    = createUseCase;
+        _summaryUseCase   = summaryUseCase;
+        _toggleUseCase    = toggleUseCase;
+        _deleteUseCase    = deleteUseCase;
+        _recurringUseCase = recurringUseCase;
+        _replicateUseCase = replicateUseCase;
     }
 
     /// <summary>Lista todos os períodos do usuário ordenados por ano/mês descendente.</summary>
@@ -87,4 +94,25 @@ public sealed class PeriodsController : ApiControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetSummary(Guid id, CancellationToken ct)
         => Ok(await _summaryUseCase.ExecuteAsync(id, CurrentUserId, ct));
+
+    /// <summary>Retorna as despesas recorrentes do período anterior ao informado.</summary>
+    [HttpGet("{id:guid}/recurring-expenses")]
+    [ProducesResponseType(typeof(IEnumerable<RecurringExpenseDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetRecurringExpenses(Guid id, CancellationToken ct)
+        => Ok(await _recurringUseCase.ExecuteAsync(CurrentUserId, id, ct));
+
+    /// <summary>Replica despesas recorrentes selecionadas para o período informado.</summary>
+    [HttpPost("{id:guid}/replicate-expenses")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ReplicateExpenses(
+        Guid id,
+        [FromBody] IReadOnlyList<Guid> expenseIds,
+        CancellationToken ct)
+    {
+        await _replicateUseCase.ExecuteAsync(
+            new ReplicateExpensesDto(CurrentUserId, id, expenseIds), ct);
+        return NoContent();
+    }
 }
