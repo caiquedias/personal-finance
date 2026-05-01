@@ -169,6 +169,62 @@ describe('IncomesComponent', () => {
     });
   });
 
+  describe('filtros — onApplyFilters()', () => {
+    beforeEach(() => { (component as any).selectedPeriodId = 'p-1'; });
+
+    it('aplica description e dispara loadPage', fakeAsync(() => {
+      component.onApplyFilters({ description: 'salário', fortnightType: '' });
+      tick();
+      expect(component.filterDescription()).toBe('salário');
+      expect(apiSpy.getIncomesByPeriod).toHaveBeenCalled();
+    }));
+
+    it('aplica fortnightType numérico', fakeAsync(() => {
+      component.onApplyFilters({ description: '', fortnightType: FortnightType.Second });
+      tick();
+      expect(component.filterFortnightType()).toBe(FortnightType.Second);
+    }));
+
+    it('converte string vazia em null para fortnightType', fakeAsync(() => {
+      component.onApplyFilters({ description: '', fortnightType: '' });
+      tick();
+      expect(component.filterFortnightType()).toBeNull();
+    }));
+
+    it('reseta currentPage para 1', fakeAsync(() => {
+      component.currentPage.set(5);
+      component.onApplyFilters({ description: '', fortnightType: '' });
+      tick();
+      expect(component.currentPage()).toBe(1);
+    }));
+  });
+
+  describe('filtros — onClearFilters()', () => {
+    beforeEach(() => { (component as any).selectedPeriodId = 'p-1'; });
+
+    it('limpa todos os filtros e dispara loadPage', fakeAsync(() => {
+      component.filterDescription.set('salário');
+      component.filterFortnightType.set(FortnightType.First);
+      component.onClearFilters();
+      tick();
+      expect(component.filterDescription()).toBe('');
+      expect(component.filterFortnightType()).toBeNull();
+      expect(apiSpy.getIncomesByPeriod).toHaveBeenCalled();
+    }));
+  });
+
+  describe('activeFilterCount', () => {
+    it('retorna 0 quando nenhum filtro ativo', () => {
+      expect(component.activeFilterCount()).toBe(0);
+    });
+
+    it('conta description e fortnightType quando ativos', () => {
+      component.filterDescription.set('s');
+      component.filterFortnightType.set(FortnightType.First);
+      expect(component.activeFilterCount()).toBe(2);
+    });
+  });
+
   describe('formatDate()', () => {
     it('retorna data formatada em pt-BR', () => {
       const result = component.formatDate('2024-04-05T00:00:00');

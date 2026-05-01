@@ -310,6 +310,67 @@ describe('ExpensesComponent', () => {
     });
   });
 
+  describe('filtros — onApplyFilters()', () => {
+    beforeEach(() => { (component as any).selectedPeriodId = 'p-1'; });
+
+    it('aplica description e dispara loadPage', fakeAsync(() => {
+      component.onApplyFilters({ description: 'aluguel', categoryId: '', paymentStatus: '', fortnightType: '', sourceType: '' });
+      tick();
+      expect(component.filterDescription()).toBe('aluguel');
+      expect(apiSpy.getExpensesByPeriod).toHaveBeenCalled();
+    }));
+
+    it('aplica paymentStatus numérico', fakeAsync(() => {
+      component.onApplyFilters({ description: '', categoryId: '', paymentStatus: PaymentStatus.Paid, fortnightType: '', sourceType: '' });
+      tick();
+      expect(component.filterStatus()).toBe(PaymentStatus.Paid);
+    }));
+
+    it('converte string vazia em null para campos enum', fakeAsync(() => {
+      component.onApplyFilters({ description: '', categoryId: '', paymentStatus: '', fortnightType: '', sourceType: '' });
+      tick();
+      expect(component.filterStatus()).toBeNull();
+      expect(component.filterFortnightType()).toBeNull();
+      expect(component.filterSourceType()).toBeNull();
+    }));
+
+    it('reseta currentPage para 1', fakeAsync(() => {
+      component.currentPage.set(3);
+      component.onApplyFilters({ description: '', categoryId: '', paymentStatus: '', fortnightType: '', sourceType: '' });
+      tick();
+      expect(component.currentPage()).toBe(1);
+    }));
+  });
+
+  describe('filtros — onClearFilters()', () => {
+    beforeEach(() => { (component as any).selectedPeriodId = 'p-1'; });
+
+    it('limpa todos os filtros e dispara loadPage', fakeAsync(() => {
+      component.filterDescription.set('aluguel');
+      component.filterCategoryId.set('cat-1');
+      component.filterStatus.set(PaymentStatus.Paid);
+      component.onClearFilters();
+      tick();
+      expect(component.filterDescription()).toBe('');
+      expect(component.filterCategoryId()).toBe('');
+      expect(component.filterStatus()).toBeNull();
+      expect(apiSpy.getExpensesByPeriod).toHaveBeenCalled();
+    }));
+  });
+
+  describe('activeFilterCount', () => {
+    it('retorna 0 quando nenhum filtro ativo', () => {
+      expect(component.activeFilterCount()).toBe(0);
+    });
+
+    it('conta cada filtro ativo individualmente', () => {
+      component.filterDescription.set('a');
+      component.filterCategoryId.set('cat-1');
+      component.filterStatus.set(PaymentStatus.Paid);
+      expect(component.activeFilterCount()).toBe(3);
+    });
+  });
+
   describe('helpers', () => {
     beforeEach(fakeAsync(() => { tick(); }));
 

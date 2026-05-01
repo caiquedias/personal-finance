@@ -23,31 +23,17 @@
 
   <!-- Filtros externos (server-side) — visíveis apenas quando há período selecionado -->
   @if (selectedPeriodId) {
-    <div class="external-filters card">
-      <div class="filters-grid">
-        <div class="filter-field">
-          <label class="field-label">Descrição</label>
-          <input
-            class="input input-sm"
-            placeholder="Buscar..."
-            [value]="filterDescription()"
-            (input)="onFilterDescriptionChange($event)"
-          />
-        </div>
-
-        <div class="filter-field">
-          <label class="field-label">Quinzena</label>
-          <select class="input input-sm" (change)="onFilterFortnightChange($event)">
-            <option value="">Ambas</option>
-            <option [value]="FortnightType.First">1ª Quinzena</option>
-            <option [value]="FortnightType.Second">2ª Quinzena</option>
-          </select>
-        </div>
-      </div>
-
-      @if (hasActiveFilters()) {
-        <button class="btn-clear-filters" (click)="clearFilters()">Limpar filtros</button>
-      }
+    <div class="filter-bar">
+      <app-filter-button
+        [activeCount]="activeFilterCount()"
+        (toggled)="filterOpen.update(v => !v)"
+      />
+      <app-filter-modal
+        [fields]="filterFields()"
+        [open]="filterOpen()"
+        (apply)="onApplyFilters($event)"
+        (clear)="onClearFilters()"
+      />
     </div>
   }
 
