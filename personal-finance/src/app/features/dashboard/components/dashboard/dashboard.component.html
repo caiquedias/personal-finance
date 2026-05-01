@@ -87,10 +87,11 @@
       cdkDropList
       cdkDropListOrientation="mixed"
       class="widgets-grid"
+      [cdkDropListDisabled]="isMobile()"
       (cdkDropListDropped)="dropWidget($event)"
     >
       @for (widget of widgets(); track widget.id) {
-        <div class="widget-card" cdkDrag>
+        <div class="widget-card" cdkDrag [cdkDragDisabled]="isMobile()">
           <!-- Drag handle -->
           <div class="widget-drag-handle" cdkDragHandle>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">

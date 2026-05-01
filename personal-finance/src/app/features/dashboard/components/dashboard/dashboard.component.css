@@ -1,8 +1,8 @@
 .page-content {
-  padding: var(--density-padding, 28px);
+  padding: clamp(12px, 4vw, 28px);
   display: flex;
   flex-direction: column;
-  gap: var(--density-gap, 24px);
+  gap: clamp(12px, 3.5vw, 24px);
   flex: 1;
 }
 
@@ -48,7 +48,7 @@
 }
 
 .month-chip {
-  padding: 7px 15px;
+  padding: clamp(5px, 1.5vw, 7px) clamp(8px, 3vw, 15px);
   border-radius: var(--v2-radius-sm);
   border: none;
   background: var(--v2-surface);
@@ -84,7 +84,7 @@
   background: var(--v2-surface);
   backdrop-filter: blur(24px);
   border-radius: var(--v2-radius);
-  padding: 22px 24px;
+  padding: clamp(12px, 3vw, 22px) clamp(14px, 3.5vw, 24px);
   box-shadow: var(--v2-shadow);
   border: 1px solid var(--v2-border);
   display: flex;
@@ -120,7 +120,7 @@
 
 .kpi-value {
   font-family: var(--font-d);
-  font-size: 26px;
+  font-size: clamp(16px, 5vw, 26px);
   font-weight: 500;
   color: var(--text);
   line-height: 1.2;
@@ -156,7 +156,7 @@
   background: var(--v2-surface);
   backdrop-filter: blur(24px);
   border-radius: var(--v2-radius);
-  padding: 22px;
+  padding: clamp(12px, 3vw, 22px);
   box-shadow: var(--v2-shadow);
   border: 1px solid var(--v2-border);
   position: relative;
@@ -355,7 +355,7 @@
   align-items: center;
   justify-content: center;
   gap: 12px;
-  padding: 64px;
+  padding: clamp(32px, 8vw, 64px) clamp(16px, 4vw, 64px);
   color: var(--text-muted);
 }
 
@@ -369,11 +369,8 @@
   display: block;
 }
 
-@media (max-width: 767px) {
-  .page-content { padding: 16px; gap: 16px; }
-  .kpi-card { padding: 16px; }
-  .kpi-value { font-size: 22px; }
-  .widget-card { padding: 16px; }
+@media (max-width: 480px) {
+  .chart-header { flex-direction: column; align-items: flex-start; gap: 8px; padding-right: 28px; }
 }
 
 @keyframes spin    { to { transform: rotate(360deg); } }
