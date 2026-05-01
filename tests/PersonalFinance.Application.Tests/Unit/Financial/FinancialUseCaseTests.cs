@@ -30,8 +30,8 @@ public class CreatePeriodUseCaseTests
     [Fact(DisplayName = "Deve criar período com dados válidos")]
     public async Task Execute_WithValidData_ShouldCreatePeriod()
     {
-        _periodRepo.Setup(r => r.ExistsAsync(UserId, 2026, 4, default))
-                   .ReturnsAsync(false);
+        _periodRepo.Setup(r => r.GetByUserYearMonthAsync(UserId, 2026, 4, default))
+                   .ReturnsAsync((Period?)null);
 
         var result = await _sut.ExecuteAsync(new CreatePeriodDto(UserId, 2026, 4));
 
@@ -44,8 +44,9 @@ public class CreatePeriodUseCaseTests
     [Fact(DisplayName = "Deve lançar exceção para período já existente no mês")]
     public async Task Execute_WithDuplicatePeriod_ShouldThrow()
     {
-        _periodRepo.Setup(r => r.ExistsAsync(UserId, 2026, 4, default))
-                   .ReturnsAsync(true);
+        var existing = Period.Create(UserId, 2026, 4);
+        _periodRepo.Setup(r => r.GetByUserYearMonthAsync(UserId, 2026, 4, default))
+                   .ReturnsAsync(existing);
 
         var act = () => _sut.ExecuteAsync(new CreatePeriodDto(UserId, 2026, 4));
 
