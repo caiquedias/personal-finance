@@ -133,6 +133,55 @@ describe('DashboardComponent', () => {
     }));
   });
 
+  describe('isMobile', () => {
+    let fakeQuery: { matches: boolean; listeners: Map<string, Function> };
+
+    function mockMatchMedia(matches: boolean): void {
+      fakeQuery = { matches, listeners: new Map() };
+      spyOn(window, 'matchMedia').and.returnValue({
+        matches,
+        addEventListener: (type: string, fn: Function) => fakeQuery.listeners.set(type, fn),
+        removeEventListener: (type: string, _fn: Function) => fakeQuery.listeners.delete(type),
+      } as any);
+    }
+
+    it('inicia como false quando não é mobile', () => {
+      mockMatchMedia(false);
+      fixture = TestBed.createComponent(DashboardComponent);
+      component = fixture.componentInstance;
+      fixture.detectChanges();
+      expect(component.isMobile()).toBeFalse();
+    });
+
+    it('inicia como true quando é mobile', () => {
+      mockMatchMedia(true);
+      fixture = TestBed.createComponent(DashboardComponent);
+      component = fixture.componentInstance;
+      fixture.detectChanges();
+      expect(component.isMobile()).toBeTrue();
+    });
+
+    it('atualiza signal ao disparar evento de mudança', fakeAsync(() => {
+      mockMatchMedia(false);
+      fixture = TestBed.createComponent(DashboardComponent);
+      component = fixture.componentInstance;
+      fixture.detectChanges();
+      tick();
+      fakeQuery.listeners.get('change')!({ matches: true } as MediaQueryListEvent);
+      expect(component.isMobile()).toBeTrue();
+    }));
+
+    it('remove listener no ngOnDestroy', fakeAsync(() => {
+      mockMatchMedia(false);
+      fixture = TestBed.createComponent(DashboardComponent);
+      component = fixture.componentInstance;
+      fixture.detectChanges();
+      tick();
+      component.ngOnDestroy();
+      expect(fakeQuery.listeners.has('change')).toBeFalse();
+    }));
+  });
+
   describe('computed — paymentProgress', () => {
     it('retorna 0 quando não há summary', () => {
       expect(component.paymentProgress()).toBe(0);

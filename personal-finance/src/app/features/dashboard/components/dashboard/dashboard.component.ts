@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed, OnInit, effect, untracked } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, OnDestroy, effect, untracked } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { DecimalPipe } from '@angular/common';
 import { CdkDragDrop, CdkDropList, CdkDrag, moveItemInArray } from '@angular/cdk/drag-drop';
@@ -34,10 +34,14 @@ const DEFAULT_WIDGETS: DashWidget[] = [
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css'],
 })
-export class DashboardComponent implements OnInit {
+export class DashboardComponent implements OnInit, OnDestroy {
   private readonly api   = inject(ApiService);
   private readonly auth  = inject(AuthService);
   private readonly theme = inject(ThemeService);
+
+  private readonly mobileQuery = window.matchMedia('(max-width: 767px)');
+  readonly isMobile = signal(this.mobileQuery.matches);
+  private readonly onMobileChange = (e: MediaQueryListEvent) => this.isMobile.set(e.matches);
 
   readonly MONTH_NAMES = MONTH_NAMES;
 
@@ -96,7 +100,12 @@ export class DashboardComponent implements OnInit {
     });
   }
 
+  ngOnDestroy(): void {
+    this.mobileQuery.removeEventListener('change', this.onMobileChange);
+  }
+
   ngOnInit(): void {
+    this.mobileQuery.addEventListener('change', this.onMobileChange);
     this.api.getPeriods().subscribe({
       next: periods => {
         this.periods.set(periods);
