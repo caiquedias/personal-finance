@@ -314,6 +314,13 @@
             <input formControlName="notes" class="input" placeholder="Opcional..." />
           </div>
 
+          <div class="field field-full">
+            <label class="checkbox-label">
+              <input type="checkbox" formControlName="isRecurring" />
+              Despesa recorrente
+            </label>
+          </div>
+
         </div>
 
         @if (apiError()) {
