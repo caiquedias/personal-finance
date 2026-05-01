@@ -23,61 +23,17 @@
 
   <!-- Filtros externos (server-side) — visíveis apenas quando há período selecionado -->
   @if (selectedPeriodId) {
-    <div class="external-filters card">
-      <div class="filters-grid">
-        <div class="filter-field">
-          <label class="field-label">Descrição</label>
-          <input
-            class="input input-sm"
-            placeholder="Buscar..."
-            [value]="filterDescription()"
-            (input)="onFilterDescriptionChange($event)"
-          />
-        </div>
-
-        <div class="filter-field">
-          <label class="field-label">Categoria</label>
-          <select class="input input-sm" (change)="onFilterCategoryChange($event)">
-            <option value="">Todas</option>
-            @for (c of categories(); track c.id) {
-              <option [value]="c.id">{{ c.name }}</option>
-            }
-          </select>
-        </div>
-
-        <div class="filter-field">
-          <label class="field-label">Fonte</label>
-          <select class="input input-sm" (change)="onFilterSourceTypeChange($event)">
-            <option value="">Todas</option>
-            <option [value]="SourceType.Parental">Parental</option>
-            <option [value]="SourceType.Personal">Própria</option>
-          </select>
-        </div>
-
-        <div class="filter-field">
-          <label class="field-label">Status</label>
-          <select class="input input-sm" (change)="onFilterStatusChange($event)">
-            <option value="">Todos</option>
-            <option [value]="PaymentStatus.Pending">Pendente</option>
-            <option [value]="PaymentStatus.Paid">Pago</option>
-            <option [value]="PaymentStatus.Partial">Parcial</option>
-            <option [value]="PaymentStatus.Cancelled">Cancelado</option>
-          </select>
-        </div>
-
-        <div class="filter-field">
-          <label class="field-label">Quinzena</label>
-          <select class="input input-sm" (change)="onFilterFortnightChange($event)">
-            <option value="">Ambas</option>
-            <option [value]="FortnightType.First">1ª Quinzena</option>
-            <option [value]="FortnightType.Second">2ª Quinzena</option>
-          </select>
-        </div>
-      </div>
-
-      @if (hasActiveFilters()) {
-        <button class="btn-clear-filters" (click)="clearFilters()">Limpar filtros</button>
-      }
+    <div class="filter-bar">
+      <app-filter-button
+        [activeCount]="activeFilterCount()"
+        (toggled)="filterOpen.update(v => !v)"
+      />
+      <app-filter-modal
+        [fields]="filterFields()"
+        [open]="filterOpen()"
+        (apply)="onApplyFilters($event)"
+        (clear)="onClearFilters()"
+      />
     </div>
   }
 
