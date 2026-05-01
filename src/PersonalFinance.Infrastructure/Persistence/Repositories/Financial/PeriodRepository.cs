@@ -44,6 +44,7 @@ public sealed class PeriodRepository : IPeriodRepository
         Guid userId, int year, int month,
         CancellationToken ct = default)
         => await _context.Periods
+               .IgnoreQueryFilters()
                .AnyAsync(p => p.UserId == userId &&
                               p.Year   == year    &&
                               p.Month  == month, ct);
