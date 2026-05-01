@@ -486,6 +486,7 @@
   .period-back-link { display: none; }
   .period-header-mobile { display: flex; }
   app-header ::ng-deep .header-title { display: none; }
+  app-header ::ng-deep .header-actions { margin-left: auto; gap: 16px; }
 }
 
 @media (max-width: 480px) {
