@@ -408,7 +408,9 @@ export class ExpensesComponent implements OnInit {
                   sourceType,
                   fortnightType,
                   paymentStatus: status,
-                  notes:         v.notes || null }
+                  notes: v.notes || null,
+                  isRecurring:   v.isRecurring ?? false
+              }
               : e
             )
           );
