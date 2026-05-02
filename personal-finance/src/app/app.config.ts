@@ -5,7 +5,6 @@ import { provideAnimationsAsync } from '@angular/platform-browser/animations/asy
 import { provideEcharts } from 'ngx-echarts';
 import { routes } from './app.routes';
 import { authInterceptor } from './core/auth/auth.interceptor';
-
 export const appConfig: ApplicationConfig = {
   providers: [
     provideZoneChangeDetection({ eventCoalescing: true }),
