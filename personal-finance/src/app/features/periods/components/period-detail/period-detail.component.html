@@ -85,6 +85,25 @@
           ></div>
         </div>
 
+        <div class="kpi-card">
+          <div class="kpi-header">
+            <span class="kpi-dot"
+              [style.background]="balanceAfterPayment() >= 0 ? 'var(--olive)' : 'var(--terracotta)'"
+              [style.box-shadow]="balanceAfterPayment() >= 0 ? '0 0 8px rgba(123,140,95,0.5)' : '0 0 8px rgba(196,103,74,0.5)'"
+            ></span>
+            <span class="kpi-label">Saldo após pag.</span>
+            <button class="mario-q" (click)="openMario('saldoAposPagamento')" title="Detalhes do Saldo após pagamento">?</button>
+          </div>
+          <div class="kpi-value"
+            [class]="balanceAfterPayment() >= 0 ? 'kpi-value--olive' : 'kpi-value--terra'"
+          >{{ balanceAfterPayment() | currencyBrl: true }}</div>
+          <div class="kpi-bar"
+            [style.background]="balanceAfterPayment() >= 0
+              ? 'linear-gradient(to right,rgba(123,140,95,0.7),rgba(123,140,95,0.1))'
+              : 'linear-gradient(to right,rgba(196,103,74,0.7),rgba(196,103,74,0.1))'"
+          ></div>
+        </div>
+
       </div>
     }
 

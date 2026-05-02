@@ -14,7 +14,7 @@ import {
   FORTNIGHT_TYPE_LABELS, PaymentStatus, FortnightType, SourceType
 } from '../../../../core/models/models';
 
-type MarioTarget = 'receitas' | 'despesas' | 'pago' | 'apagar' | 'saldo';
+type MarioTarget = 'receitas' | 'despesas' | 'pago' | 'apagar' | 'saldo' | 'saldoAposPagamento';
 type ExpSortCol = 'description' | 'category' | 'fortnightType' | 'dueDate' | 'amount' | 'paymentStatus' | 'sourceType';
 type IncSortCol = 'description' | 'fortnightType' | 'receivedAt' | 'amount';
 
@@ -175,6 +175,11 @@ export class PeriodDetailComponent implements OnInit {
   });
 
   readonly year = computed(() => this.summary()?.year ?? null);
+
+  readonly balanceAfterPayment = computed(() => {
+    const s = this.summary();
+    return s ? s.totalIncome - s.totalExpense : 0;
+  });
 
   // Exposição de enums para o template
   readonly PaymentStatus  = PaymentStatus;
@@ -400,6 +405,21 @@ export class PeriodDetailComponent implements OnInit {
           '',
           `(=) Saldo:`,
           `  ${this.fmt(s.balance)}`,
+        ];
+        break;
+      }
+      case 'saldoAposPagamento': {
+        const val = s.totalIncome - s.totalExpense;
+        title = 'SALDO APOS PAGAMENTO';
+        lines = [
+          `Receitas:`,
+          `  ${this.fmt(s.totalIncome)}`,
+          '',
+          `(-) Total de despesas:`,
+          `  ${this.fmt(s.totalExpense)}`,
+          '',
+          `(=) Saldo apos pagamento:`,
+          `  ${this.fmt(val)}`,
         ];
         break;
       }
