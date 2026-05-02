@@ -34,7 +34,7 @@ describe('LoadingService', () => {
   });
 
   it('currentGif deve ser um dos 4 GIFs válidos', () => {
-    const validSrcs = ['green-shell-mario.gif', 'dr-eggman.gif', 'soni-running.gif', 'soni-running-2.gif'];
+    const validSrcs = ['green-shell-mario.gif', 'dr-eggman.gif', 'sonic-running.gif', 'sonic-running-2.gif'];
     service.show();
     expect(validSrcs).toContain(service.currentGif().src);
   });

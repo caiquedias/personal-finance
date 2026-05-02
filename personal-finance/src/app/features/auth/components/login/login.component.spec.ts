@@ -5,6 +5,8 @@ import { of, throwError } from 'rxjs';
 import { AuthService } from '../../../../core/auth/auth.service';
 import { LoginComponent } from './login.component';
 
+const QUOTES_STORAGE_KEY = 'login_quotes_usage';
+
 describe('LoginComponent', () => {
   let fixture: ComponentFixture<LoginComponent>;
   let component: LoginComponent;
@@ -125,6 +127,46 @@ describe('LoginComponent', () => {
 
       expect(component.apiError()).toBe('Credenciais inválidas.');
     }));
+  });
+
+  describe('pickQuote()', () => {
+    beforeEach(() => sessionStorage.removeItem(QUOTES_STORAGE_KEY));
+    afterEach(() => sessionStorage.removeItem(QUOTES_STORAGE_KEY));
+
+    it('retorna uma frase não vazia', () => {
+      expect(component.pickQuote().length).toBeGreaterThan(0);
+    });
+
+    it('a mesma frase não aparece mais de 3 vezes consecutivas', () => {
+      const counts: Record<string, number> = {};
+      for (let i = 0; i < 60; i++) {
+        const q = component.pickQuote();
+        counts[q] = (counts[q] ?? 0) + 1;
+        expect(counts[q]).toBeLessThanOrEqual(3);
+      }
+    });
+
+    it('reseta o ciclo quando todas as frases atingem 3 repetições', () => {
+      // Preenche storage com uso = 3 para todas as 50 frases
+      const usage: Record<number, number> = {};
+      for (let i = 0; i < 50; i++) usage[i] = 3;
+      sessionStorage.setItem(QUOTES_STORAGE_KEY, JSON.stringify(usage));
+
+      // Após reset, deve retornar uma frase e atualizar o storage com contagem 1
+      const q = component.pickQuote();
+      expect(q.length).toBeGreaterThan(0);
+
+      const stored: Record<number, number> = JSON.parse(sessionStorage.getItem(QUOTES_STORAGE_KEY)!);
+      const total = Object.values(stored).reduce((s, v) => s + v, 0);
+      expect(total).toBe(1);
+    });
+
+    it('persiste contagem no sessionStorage', () => {
+      component.pickQuote();
+      const stored = JSON.parse(sessionStorage.getItem(QUOTES_STORAGE_KEY)!);
+      const total = Object.values(stored as Record<string, number>).reduce((s, v) => s + v, 0);
+      expect(total).toBe(1);
+    });
   });
 
   describe('showPassword signal', () => {
