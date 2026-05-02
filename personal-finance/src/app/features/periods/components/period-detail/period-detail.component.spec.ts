@@ -231,6 +231,34 @@ describe('PeriodDetailComponent', () => {
       expect(component.marioContent()).toContain('Despesas');
       expect(component.marioContent()).toContain('Saldo');
     });
+
+    it('target "saldoAposPagamento" — exibe titulo e calculo correto', () => {
+      component.openMario('saldoAposPagamento');
+      expect(component.marioTitle()).toBe('SALDO APOS PAGAMENTO');
+      expect(component.marioContent()).toContain('Receitas');
+      expect(component.marioContent()).toContain('Total de despesas');
+      expect(component.marioContent()).toContain('Saldo apos pagamento');
+      expect(component.marioOpen()).toBeTrue();
+    });
+  });
+
+  describe('balanceAfterPayment computed', () => {
+    it('retorna 0 sem summary', () => {
+      expect(component.balanceAfterPayment()).toBe(0);
+    });
+
+    it('retorna totalIncome - totalExpense', fakeAsync(() => {
+      fixture.detectChanges();
+      tick();
+      expect(component.balanceAfterPayment()).toBe(SUMMARY.totalIncome - SUMMARY.totalExpense);
+    }));
+
+    it('retorna valor negativo quando despesas superam receitas', fakeAsync(() => {
+      apiSpy.getPeriodSummary.and.returnValue(of({ ...SUMMARY, totalIncome: 500, totalExpense: 1500 }));
+      fixture.detectChanges();
+      tick();
+      expect(component.balanceAfterPayment()).toBe(-1000);
+    }));
   });
 
   describe('expFilterFields computed', () => {
