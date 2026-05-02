@@ -38,12 +38,8 @@ describe('ThemeService', () => {
         dispatchEvent: () => false,
       } as MediaQueryList;
       const matchMediaSpy = jasmine.createSpy('matchMedia').and.returnValue(mql);
-      TestBed.configureTestingModule({
-        providers: [
-          ThemeService,
-          { provide: MATCH_MEDIA_FN, useValue: matchMediaSpy },
-        ],
-      });
+      TestBed.configureTestingModule({ providers: [ThemeService] });
+      TestBed.overrideProvider(MATCH_MEDIA_FN, { useValue: matchMediaSpy });
       const svc = TestBed.inject(ThemeService);
       TestBed.flushEffects();
       expect(svc.isDark()).toBeTrue();
