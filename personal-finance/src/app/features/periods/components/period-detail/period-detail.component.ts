@@ -65,10 +65,12 @@ export class PeriodDetailComponent implements OnInit {
   readonly expPageSize     = signal(20);
   readonly expTotal        = signal(0);
   readonly expLoadingList  = signal(false);
-  readonly expDesc         = signal('');
+  // Filtros compartilhados entre despesas e receitas
+  readonly filterDesc      = signal('');
+  readonly filterFortnight = signal<FortnightType | null>(null);
+
   readonly expCategoryId   = signal('');
   readonly expStatus       = signal<PaymentStatus | null>(null);
-  readonly expFortnight    = signal<FortnightType | null>(null);
   readonly expSourceType   = signal<SourceType | null>(null);
   readonly expSortCol      = signal<ExpSortCol | null>(null);
   readonly expSortDir      = signal<'asc' | 'desc'>('asc');
@@ -78,19 +80,19 @@ export class PeriodDetailComponent implements OnInit {
   readonly allFilteredIncomes  = signal<IncomeResponse[]>([]);
 
   readonly expHasFilters = computed(() =>
-    !!this.expDesc() || !!this.expCategoryId() ||
-    this.expStatus() != null || this.expFortnight() != null ||
+    !!this.filterDesc() || !!this.expCategoryId() ||
+    this.expStatus() != null || this.filterFortnight() != null ||
     this.expSourceType() != null);
 
   readonly expFilterFields = computed<FilterFieldConfig[]>(() => [
-    { key: 'description',   label: 'Descrição', type: 'text',   value: this.expDesc() },
+    { key: 'description',   label: 'Descrição', type: 'text',   value: this.filterDesc() },
     { key: 'categoryId',    label: 'Categoria',  type: 'select', value: this.expCategoryId(),
       options: [{ value: '', label: 'Todas' }, ...this.categories().map(c => ({ value: c.id, label: c.name }))] },
     { key: 'paymentStatus', label: 'Status',     type: 'select', value: this.expStatus() ?? '',
       options: [{ value: '', label: 'Todos' }, { value: PaymentStatus.Pending, label: 'Pendente' },
         { value: PaymentStatus.Paid, label: 'Pago' }, { value: PaymentStatus.Partial, label: 'Parcial' },
         { value: PaymentStatus.Cancelled, label: 'Cancelado' }] },
-    { key: 'fortnightType', label: 'Quinzena',   type: 'select', value: this.expFortnight() ?? '',
+    { key: 'fortnightType', label: 'Quinzena',   type: 'select', value: this.filterFortnight() ?? '',
       options: [{ value: '', label: 'Ambas' }, { value: FortnightType.First, label: '1ª Quinzena' },
         { value: FortnightType.Second, label: '2ª Quinzena' }] },
     { key: 'sourceType',    label: 'Fonte',      type: 'select', value: this.expSourceType() ?? '',
@@ -128,18 +130,16 @@ export class PeriodDetailComponent implements OnInit {
   readonly incPageSize    = signal(20);
   readonly incTotal       = signal(0);
   readonly incLoadingList = signal(false);
-  readonly incDesc        = signal('');
-  readonly incFortnight   = signal<FortnightType | null>(null);
   readonly incSortCol     = signal<IncSortCol | null>(null);
   readonly incSortDir     = signal<'asc' | 'desc'>('asc');
   readonly incFilterOpen  = signal(false);
 
   readonly incHasFilters = computed(() =>
-    !!this.incDesc() || this.incFortnight() != null);
+    !!this.filterDesc() || this.filterFortnight() != null);
 
   readonly incFilterFields = computed<FilterFieldConfig[]>(() => [
-    { key: 'description',   label: 'Descrição', type: 'text',   value: this.incDesc() },
-    { key: 'fortnightType', label: 'Quinzena',   type: 'select', value: this.incFortnight() ?? '',
+    { key: 'description',   label: 'Descrição', type: 'text',   value: this.filterDesc() },
+    { key: 'fortnightType', label: 'Quinzena',   type: 'select', value: this.filterFortnight() ?? '',
       options: [{ value: '', label: 'Ambas' }, { value: FortnightType.First, label: '1ª Quinzena' },
         { value: FortnightType.Second, label: '2ª Quinzena' }] },
   ]);
@@ -239,11 +239,11 @@ export class PeriodDetailComponent implements OnInit {
     this.api.getExpensesByPeriod(this.id(), {
       pageNumber:    1,
       pageSize:      9999,
-      description:   this.expDesc()       || undefined,
-      categoryId:    this.expCategoryId() || undefined,
-      paymentStatus: this.expStatus()      ?? undefined,
-      fortnightType: this.expFortnight()   ?? undefined,
-      sourceType:    this.expSourceType()  ?? undefined,
+      description:   this.filterDesc()      || undefined,
+      categoryId:    this.expCategoryId()   || undefined,
+      paymentStatus: this.expStatus()        ?? undefined,
+      fortnightType: this.filterFortnight()  ?? undefined,
+      sourceType:    this.expSourceType()    ?? undefined,
     }).subscribe({ next: r => this.allFilteredExpenses.set(r.items) });
   }
 
@@ -252,8 +252,8 @@ export class PeriodDetailComponent implements OnInit {
     this.api.getIncomesByPeriod(this.id(), {
       pageNumber:    1,
       pageSize:      9999,
-      description:   this.incDesc()      || undefined,
-      fortnightType: this.incFortnight() ?? undefined,
+      description:   this.filterDesc()      || undefined,
+      fortnightType: this.filterFortnight()  ?? undefined,
     }).subscribe({ next: r => this.allFilteredIncomes.set(r.items) });
   }
 
@@ -262,11 +262,11 @@ export class PeriodDetailComponent implements OnInit {
     this.api.getExpensesByPeriod(this.id(), {
       pageNumber:    this.expPage(),
       pageSize:      this.expPageSize(),
-      description:   this.expDesc()       || undefined,
-      categoryId:    this.expCategoryId() || undefined,
-      paymentStatus: this.expStatus()      ?? undefined,
-      fortnightType: this.expFortnight()   ?? undefined,
-      sourceType:    this.expSourceType()  ?? undefined,
+      description:   this.filterDesc()      || undefined,
+      categoryId:    this.expCategoryId()   || undefined,
+      paymentStatus: this.expStatus()        ?? undefined,
+      fortnightType: this.filterFortnight()  ?? undefined,
+      sourceType:    this.expSourceType()    ?? undefined,
     }).subscribe({
       next: result => {
         this.expenses.set(result.items);
@@ -278,18 +278,21 @@ export class PeriodDetailComponent implements OnInit {
   }
 
   onExpFilterApply(values: Record<string, unknown>): void {
-    this.expDesc.set((values['description'] as string) ?? '');
+    this.filterDesc.set((values['description'] as string) ?? '');
     this.expCategoryId.set((values['categoryId'] as string) ?? '');
     const status = values['paymentStatus'] as string;
     this.expStatus.set(status ? Number(status) as PaymentStatus : null);
     const fortnight = values['fortnightType'] as string;
-    this.expFortnight.set(fortnight ? Number(fortnight) as FortnightType : null);
+    this.filterFortnight.set(fortnight ? Number(fortnight) as FortnightType : null);
     const source = values['sourceType'] as string;
     this.expSourceType.set(source ? Number(source) as SourceType : null);
     this.expFilterOpen.set(false);
     this.expPage.set(1);
+    this.incPage.set(1);
     this.loadExpenses();
     this.loadAllFilteredExpenses();
+    this.loadIncomes();
+    this.loadAllFilteredIncomes();
   }
 
   onExpFilterClear(): void {
@@ -298,14 +301,17 @@ export class PeriodDetailComponent implements OnInit {
   }
 
   clearExpFilters(): void {
-    this.expDesc.set('');
+    this.filterDesc.set('');
+    this.filterFortnight.set(null);
     this.expCategoryId.set('');
     this.expStatus.set(null);
-    this.expFortnight.set(null);
     this.expSourceType.set(null);
     this.expPage.set(1);
+    this.incPage.set(1);
     this.allFilteredExpenses.set([]);
+    this.allFilteredIncomes.set([]);
     this.loadExpenses();
+    this.loadIncomes();
   }
 
   onExpPageChange(page: number): void { this.expPage.set(page); this.loadExpenses(); }
@@ -328,8 +334,8 @@ export class PeriodDetailComponent implements OnInit {
     this.api.getIncomesByPeriod(this.id(), {
       pageNumber:    this.incPage(),
       pageSize:      this.incPageSize(),
-      description:   this.incDesc()      || undefined,
-      fortnightType: this.incFortnight() ?? undefined,
+      description:   this.filterDesc()      || undefined,
+      fortnightType: this.filterFortnight()  ?? undefined,
     }).subscribe({
       next: result => {
         this.incomes.set(result.items);
@@ -341,13 +347,16 @@ export class PeriodDetailComponent implements OnInit {
   }
 
   onIncFilterApply(values: Record<string, unknown>): void {
-    this.incDesc.set((values['description'] as string) ?? '');
+    this.filterDesc.set((values['description'] as string) ?? '');
     const fortnight = values['fortnightType'] as string;
-    this.incFortnight.set(fortnight ? Number(fortnight) as FortnightType : null);
+    this.filterFortnight.set(fortnight ? Number(fortnight) as FortnightType : null);
     this.incFilterOpen.set(false);
     this.incPage.set(1);
+    this.expPage.set(1);
     this.loadIncomes();
     this.loadAllFilteredIncomes();
+    this.loadExpenses();
+    this.loadAllFilteredExpenses();
   }
 
   onIncFilterClear(): void {
@@ -356,11 +365,14 @@ export class PeriodDetailComponent implements OnInit {
   }
 
   clearIncFilters(): void {
-    this.incDesc.set('');
-    this.incFortnight.set(null);
+    this.filterDesc.set('');
+    this.filterFortnight.set(null);
     this.incPage.set(1);
+    this.expPage.set(1);
     this.allFilteredIncomes.set([]);
+    this.allFilteredExpenses.set([]);
     this.loadIncomes();
+    this.loadExpenses();
   }
 
   onIncPageChange(page: number): void { this.incPage.set(page); this.loadIncomes(); }
