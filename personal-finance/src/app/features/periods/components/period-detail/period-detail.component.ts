@@ -390,106 +390,178 @@ export class PeriodDetailComponent implements OnInit {
 
   // ── Mario modal ───────────────────────────────────────────────────────────
 
+  private marioFilterInfo(target: 'expenses' | 'incomes' | 'balance'): string[] {
+    const hasExp = this.expHasFilters();
+    const hasInc = this.incHasFilters();
+    const relevant = target === 'expenses' ? hasExp : target === 'incomes' ? hasInc : hasExp || hasInc;
+    if (!relevant) return [];
+
+    const lines: string[] = ['[FILTROS APLICADOS]'];
+    if (this.filterDesc())       lines.push(`Descricao: "${this.filterDesc()}"`);
+    if (this.filterFortnight() != null) lines.push(`Quinzena: ${FORTNIGHT_TYPE_LABELS[this.filterFortnight()!]}`);
+    if (target !== 'incomes') {
+      if (this.expCategoryId()) {
+        const cat = this.categories().find(c => c.id === this.expCategoryId());
+        if (cat) lines.push(`Categoria: ${cat.name}`);
+      }
+      if (this.expStatus()     != null) lines.push(`Status: ${PAYMENT_STATUS_LABELS[this.expStatus()!]}`);
+      if (this.expSourceType() != null) lines.push(`Fonte: ${SOURCE_TYPE_LABELS[this.expSourceType()! as keyof typeof SOURCE_TYPE_LABELS]}`);
+    }
+    lines.push('');
+    return lines;
+  }
+
   openMario(target: MarioTarget): void {
     const s = this.summary()!;
-    const exps = this.expenses();
     let title = '';
     let lines: string[] = [];
 
     switch (target) {
       case 'receitas': {
-        this.api.getIncomesByPeriod(this.id(), { pageNumber: 1, pageSize: 1000 })
-          .subscribe(result => {
-            const receitas = result.items;
-            if (receitas.length === 0) {
-              lines = ['Nenhuma receita\nregistrada neste periodo.'];
-            } else {
-              lines = receitas.map(i => `• ${i.description}\n  ${this.fmt(i.amount)}`);
-              lines.push('', `TOTAL: ${this.fmt(s.totalIncome)}`);
-            }
-            this.marioTitle.set('RECEITAS DO PERIODO');
-            this.marioContent.set(lines.join('\n'));
-            this.marioOpen.set(true);
-          });
+        if (this.incHasFilters()) {
+          const items = this.allFilteredIncomes();
+          lines = [...this.marioFilterInfo('incomes')];
+          if (items.length === 0) {
+            lines.push('Nenhuma receita\nencontrada com os filtros.');
+          } else {
+            lines.push(...items.map(i => `• ${i.description}\n  ${this.fmt(i.amount)}`));
+            lines.push('', `TOTAL: ${this.fmt(this.kpiIncomeTotal())}`);
+          }
+          this.marioTitle.set('RECEITAS DO PERIODO');
+          this.marioContent.set(lines.join('\n'));
+          this.marioOpen.set(true);
+        } else {
+          this.api.getIncomesByPeriod(this.id(), { pageNumber: 1, pageSize: 1000 })
+            .subscribe(result => {
+              const receitas = result.items;
+              lines = receitas.length === 0
+                ? ['Nenhuma receita\nregistrada neste periodo.']
+                : [...receitas.map(i => `• ${i.description}\n  ${this.fmt(i.amount)}`), '', `TOTAL: ${this.fmt(s.totalIncome)}`];
+              this.marioTitle.set('RECEITAS DO PERIODO');
+              this.marioContent.set(lines.join('\n'));
+              this.marioOpen.set(true);
+            });
+        }
         return;
       }
       case 'despesas': {
-        this.api.getExpensesByPeriod(this.id(), { pageNumber: 1, pageSize: 1000 })
-          .subscribe(result => {
-            const despesas = result.items;
-            if (despesas.length === 0) {
-              lines = ['Nenhuma despesa\nregistrada neste periodo.'];
-            } else {
-              lines = despesas.map(e => `• ${e.description}\n  ${this.fmt(e.amount)}`);
-              lines.push('', `TOTAL: ${this.fmt(s.totalExpense)}`);
-            }
-            this.marioTitle.set('DESPESAS DO PERIODO');
-            this.marioContent.set(lines.join('\n'));
-            this.marioOpen.set(true);
-          });
+        if (this.expHasFilters()) {
+          const items = this.allFilteredExpenses();
+          lines = [...this.marioFilterInfo('expenses')];
+          if (items.length === 0) {
+            lines.push('Nenhuma despesa\nencontrada com os filtros.');
+          } else {
+            lines.push(...items.map(e => `• ${e.description}\n  ${this.fmt(e.amount)}`));
+            lines.push('', `TOTAL: ${this.fmt(this.kpiExpenseTotal())}`);
+          }
+          this.marioTitle.set('DESPESAS DO PERIODO');
+          this.marioContent.set(lines.join('\n'));
+          this.marioOpen.set(true);
+        } else {
+          this.api.getExpensesByPeriod(this.id(), { pageNumber: 1, pageSize: 1000 })
+            .subscribe(result => {
+              const despesas = result.items;
+              lines = despesas.length === 0
+                ? ['Nenhuma despesa\nregistrada neste periodo.']
+                : [...despesas.map(e => `• ${e.description}\n  ${this.fmt(e.amount)}`), '', `TOTAL: ${this.fmt(s.totalExpense)}`];
+              this.marioTitle.set('DESPESAS DO PERIODO');
+              this.marioContent.set(lines.join('\n'));
+              this.marioOpen.set(true);
+            });
+        }
         return;
       }
       case 'pago': {
-        this.api.getExpensesByPeriod(this.id(), { pageNumber: 1, pageSize: 1000, paymentStatus: PaymentStatus.Paid })
-          .subscribe(result => {
-            const pagas = result.items;
-            if (pagas.length === 0) {
-              lines = ['Nenhuma despesa\npaga neste periodo.'];
-            } else {
-              lines = pagas.map(e => `• ${e.description}\n  ${this.fmt(e.amount)}`);
-              lines.push('', `TOTAL PAGO: ${this.fmt(s.totalPaid)}`);
-            }
-            this.marioTitle.set('DESPESAS PAGAS');
-            this.marioContent.set(lines.join('\n'));
-            this.marioOpen.set(true);
-          });
+        if (this.expHasFilters()) {
+          const pagas = this.allFilteredExpenses().filter(e => e.paymentStatus === PaymentStatus.Paid);
+          lines = [...this.marioFilterInfo('expenses')];
+          if (pagas.length === 0) {
+            lines.push('Nenhuma despesa\npaga com os filtros.');
+          } else {
+            lines.push(...pagas.map(e => `• ${e.description}\n  ${this.fmt(e.amount)}`));
+            lines.push('', `TOTAL PAGO: ${this.fmt(this.kpiPaid())}`);
+          }
+          this.marioTitle.set('DESPESAS PAGAS');
+          this.marioContent.set(lines.join('\n'));
+          this.marioOpen.set(true);
+        } else {
+          this.api.getExpensesByPeriod(this.id(), { pageNumber: 1, pageSize: 1000, paymentStatus: PaymentStatus.Paid })
+            .subscribe(result => {
+              const pagas = result.items;
+              lines = pagas.length === 0
+                ? ['Nenhuma despesa\npaga neste periodo.']
+                : [...pagas.map(e => `• ${e.description}\n  ${this.fmt(e.amount)}`), '', `TOTAL PAGO: ${this.fmt(s.totalPaid)}`];
+              this.marioTitle.set('DESPESAS PAGAS');
+              this.marioContent.set(lines.join('\n'));
+              this.marioOpen.set(true);
+            });
+        }
         return;
       }
       case 'apagar': {
-        this.api.getExpensesByPeriod(this.id(), { pageNumber: 1, pageSize: 1000, paymentStatus: PaymentStatus.Pending })
-          .subscribe(result => {
-            const pendentes = result.items;
-            if (pendentes.length === 0) {
-              lines = ['Nenhuma despesa\npendente neste periodo.'];
-            } else {
-              lines = pendentes.map(e => {
-                const suffix = e.paymentStatus === PaymentStatus.Partial ? ' (parcial)' : '';
-                return `• ${e.description}${suffix}\n  ${this.fmt(e.amount)}`;
-              });
-              lines.push('', `TOTAL A PAGAR: ${this.fmt(s.totalOwed)}`);
-            }
-            this.marioTitle.set('DESPESAS A PAGAR');
-            this.marioContent.set(lines.join('\n'));
-            this.marioOpen.set(true);
-          });
+        if (this.expHasFilters()) {
+          const pendentes = this.allFilteredExpenses()
+            .filter(e => e.paymentStatus === PaymentStatus.Pending || e.paymentStatus === PaymentStatus.Partial);
+          lines = [...this.marioFilterInfo('expenses')];
+          if (pendentes.length === 0) {
+            lines.push('Nenhuma despesa\npendente com os filtros.');
+          } else {
+            lines.push(...pendentes.map(e => {
+              const suffix = e.paymentStatus === PaymentStatus.Partial ? ' (parcial)' : '';
+              return `• ${e.description}${suffix}\n  ${this.fmt(e.amount)}`;
+            }));
+            lines.push('', `TOTAL A PAGAR: ${this.fmt(this.kpiOwed())}`);
+          }
+          this.marioTitle.set('DESPESAS A PAGAR');
+          this.marioContent.set(lines.join('\n'));
+          this.marioOpen.set(true);
+        } else {
+          this.api.getExpensesByPeriod(this.id(), { pageNumber: 1, pageSize: 1000, paymentStatus: PaymentStatus.Pending })
+            .subscribe(result => {
+              const pendentes = result.items;
+              if (pendentes.length === 0) {
+                lines = ['Nenhuma despesa\npendente neste periodo.'];
+              } else {
+                lines = pendentes.map(e => {
+                  const suffix = e.paymentStatus === PaymentStatus.Partial ? ' (parcial)' : '';
+                  return `• ${e.description}${suffix}\n  ${this.fmt(e.amount)}`;
+                });
+                lines.push('', `TOTAL A PAGAR: ${this.fmt(s.totalOwed)}`);
+              }
+              this.marioTitle.set('DESPESAS A PAGAR');
+              this.marioContent.set(lines.join('\n'));
+              this.marioOpen.set(true);
+            });
+        }
         return;
       }
       case 'saldo': {
         title = 'CALCULO DO SALDO';
         lines = [
+          ...this.marioFilterInfo('balance'),
           `Receitas:`,
-          `  ${this.fmt(s.totalIncome)}`,
+          `  ${this.fmt(this.kpiIncomeTotal())}`,
           '',
           `(-) Despesas:`,
-          `  ${this.fmt(s.totalExpense)}`,
+          `  ${this.fmt(this.kpiExpenseTotal())}`,
           '',
           `(=) Saldo:`,
-          `  ${this.fmt(s.balance)}`,
+          `  ${this.fmt(this.kpiBalance())}`,
         ];
         break;
       }
       case 'saldoAposPagamento': {
-        const val = s.totalIncome - s.totalExpense;
         title = 'SALDO APOS PAGAMENTO';
         lines = [
+          ...this.marioFilterInfo('balance'),
           `Receitas:`,
-          `  ${this.fmt(s.totalIncome)}`,
+          `  ${this.fmt(this.kpiIncomeTotal())}`,
           '',
           `(-) Total de despesas:`,
-          `  ${this.fmt(s.totalExpense)}`,
+          `  ${this.fmt(this.kpiExpenseTotal())}`,
           '',
           `(=) Saldo apos pagamento:`,
-          `  ${this.fmt(val)}`,
+          `  ${this.fmt(this.kpiBalanceAfterPayment())}`,
         ];
         break;
       }

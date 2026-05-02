@@ -220,6 +220,19 @@ Integration: `WebApplicationFactory<Program>` + banco InMemory. Unit: xUnit + Mo
 
 ---
 
+## Autonomia por contexto
+
+| Contexto | Nível de autonomia |
+|----------|--------------------|
+| **Worktree** (`claude/`) | **Livre** — ler arquivos, implementar, rodar testes, ler GitHub/board, alterar status da issue sem pedir permissão |
+| **Planning** | **Livre** — ler arquivos e board para levantamento; confirmar ordem/escopo antes de executar |
+| **Branch `feat/`** | **Restrito** — confirmar antes de push, criação de PR e alterações fora do escopo |
+| **Deploy / ambientes** | **Restrito** — sempre confirmar antes de qualquer ação |
+
+Regra geral: **worktree é espaço de implementação autônomo**. Volta ao modo restrito quando a ação afeta branches do Caique, PRs públicas ou ambientes.
+
+---
+
 ## Otimização de tokens
 
 - Respostas curtas — sem repetir código ou contexto anterior
