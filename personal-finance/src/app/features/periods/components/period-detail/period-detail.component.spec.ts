@@ -284,7 +284,7 @@ describe('PeriodDetailComponent', () => {
     beforeEach(fakeAsync(() => { fixture.detectChanges(); tick(); }));
 
     it('kpiExpenseTotal soma allFilteredExpenses', () => {
-      component.expDesc.set('x');
+      component.filterDesc.set('x');
       component.allFilteredExpenses.set([
         { ...EXPENSE, amount: 300 },
         { ...EXPENSE, amount: 200, paymentStatus: PaymentStatus.Pending },
@@ -293,7 +293,7 @@ describe('PeriodDetailComponent', () => {
     });
 
     it('kpiPaid soma somente despesas Paid de allFilteredExpenses', () => {
-      component.expDesc.set('x');
+      component.filterDesc.set('x');
       component.allFilteredExpenses.set([
         { ...EXPENSE, amount: 300, paymentStatus: PaymentStatus.Paid },
         { ...EXPENSE, amount: 200, paymentStatus: PaymentStatus.Pending },
@@ -302,7 +302,7 @@ describe('PeriodDetailComponent', () => {
     });
 
     it('kpiOwed soma Pending e Partial de allFilteredExpenses', () => {
-      component.expDesc.set('x');
+      component.filterDesc.set('x');
       component.allFilteredExpenses.set([
         { ...EXPENSE, amount: 300, paymentStatus: PaymentStatus.Paid },
         { ...EXPENSE, amount: 200, paymentStatus: PaymentStatus.Pending },
@@ -312,8 +312,9 @@ describe('PeriodDetailComponent', () => {
     });
 
     it('kpiBalance deriva de kpiIncomeTotal - kpiExpenseTotal com filtros ativos', () => {
-      component.expDesc.set('x');
+      component.filterDesc.set('x');
       component.allFilteredExpenses.set([{ ...EXPENSE, amount: 400 }]);
+      component.allFilteredIncomes.set([{ ...INCOME, amount: SUMMARY.totalIncome }]);
       expect(component.kpiBalance()).toBe(SUMMARY.totalIncome - 400);
     });
   });
@@ -322,7 +323,7 @@ describe('PeriodDetailComponent', () => {
     beforeEach(fakeAsync(() => { fixture.detectChanges(); tick(); }));
 
     it('kpiIncomeTotal soma allFilteredIncomes', () => {
-      component.incDesc.set('sal');
+      component.filterDesc.set('sal');
       component.allFilteredIncomes.set([
         { ...INCOME, amount: 1500 },
         { ...INCOME, amount: 500 },
@@ -331,8 +332,9 @@ describe('PeriodDetailComponent', () => {
     });
 
     it('kpiBalance deriva de kpiIncomeTotal - kpiExpenseTotal com filtros ativos', () => {
-      component.incDesc.set('sal');
+      component.filterDesc.set('sal');
       component.allFilteredIncomes.set([{ ...INCOME, amount: 2000 }]);
+      component.allFilteredExpenses.set([{ ...EXPENSE, amount: SUMMARY.totalExpense }]);
       expect(component.kpiBalance()).toBe(2000 - SUMMARY.totalExpense);
     });
   });
@@ -344,8 +346,8 @@ describe('PeriodDetailComponent', () => {
       expect(component.expFilterFields().length).toBe(5);
     });
 
-    it('campo description reflete expDesc', () => {
-      component.expDesc.set('teste');
+    it('campo description reflete filterDesc', () => {
+      component.filterDesc.set('teste');
       const field = component.expFilterFields().find(f => f.key === 'description')!;
       expect(field.value).toBe('teste');
     });
@@ -361,8 +363,8 @@ describe('PeriodDetailComponent', () => {
       expect(component.incFilterFields().length).toBe(2);
     });
 
-    it('campo description reflete incDesc', () => {
-      component.incDesc.set('sal');
+    it('campo description reflete filterDesc', () => {
+      component.filterDesc.set('sal');
       const field = component.incFilterFields().find(f => f.key === 'description')!;
       expect(field.value).toBe('sal');
     });
@@ -375,10 +377,10 @@ describe('PeriodDetailComponent', () => {
       component.expFilterOpen.set(true);
       component.onExpFilterApply({ description: 'aluguel', categoryId: 'cat-1', paymentStatus: '1', fortnightType: '1', sourceType: '1' });
       tick();
-      expect(component.expDesc()).toBe('aluguel');
+      expect(component.filterDesc()).toBe('aluguel');
       expect(component.expCategoryId()).toBe('cat-1');
       expect(component.expStatus()).toBe(1);
-      expect(component.expFortnight()).toBe(1);
+      expect(component.filterFortnight()).toBe(1);
       expect(component.expSourceType()).toBe(1);
       expect(component.expFilterOpen()).toBeFalse();
       expect(apiSpy.getExpensesByPeriod).toHaveBeenCalled();
@@ -389,7 +391,7 @@ describe('PeriodDetailComponent', () => {
       component.onExpFilterApply({ description: '', categoryId: '', paymentStatus: '', fortnightType: '', sourceType: '' });
       tick();
       expect(component.expStatus()).toBeNull();
-      expect(component.expFortnight()).toBeNull();
+      expect(component.filterFortnight()).toBeNull();
       expect(component.expSourceType()).toBeNull();
     }));
   });
@@ -398,11 +400,11 @@ describe('PeriodDetailComponent', () => {
     beforeEach(fakeAsync(() => { fixture.detectChanges(); tick(); }));
 
     it('limpa filtros e fecha painel', fakeAsync(() => {
-      component.expDesc.set('x');
+      component.filterDesc.set('x');
       component.expFilterOpen.set(true);
       component.onExpFilterClear();
       tick();
-      expect(component.expDesc()).toBe('');
+      expect(component.filterDesc()).toBe('');
       expect(component.expFilterOpen()).toBeFalse();
     }));
   });
@@ -413,8 +415,8 @@ describe('PeriodDetailComponent', () => {
     it('aplica filtros e recarrega receitas', fakeAsync(() => {
       component.onIncFilterApply({ description: 'sal', fortnightType: '2' });
       tick();
-      expect(component.incDesc()).toBe('sal');
-      expect(component.incFortnight()).toBe(2);
+      expect(component.filterDesc()).toBe('sal');
+      expect(component.filterFortnight()).toBe(2);
       expect(component.incFilterOpen()).toBeFalse();
       expect(apiSpy.getIncomesByPeriod).toHaveBeenCalled();
     }));
@@ -424,11 +426,11 @@ describe('PeriodDetailComponent', () => {
     beforeEach(fakeAsync(() => { fixture.detectChanges(); tick(); }));
 
     it('limpa filtros e fecha painel', fakeAsync(() => {
-      component.incDesc.set('x');
+      component.filterDesc.set('x');
       component.incFilterOpen.set(true);
       component.onIncFilterClear();
       tick();
-      expect(component.incDesc()).toBe('');
+      expect(component.filterDesc()).toBe('');
       expect(component.incFilterOpen()).toBeFalse();
     }));
   });
