@@ -65,29 +65,34 @@ export class PeriodDetailComponent implements OnInit {
   readonly expPageSize     = signal(20);
   readonly expTotal        = signal(0);
   readonly expLoadingList  = signal(false);
-  readonly expDesc         = signal('');
+  // Filtros compartilhados entre despesas e receitas
+  readonly filterDesc      = signal('');
+  readonly filterFortnight = signal<FortnightType | null>(null);
+
   readonly expCategoryId   = signal('');
   readonly expStatus       = signal<PaymentStatus | null>(null);
-  readonly expFortnight    = signal<FortnightType | null>(null);
   readonly expSourceType   = signal<SourceType | null>(null);
   readonly expSortCol      = signal<ExpSortCol | null>(null);
   readonly expSortDir      = signal<'asc' | 'desc'>('asc');
   readonly expFilterOpen   = signal(false);
 
+  readonly allFilteredExpenses = signal<ExpenseResponse[]>([]);
+  readonly allFilteredIncomes  = signal<IncomeResponse[]>([]);
+
   readonly expHasFilters = computed(() =>
-    !!this.expDesc() || !!this.expCategoryId() ||
-    this.expStatus() != null || this.expFortnight() != null ||
+    !!this.filterDesc() || !!this.expCategoryId() ||
+    this.expStatus() != null || this.filterFortnight() != null ||
     this.expSourceType() != null);
 
   readonly expFilterFields = computed<FilterFieldConfig[]>(() => [
-    { key: 'description',   label: 'Descrição', type: 'text',   value: this.expDesc() },
+    { key: 'description',   label: 'Descrição', type: 'text',   value: this.filterDesc() },
     { key: 'categoryId',    label: 'Categoria',  type: 'select', value: this.expCategoryId(),
       options: [{ value: '', label: 'Todas' }, ...this.categories().map(c => ({ value: c.id, label: c.name }))] },
     { key: 'paymentStatus', label: 'Status',     type: 'select', value: this.expStatus() ?? '',
       options: [{ value: '', label: 'Todos' }, { value: PaymentStatus.Pending, label: 'Pendente' },
         { value: PaymentStatus.Paid, label: 'Pago' }, { value: PaymentStatus.Partial, label: 'Parcial' },
         { value: PaymentStatus.Cancelled, label: 'Cancelado' }] },
-    { key: 'fortnightType', label: 'Quinzena',   type: 'select', value: this.expFortnight() ?? '',
+    { key: 'fortnightType', label: 'Quinzena',   type: 'select', value: this.filterFortnight() ?? '',
       options: [{ value: '', label: 'Ambas' }, { value: FortnightType.First, label: '1ª Quinzena' },
         { value: FortnightType.Second, label: '2ª Quinzena' }] },
     { key: 'sourceType',    label: 'Fonte',      type: 'select', value: this.expSourceType() ?? '',
@@ -125,18 +130,16 @@ export class PeriodDetailComponent implements OnInit {
   readonly incPageSize    = signal(20);
   readonly incTotal       = signal(0);
   readonly incLoadingList = signal(false);
-  readonly incDesc        = signal('');
-  readonly incFortnight   = signal<FortnightType | null>(null);
   readonly incSortCol     = signal<IncSortCol | null>(null);
   readonly incSortDir     = signal<'asc' | 'desc'>('asc');
   readonly incFilterOpen  = signal(false);
 
   readonly incHasFilters = computed(() =>
-    !!this.incDesc() || this.incFortnight() != null);
+    !!this.filterDesc() || this.filterFortnight() != null);
 
   readonly incFilterFields = computed<FilterFieldConfig[]>(() => [
-    { key: 'description',   label: 'Descrição', type: 'text',   value: this.incDesc() },
-    { key: 'fortnightType', label: 'Quinzena',   type: 'select', value: this.incFortnight() ?? '',
+    { key: 'description',   label: 'Descrição', type: 'text',   value: this.filterDesc() },
+    { key: 'fortnightType', label: 'Quinzena',   type: 'select', value: this.filterFortnight() ?? '',
       options: [{ value: '', label: 'Ambas' }, { value: FortnightType.First, label: '1ª Quinzena' },
         { value: FortnightType.Second, label: '2ª Quinzena' }] },
   ]);
@@ -176,10 +179,38 @@ export class PeriodDetailComponent implements OnInit {
 
   readonly year = computed(() => this.summary()?.year ?? null);
 
-  readonly balanceAfterPayment = computed(() => {
-    const s = this.summary();
-    return s ? s.totalIncome - s.totalExpense : 0;
+  readonly kpiIncomeTotal = computed(() =>
+    this.incHasFilters()
+      ? this.allFilteredIncomes().reduce((sum, i) => sum + i.amount, 0)
+      : (this.summary()?.totalIncome ?? 0));
+
+  readonly kpiExpenseTotal = computed(() =>
+    this.expHasFilters()
+      ? this.allFilteredExpenses().reduce((sum, e) => sum + e.amount, 0)
+      : (this.summary()?.totalExpense ?? 0));
+
+  readonly kpiPaid = computed(() =>
+    this.expHasFilters()
+      ? this.allFilteredExpenses()
+          .filter(e => e.paymentStatus === PaymentStatus.Paid)
+          .reduce((sum, e) => sum + e.amount, 0)
+      : (this.summary()?.totalPaid ?? 0));
+
+  readonly kpiOwed = computed(() =>
+    this.expHasFilters()
+      ? this.allFilteredExpenses()
+          .filter(e => e.paymentStatus === PaymentStatus.Pending || e.paymentStatus === PaymentStatus.Partial)
+          .reduce((sum, e) => sum + e.amount, 0)
+      : (this.summary()?.totalOwed ?? 0));
+
+  readonly kpiBalance = computed(() => {
+    if (this.expHasFilters() || this.incHasFilters())
+      return this.kpiIncomeTotal() - this.kpiExpenseTotal();
+    return this.summary()?.balance ?? 0;
   });
+
+  readonly kpiBalanceAfterPayment = computed(() =>
+    this.kpiIncomeTotal() - this.kpiExpenseTotal());
 
   // Exposição de enums para o template
   readonly PaymentStatus  = PaymentStatus;
@@ -203,16 +234,39 @@ export class PeriodDetailComponent implements OnInit {
 
   // ── Despesas ─────────────────────────────────────────────────────────────
 
+  private loadAllFilteredExpenses(): void {
+    if (!this.expHasFilters()) { this.allFilteredExpenses.set([]); return; }
+    this.api.getExpensesByPeriod(this.id(), {
+      pageNumber:    1,
+      pageSize:      9999,
+      description:   this.filterDesc()      || undefined,
+      categoryId:    this.expCategoryId()   || undefined,
+      paymentStatus: this.expStatus()        ?? undefined,
+      fortnightType: this.filterFortnight()  ?? undefined,
+      sourceType:    this.expSourceType()    ?? undefined,
+    }).subscribe({ next: r => this.allFilteredExpenses.set(r.items) });
+  }
+
+  private loadAllFilteredIncomes(): void {
+    if (!this.incHasFilters()) { this.allFilteredIncomes.set([]); return; }
+    this.api.getIncomesByPeriod(this.id(), {
+      pageNumber:    1,
+      pageSize:      9999,
+      description:   this.filterDesc()      || undefined,
+      fortnightType: this.filterFortnight()  ?? undefined,
+    }).subscribe({ next: r => this.allFilteredIncomes.set(r.items) });
+  }
+
   private loadExpenses(): void {
     this.expLoadingList.set(true);
     this.api.getExpensesByPeriod(this.id(), {
       pageNumber:    this.expPage(),
       pageSize:      this.expPageSize(),
-      description:   this.expDesc()       || undefined,
-      categoryId:    this.expCategoryId() || undefined,
-      paymentStatus: this.expStatus()      ?? undefined,
-      fortnightType: this.expFortnight()   ?? undefined,
-      sourceType:    this.expSourceType()  ?? undefined,
+      description:   this.filterDesc()      || undefined,
+      categoryId:    this.expCategoryId()   || undefined,
+      paymentStatus: this.expStatus()        ?? undefined,
+      fortnightType: this.filterFortnight()  ?? undefined,
+      sourceType:    this.expSourceType()    ?? undefined,
     }).subscribe({
       next: result => {
         this.expenses.set(result.items);
@@ -224,17 +278,21 @@ export class PeriodDetailComponent implements OnInit {
   }
 
   onExpFilterApply(values: Record<string, unknown>): void {
-    this.expDesc.set((values['description'] as string) ?? '');
+    this.filterDesc.set((values['description'] as string) ?? '');
     this.expCategoryId.set((values['categoryId'] as string) ?? '');
     const status = values['paymentStatus'] as string;
     this.expStatus.set(status ? Number(status) as PaymentStatus : null);
     const fortnight = values['fortnightType'] as string;
-    this.expFortnight.set(fortnight ? Number(fortnight) as FortnightType : null);
+    this.filterFortnight.set(fortnight ? Number(fortnight) as FortnightType : null);
     const source = values['sourceType'] as string;
     this.expSourceType.set(source ? Number(source) as SourceType : null);
     this.expFilterOpen.set(false);
     this.expPage.set(1);
+    this.incPage.set(1);
     this.loadExpenses();
+    this.loadAllFilteredExpenses();
+    this.loadIncomes();
+    this.loadAllFilteredIncomes();
   }
 
   onExpFilterClear(): void {
@@ -243,13 +301,17 @@ export class PeriodDetailComponent implements OnInit {
   }
 
   clearExpFilters(): void {
-    this.expDesc.set('');
+    this.filterDesc.set('');
+    this.filterFortnight.set(null);
     this.expCategoryId.set('');
     this.expStatus.set(null);
-    this.expFortnight.set(null);
     this.expSourceType.set(null);
     this.expPage.set(1);
+    this.incPage.set(1);
+    this.allFilteredExpenses.set([]);
+    this.allFilteredIncomes.set([]);
     this.loadExpenses();
+    this.loadIncomes();
   }
 
   onExpPageChange(page: number): void { this.expPage.set(page); this.loadExpenses(); }
@@ -272,8 +334,8 @@ export class PeriodDetailComponent implements OnInit {
     this.api.getIncomesByPeriod(this.id(), {
       pageNumber:    this.incPage(),
       pageSize:      this.incPageSize(),
-      description:   this.incDesc()      || undefined,
-      fortnightType: this.incFortnight() ?? undefined,
+      description:   this.filterDesc()      || undefined,
+      fortnightType: this.filterFortnight()  ?? undefined,
     }).subscribe({
       next: result => {
         this.incomes.set(result.items);
@@ -285,12 +347,16 @@ export class PeriodDetailComponent implements OnInit {
   }
 
   onIncFilterApply(values: Record<string, unknown>): void {
-    this.incDesc.set((values['description'] as string) ?? '');
+    this.filterDesc.set((values['description'] as string) ?? '');
     const fortnight = values['fortnightType'] as string;
-    this.incFortnight.set(fortnight ? Number(fortnight) as FortnightType : null);
+    this.filterFortnight.set(fortnight ? Number(fortnight) as FortnightType : null);
     this.incFilterOpen.set(false);
     this.incPage.set(1);
+    this.expPage.set(1);
     this.loadIncomes();
+    this.loadAllFilteredIncomes();
+    this.loadExpenses();
+    this.loadAllFilteredExpenses();
   }
 
   onIncFilterClear(): void {
@@ -299,10 +365,14 @@ export class PeriodDetailComponent implements OnInit {
   }
 
   clearIncFilters(): void {
-    this.incDesc.set('');
-    this.incFortnight.set(null);
+    this.filterDesc.set('');
+    this.filterFortnight.set(null);
     this.incPage.set(1);
+    this.expPage.set(1);
+    this.allFilteredIncomes.set([]);
+    this.allFilteredExpenses.set([]);
     this.loadIncomes();
+    this.loadExpenses();
   }
 
   onIncPageChange(page: number): void { this.incPage.set(page); this.loadIncomes(); }
@@ -320,106 +390,178 @@ export class PeriodDetailComponent implements OnInit {
 
   // ── Mario modal ───────────────────────────────────────────────────────────
 
+  private marioFilterInfo(target: 'expenses' | 'incomes' | 'balance'): string[] {
+    const hasExp = this.expHasFilters();
+    const hasInc = this.incHasFilters();
+    const relevant = target === 'expenses' ? hasExp : target === 'incomes' ? hasInc : hasExp || hasInc;
+    if (!relevant) return [];
+
+    const lines: string[] = ['[FILTROS APLICADOS]'];
+    if (this.filterDesc())       lines.push(`Descricao: "${this.filterDesc()}"`);
+    if (this.filterFortnight() != null) lines.push(`Quinzena: ${FORTNIGHT_TYPE_LABELS[this.filterFortnight()!]}`);
+    if (target !== 'incomes') {
+      if (this.expCategoryId()) {
+        const cat = this.categories().find(c => c.id === this.expCategoryId());
+        if (cat) lines.push(`Categoria: ${cat.name}`);
+      }
+      if (this.expStatus()     != null) lines.push(`Status: ${PAYMENT_STATUS_LABELS[this.expStatus()!]}`);
+      if (this.expSourceType() != null) lines.push(`Fonte: ${SOURCE_TYPE_LABELS[this.expSourceType()! as keyof typeof SOURCE_TYPE_LABELS]}`);
+    }
+    lines.push('');
+    return lines;
+  }
+
   openMario(target: MarioTarget): void {
     const s = this.summary()!;
-    const exps = this.expenses();
     let title = '';
     let lines: string[] = [];
 
     switch (target) {
       case 'receitas': {
-        this.api.getIncomesByPeriod(this.id(), { pageNumber: 1, pageSize: 1000 })
-          .subscribe(result => {
-            const receitas = result.items;
-            if (receitas.length === 0) {
-              lines = ['Nenhuma receita\nregistrada neste periodo.'];
-            } else {
-              lines = receitas.map(i => `• ${i.description}\n  ${this.fmt(i.amount)}`);
-              lines.push('', `TOTAL: ${this.fmt(s.totalIncome)}`);
-            }
-            this.marioTitle.set('RECEITAS DO PERIODO');
-            this.marioContent.set(lines.join('\n'));
-            this.marioOpen.set(true);
-          });
+        if (this.incHasFilters()) {
+          const items = this.allFilteredIncomes();
+          lines = [...this.marioFilterInfo('incomes')];
+          if (items.length === 0) {
+            lines.push('Nenhuma receita\nencontrada com os filtros.');
+          } else {
+            lines.push(...items.map(i => `• ${i.description}\n  ${this.fmt(i.amount)}`));
+            lines.push('', `TOTAL: ${this.fmt(this.kpiIncomeTotal())}`);
+          }
+          this.marioTitle.set('RECEITAS DO PERIODO');
+          this.marioContent.set(lines.join('\n'));
+          this.marioOpen.set(true);
+        } else {
+          this.api.getIncomesByPeriod(this.id(), { pageNumber: 1, pageSize: 1000 })
+            .subscribe(result => {
+              const receitas = result.items;
+              lines = receitas.length === 0
+                ? ['Nenhuma receita\nregistrada neste periodo.']
+                : [...receitas.map(i => `• ${i.description}\n  ${this.fmt(i.amount)}`), '', `TOTAL: ${this.fmt(s.totalIncome)}`];
+              this.marioTitle.set('RECEITAS DO PERIODO');
+              this.marioContent.set(lines.join('\n'));
+              this.marioOpen.set(true);
+            });
+        }
         return;
       }
       case 'despesas': {
-        this.api.getExpensesByPeriod(this.id(), { pageNumber: 1, pageSize: 1000 })
-          .subscribe(result => {
-            const despesas = result.items;
-            if (despesas.length === 0) {
-              lines = ['Nenhuma despesa\nregistrada neste periodo.'];
-            } else {
-              lines = despesas.map(e => `• ${e.description}\n  ${this.fmt(e.amount)}`);
-              lines.push('', `TOTAL: ${this.fmt(s.totalExpense)}`);
-            }
-            this.marioTitle.set('DESPESAS DO PERIODO');
-            this.marioContent.set(lines.join('\n'));
-            this.marioOpen.set(true);
-          });
+        if (this.expHasFilters()) {
+          const items = this.allFilteredExpenses();
+          lines = [...this.marioFilterInfo('expenses')];
+          if (items.length === 0) {
+            lines.push('Nenhuma despesa\nencontrada com os filtros.');
+          } else {
+            lines.push(...items.map(e => `• ${e.description}\n  ${this.fmt(e.amount)}`));
+            lines.push('', `TOTAL: ${this.fmt(this.kpiExpenseTotal())}`);
+          }
+          this.marioTitle.set('DESPESAS DO PERIODO');
+          this.marioContent.set(lines.join('\n'));
+          this.marioOpen.set(true);
+        } else {
+          this.api.getExpensesByPeriod(this.id(), { pageNumber: 1, pageSize: 1000 })
+            .subscribe(result => {
+              const despesas = result.items;
+              lines = despesas.length === 0
+                ? ['Nenhuma despesa\nregistrada neste periodo.']
+                : [...despesas.map(e => `• ${e.description}\n  ${this.fmt(e.amount)}`), '', `TOTAL: ${this.fmt(s.totalExpense)}`];
+              this.marioTitle.set('DESPESAS DO PERIODO');
+              this.marioContent.set(lines.join('\n'));
+              this.marioOpen.set(true);
+            });
+        }
         return;
       }
       case 'pago': {
-        this.api.getExpensesByPeriod(this.id(), { pageNumber: 1, pageSize: 1000, paymentStatus: PaymentStatus.Paid })
-          .subscribe(result => {
-            const pagas = result.items;
-            if (pagas.length === 0) {
-              lines = ['Nenhuma despesa\npaga neste periodo.'];
-            } else {
-              lines = pagas.map(e => `• ${e.description}\n  ${this.fmt(e.amount)}`);
-              lines.push('', `TOTAL PAGO: ${this.fmt(s.totalPaid)}`);
-            }
-            this.marioTitle.set('DESPESAS PAGAS');
-            this.marioContent.set(lines.join('\n'));
-            this.marioOpen.set(true);
-          });
+        if (this.expHasFilters()) {
+          const pagas = this.allFilteredExpenses().filter(e => e.paymentStatus === PaymentStatus.Paid);
+          lines = [...this.marioFilterInfo('expenses')];
+          if (pagas.length === 0) {
+            lines.push('Nenhuma despesa\npaga com os filtros.');
+          } else {
+            lines.push(...pagas.map(e => `• ${e.description}\n  ${this.fmt(e.amount)}`));
+            lines.push('', `TOTAL PAGO: ${this.fmt(this.kpiPaid())}`);
+          }
+          this.marioTitle.set('DESPESAS PAGAS');
+          this.marioContent.set(lines.join('\n'));
+          this.marioOpen.set(true);
+        } else {
+          this.api.getExpensesByPeriod(this.id(), { pageNumber: 1, pageSize: 1000, paymentStatus: PaymentStatus.Paid })
+            .subscribe(result => {
+              const pagas = result.items;
+              lines = pagas.length === 0
+                ? ['Nenhuma despesa\npaga neste periodo.']
+                : [...pagas.map(e => `• ${e.description}\n  ${this.fmt(e.amount)}`), '', `TOTAL PAGO: ${this.fmt(s.totalPaid)}`];
+              this.marioTitle.set('DESPESAS PAGAS');
+              this.marioContent.set(lines.join('\n'));
+              this.marioOpen.set(true);
+            });
+        }
         return;
       }
       case 'apagar': {
-        this.api.getExpensesByPeriod(this.id(), { pageNumber: 1, pageSize: 1000, paymentStatus: PaymentStatus.Pending })
-          .subscribe(result => {
-            const pendentes = result.items;
-            if (pendentes.length === 0) {
-              lines = ['Nenhuma despesa\npendente neste periodo.'];
-            } else {
-              lines = pendentes.map(e => {
-                const suffix = e.paymentStatus === PaymentStatus.Partial ? ' (parcial)' : '';
-                return `• ${e.description}${suffix}\n  ${this.fmt(e.amount)}`;
-              });
-              lines.push('', `TOTAL A PAGAR: ${this.fmt(s.totalOwed)}`);
-            }
-            this.marioTitle.set('DESPESAS A PAGAR');
-            this.marioContent.set(lines.join('\n'));
-            this.marioOpen.set(true);
-          });
+        if (this.expHasFilters()) {
+          const pendentes = this.allFilteredExpenses()
+            .filter(e => e.paymentStatus === PaymentStatus.Pending || e.paymentStatus === PaymentStatus.Partial);
+          lines = [...this.marioFilterInfo('expenses')];
+          if (pendentes.length === 0) {
+            lines.push('Nenhuma despesa\npendente com os filtros.');
+          } else {
+            lines.push(...pendentes.map(e => {
+              const suffix = e.paymentStatus === PaymentStatus.Partial ? ' (parcial)' : '';
+              return `• ${e.description}${suffix}\n  ${this.fmt(e.amount)}`;
+            }));
+            lines.push('', `TOTAL A PAGAR: ${this.fmt(this.kpiOwed())}`);
+          }
+          this.marioTitle.set('DESPESAS A PAGAR');
+          this.marioContent.set(lines.join('\n'));
+          this.marioOpen.set(true);
+        } else {
+          this.api.getExpensesByPeriod(this.id(), { pageNumber: 1, pageSize: 1000, paymentStatus: PaymentStatus.Pending })
+            .subscribe(result => {
+              const pendentes = result.items;
+              if (pendentes.length === 0) {
+                lines = ['Nenhuma despesa\npendente neste periodo.'];
+              } else {
+                lines = pendentes.map(e => {
+                  const suffix = e.paymentStatus === PaymentStatus.Partial ? ' (parcial)' : '';
+                  return `• ${e.description}${suffix}\n  ${this.fmt(e.amount)}`;
+                });
+                lines.push('', `TOTAL A PAGAR: ${this.fmt(s.totalOwed)}`);
+              }
+              this.marioTitle.set('DESPESAS A PAGAR');
+              this.marioContent.set(lines.join('\n'));
+              this.marioOpen.set(true);
+            });
+        }
         return;
       }
       case 'saldo': {
         title = 'CALCULO DO SALDO';
         lines = [
+          ...this.marioFilterInfo('balance'),
           `Receitas:`,
-          `  ${this.fmt(s.totalIncome)}`,
+          `  ${this.fmt(this.kpiIncomeTotal())}`,
           '',
           `(-) Despesas:`,
-          `  ${this.fmt(s.totalExpense)}`,
+          `  ${this.fmt(this.kpiExpenseTotal())}`,
           '',
           `(=) Saldo:`,
-          `  ${this.fmt(s.balance)}`,
+          `  ${this.fmt(this.kpiBalance())}`,
         ];
         break;
       }
       case 'saldoAposPagamento': {
-        const val = s.totalIncome - s.totalExpense;
         title = 'SALDO APOS PAGAMENTO';
         lines = [
+          ...this.marioFilterInfo('balance'),
           `Receitas:`,
-          `  ${this.fmt(s.totalIncome)}`,
+          `  ${this.fmt(this.kpiIncomeTotal())}`,
           '',
           `(-) Total de despesas:`,
-          `  ${this.fmt(s.totalExpense)}`,
+          `  ${this.fmt(this.kpiExpenseTotal())}`,
           '',
           `(=) Saldo apos pagamento:`,
-          `  ${this.fmt(val)}`,
+          `  ${this.fmt(this.kpiBalanceAfterPayment())}`,
         ];
         break;
       }
