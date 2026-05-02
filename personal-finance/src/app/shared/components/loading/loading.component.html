@@ -1,0 +1,11 @@
+@if (visible()) {
+  <div class="loading-overlay">
+    <img
+      [src]="gif().src"
+      [ngClass]="animClass()"
+      (animationend)="onAnimationEnd()"
+      class="loading-gif"
+      alt="loading"
+    />
+  </div>
+}
