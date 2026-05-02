@@ -200,13 +200,19 @@
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* ── Mario Block ── */
+.mario-block-area {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+}
+
 .mario-block-wrap {
   position: relative;
   width: 44px;
   height: 44px;
   cursor: pointer;
   user-select: none;
-  flex-shrink: 0;
 }
 
 .mario-block-img {
@@ -228,36 +234,51 @@
   100% { transform: translateY(0); }
 }
 
-/* ── Coin ── */
-.coin {
+/* ── Coin — outer controla X (linear), inner controla Y (física) ── */
+.coin-x {
   position: absolute;
-  width: 24px;
-  height: 24px;
   top: 0;
   left: 10px;
   pointer-events: none;
+}
+
+.coin-x-flying {
+  animation: coin-fly-x 1.5s linear forwards;
+}
+
+@keyframes coin-fly-x {
+  from { transform: translateX(0px); }
+  to   { transform: translateX(var(--cx)); }
+}
+
+.coin-y {
+  width: 24px;
+  height: 24px;
+  display: block;
   image-rendering: pixelated;
 }
 
-.coin-flying {
-  animation: coin-fly 1.5s ease-out forwards;
+.coin-y-flying {
+  animation: coin-fly-y 1.5s linear forwards;
 }
 
-@keyframes coin-fly {
-  0%   { transform: translate(0px, 0px); }
-  20%  { transform: translate(calc(var(--cx) * 0.2), -90px); }
-  55%  { transform: translate(var(--cx), 65px); }
-  70%  { transform: translate(var(--cx), 45px); }
-  82%  { transform: translate(var(--cx), 62px); }
-  90%  { transform: translate(var(--cx), 58px); }
-  100% { transform: translate(var(--cx), 60px); }
+/* easeOutCubic = deceleração (subida / quique para cima) */
+/* easeInCubic  = aceleração  (queda)                     */
+@keyframes coin-fly-y {
+  0%   { transform: translateY(0px);   animation-timing-function: cubic-bezier(0.215, 0.61, 0.355, 1); }
+  32%  { transform: translateY(-88px); animation-timing-function: cubic-bezier(0.55, 0.055, 0.675, 0.19); }
+  62%  { transform: translateY(60px);  animation-timing-function: cubic-bezier(0.215, 0.61, 0.355, 1); }
+  76%  { transform: translateY(22px);  animation-timing-function: cubic-bezier(0.55, 0.055, 0.675, 0.19); }
+  88%  { transform: translateY(60px);  animation-timing-function: cubic-bezier(0.215, 0.61, 0.355, 1); }
+  94%  { transform: translateY(46px);  animation-timing-function: cubic-bezier(0.55, 0.055, 0.675, 0.19); }
+  100% { transform: translateY(60px); }
 }
 
-@keyframes blink {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0; }
+@keyframes blink-rest {
+  0%, 100% { transform: translateY(60px); opacity: 1; }
+  50%       { transform: translateY(60px); opacity: 0; }
 }
 
-.coin-slow   { animation: blink 0.8s linear infinite; }
-.coin-medium { animation: blink 0.35s linear infinite; }
-.coin-fast   { animation: blink 0.15s linear infinite; }
+.coin-slow   { animation: blink-rest 0.8s  linear infinite; }
+.coin-medium { animation: blink-rest 0.35s linear infinite; }
+.coin-fast   { animation: blink-rest 0.15s linear infinite; }
