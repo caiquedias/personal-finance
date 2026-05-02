@@ -10,8 +10,8 @@ export interface GifConfig {
 const GIFS: GifConfig[] = [
   { src: 'green-shell-mario.gif', idleAnimation: 'bounce-horizontal' },
   { src: 'dr-eggman.gif', idleAnimation: 'bounce-vertical' },
-  { src: 'soni-running.gif', idleAnimation: 'none' },
-  { src: 'soni-running-2.gif', idleAnimation: 'none' },
+  { src: 'sonic-running.gif', idleAnimation: 'none' },
+  { src: 'sonic-running-2.gif', idleAnimation: 'none' },
 ];
 
 @Injectable({ providedIn: 'root' })
