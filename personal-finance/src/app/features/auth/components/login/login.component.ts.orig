@@ -3,14 +3,7 @@ import { Router, RouterLink } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { AuthService } from '../../../../core/auth/auth.service';
 
-interface Coin {
-  id: number;
-  x: number;
-  phase: 'flying' | 'slow' | 'medium' | 'fast';
-}
-
-const MAX_COINS = 10;
-
+<<<<<<< HEAD
 const QUOTES: string[] = [
   'A economia é muito maior se eu não comprar.',
   'Minha estratégia financeira? Rezar pro Pix cair.',
@@ -65,6 +58,15 @@ const QUOTES: string[] = [
 ];
 
 const QUOTES_STORAGE_KEY = 'login_quotes_usage';
+=======
+interface Coin {
+  id: number;
+  x: number;
+  phase: 'flying' | 'slow' | 'medium' | 'fast';
+}
+
+const MAX_COINS = 10;
+>>>>>>> origin/master
 
 @Component({
   selector: 'app-login',
@@ -83,19 +85,23 @@ export class LoginComponent implements OnDestroy {
   readonly loading      = signal(false);
   readonly apiError     = signal<string | null>(null);
   readonly showPassword = signal(false);
-  readonly coins        = signal<Coin[]>([]);
+<<<<<<< HEAD
   readonly currentQuote = signal(this.pickQuote());
+=======
+  readonly coins        = signal<Coin[]>([]);
 
   private clickCount    = 0;
   private coinId        = 0;
   private readonly timers: ReturnType<typeof setTimeout>[] = [];
+>>>>>>> origin/master
 
   readonly form = this.fb.group({
     email:    ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required]],
   });
 
- pickQuote(): string {
+<<<<<<< HEAD
+  pickQuote(): string {
     const raw = sessionStorage.getItem(QUOTES_STORAGE_KEY);
     let usage: Record<number, number> = raw ? JSON.parse(raw) : {};
 
@@ -110,8 +116,7 @@ export class LoginComponent implements OnDestroy {
     usage[idx] = (usage[idx] ?? 0) + 1;
     sessionStorage.setItem(QUOTES_STORAGE_KEY, JSON.stringify(usage));
     return QUOTES[idx];
-  }
-
+=======
   onBlockClick(): void {
     const el = this.blockEl.nativeElement;
     el.classList.remove('block-bounce');
@@ -145,8 +150,8 @@ export class LoginComponent implements OnDestroy {
 
   ngOnDestroy(): void {
     this.timers.forEach(t => clearTimeout(t));
+>>>>>>> origin/master
   }
-
 
   showError(field: string): boolean {
     const ctrl = this.form.get(field);
