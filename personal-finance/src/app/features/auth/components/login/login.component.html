@@ -3,7 +3,29 @@
   <div class="login-aside">
     <div class="login-aside-inner">
       <div class="login-brand">
-        <span class="login-brand-mark">₿</span>
+        <div class="mario-block-area">
+          <div class="mario-block-wrap" #blockEl (click)="onBlockClick()">
+            <img src="mario-block.gif" class="mario-block-img" alt="?" />
+          </div>
+          @for (coin of coins(); track coin.id) {
+            <div
+              class="coin-x"
+              [class.coin-x-flying]="coin.phase === 'flying'"
+              [style.--cx]="coin.x + 'px'"
+              [style.transform]="coin.phase !== 'flying' ? 'translateX(' + coin.x + 'px)' : null"
+            >
+              <img
+                src="coin.gif"
+                class="coin-y"
+                [class.coin-y-flying]="coin.phase === 'flying'"
+                [class.coin-slow]="coin.phase === 'slow'"
+                [class.coin-medium]="coin.phase === 'medium'"
+                [class.coin-fast]="coin.phase === 'fast'"
+                alt=""
+              />
+            </div>
+          }
+        </div>
         <span class="login-brand-name">Personal Finance</span>
       </div>
       <blockquote class="login-quote">
