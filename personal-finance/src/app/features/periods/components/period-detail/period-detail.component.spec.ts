@@ -242,6 +242,85 @@ describe('PeriodDetailComponent', () => {
     });
   });
 
+  describe('openMario() — com filtros ativos', () => {
+    beforeEach(fakeAsync(() => {
+      fixture.detectChanges();
+      tick();
+    }));
+
+    it('receitas com incHasFilters — usa allFilteredIncomes e exibe info de filtro', () => {
+      component.filterDesc.set('sal');
+      component.allFilteredIncomes.set([{ ...INCOME, amount: 1500 }]);
+      component.openMario('receitas');
+      expect(component.marioTitle()).toBe('RECEITAS DO PERIODO');
+      expect(component.marioContent()).toContain('[FILTROS APLICADOS]');
+      expect(component.marioContent()).toContain('"sal"');
+      expect(component.marioContent()).toContain('Salário');
+    });
+
+    it('receitas filtradas sem resultados — mensagem adequada', () => {
+      component.filterDesc.set('xyz');
+      component.allFilteredIncomes.set([]);
+      component.openMario('receitas');
+      expect(component.marioContent()).toContain('Nenhuma receita');
+      expect(component.marioContent()).toContain('[FILTROS APLICADOS]');
+    });
+
+    it('despesas com expHasFilters — usa allFilteredExpenses e exibe info de filtro', () => {
+      component.filterDesc.set('alu');
+      component.allFilteredExpenses.set([{ ...EXPENSE, amount: 800 }]);
+      component.openMario('despesas');
+      expect(component.marioTitle()).toBe('DESPESAS DO PERIODO');
+      expect(component.marioContent()).toContain('[FILTROS APLICADOS]');
+      expect(component.marioContent()).toContain('"alu"');
+      expect(component.marioContent()).toContain('Aluguel');
+    });
+
+    it('pago com expHasFilters — filtra Paid de allFilteredExpenses', () => {
+      component.filterDesc.set('x');
+      component.allFilteredExpenses.set([
+        { ...EXPENSE, amount: 500, paymentStatus: PaymentStatus.Paid },
+        { ...EXPENSE, amount: 200, paymentStatus: PaymentStatus.Pending },
+      ]);
+      component.openMario('pago');
+      expect(component.marioTitle()).toBe('DESPESAS PAGAS');
+      expect(component.marioContent()).toContain('[FILTROS APLICADOS]');
+      expect(component.marioContent()).toContain('Aluguel');
+      expect(component.marioContent()).not.toContain('R$ 200');
+    });
+
+    it('apagar com expHasFilters — filtra Pending/Partial de allFilteredExpenses', () => {
+      component.filterDesc.set('x');
+      component.allFilteredExpenses.set([
+        { ...EXPENSE, amount: 300, paymentStatus: PaymentStatus.Pending },
+        { ...EXPENSE, amount: 100, paymentStatus: PaymentStatus.Partial },
+        { ...EXPENSE, amount: 600, paymentStatus: PaymentStatus.Paid },
+      ]);
+      component.openMario('apagar');
+      expect(component.marioTitle()).toBe('DESPESAS A PAGAR');
+      expect(component.marioContent()).toContain('[FILTROS APLICADOS]');
+      expect(component.marioContent()).toContain('parcial');
+    });
+
+    it('saldo com filtros — exibe info de filtro e usa kpi values', () => {
+      component.filterDesc.set('x');
+      component.allFilteredExpenses.set([{ ...EXPENSE, amount: 400 }]);
+      component.allFilteredIncomes.set([{ ...INCOME, amount: 2000 }]);
+      component.openMario('saldo');
+      expect(component.marioTitle()).toBe('CALCULO DO SALDO');
+      expect(component.marioContent()).toContain('[FILTROS APLICADOS]');
+    });
+
+    it('saldoAposPagamento com filtros — exibe info de filtro', () => {
+      component.filterDesc.set('x');
+      component.allFilteredExpenses.set([{ ...EXPENSE, amount: 400 }]);
+      component.allFilteredIncomes.set([{ ...INCOME, amount: 2000 }]);
+      component.openMario('saldoAposPagamento');
+      expect(component.marioTitle()).toBe('SALDO APOS PAGAMENTO');
+      expect(component.marioContent()).toContain('[FILTROS APLICADOS]');
+    });
+  });
+
   describe('KPI computeds — sem filtros ativos', () => {
     beforeEach(fakeAsync(() => { fixture.detectChanges(); tick(); }));
 
