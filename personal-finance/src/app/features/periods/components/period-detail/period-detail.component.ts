@@ -74,6 +74,9 @@ export class PeriodDetailComponent implements OnInit {
   readonly expSortDir      = signal<'asc' | 'desc'>('asc');
   readonly expFilterOpen   = signal(false);
 
+  readonly allFilteredExpenses = signal<ExpenseResponse[]>([]);
+  readonly allFilteredIncomes  = signal<IncomeResponse[]>([]);
+
   readonly expHasFilters = computed(() =>
     !!this.expDesc() || !!this.expCategoryId() ||
     this.expStatus() != null || this.expFortnight() != null ||
@@ -176,10 +179,38 @@ export class PeriodDetailComponent implements OnInit {
 
   readonly year = computed(() => this.summary()?.year ?? null);
 
-  readonly balanceAfterPayment = computed(() => {
-    const s = this.summary();
-    return s ? s.totalIncome - s.totalExpense : 0;
+  readonly kpiIncomeTotal = computed(() =>
+    this.incHasFilters()
+      ? this.allFilteredIncomes().reduce((sum, i) => sum + i.amount, 0)
+      : (this.summary()?.totalIncome ?? 0));
+
+  readonly kpiExpenseTotal = computed(() =>
+    this.expHasFilters()
+      ? this.allFilteredExpenses().reduce((sum, e) => sum + e.amount, 0)
+      : (this.summary()?.totalExpense ?? 0));
+
+  readonly kpiPaid = computed(() =>
+    this.expHasFilters()
+      ? this.allFilteredExpenses()
+          .filter(e => e.paymentStatus === PaymentStatus.Paid)
+          .reduce((sum, e) => sum + e.amount, 0)
+      : (this.summary()?.totalPaid ?? 0));
+
+  readonly kpiOwed = computed(() =>
+    this.expHasFilters()
+      ? this.allFilteredExpenses()
+          .filter(e => e.paymentStatus === PaymentStatus.Pending || e.paymentStatus === PaymentStatus.Partial)
+          .reduce((sum, e) => sum + e.amount, 0)
+      : (this.summary()?.totalOwed ?? 0));
+
+  readonly kpiBalance = computed(() => {
+    if (this.expHasFilters() || this.incHasFilters())
+      return this.kpiIncomeTotal() - this.kpiExpenseTotal();
+    return this.summary()?.balance ?? 0;
   });
+
+  readonly kpiBalanceAfterPayment = computed(() =>
+    this.kpiIncomeTotal() - this.kpiExpenseTotal());
 
   // Exposição de enums para o template
   readonly PaymentStatus  = PaymentStatus;
@@ -202,6 +233,29 @@ export class PeriodDetailComponent implements OnInit {
   }
 
   // ── Despesas ─────────────────────────────────────────────────────────────
+
+  private loadAllFilteredExpenses(): void {
+    if (!this.expHasFilters()) { this.allFilteredExpenses.set([]); return; }
+    this.api.getExpensesByPeriod(this.id(), {
+      pageNumber:    1,
+      pageSize:      9999,
+      description:   this.expDesc()       || undefined,
+      categoryId:    this.expCategoryId() || undefined,
+      paymentStatus: this.expStatus()      ?? undefined,
+      fortnightType: this.expFortnight()   ?? undefined,
+      sourceType:    this.expSourceType()  ?? undefined,
+    }).subscribe({ next: r => this.allFilteredExpenses.set(r.items) });
+  }
+
+  private loadAllFilteredIncomes(): void {
+    if (!this.incHasFilters()) { this.allFilteredIncomes.set([]); return; }
+    this.api.getIncomesByPeriod(this.id(), {
+      pageNumber:    1,
+      pageSize:      9999,
+      description:   this.incDesc()      || undefined,
+      fortnightType: this.incFortnight() ?? undefined,
+    }).subscribe({ next: r => this.allFilteredIncomes.set(r.items) });
+  }
 
   private loadExpenses(): void {
     this.expLoadingList.set(true);
@@ -235,6 +289,7 @@ export class PeriodDetailComponent implements OnInit {
     this.expFilterOpen.set(false);
     this.expPage.set(1);
     this.loadExpenses();
+    this.loadAllFilteredExpenses();
   }
 
   onExpFilterClear(): void {
@@ -249,6 +304,7 @@ export class PeriodDetailComponent implements OnInit {
     this.expFortnight.set(null);
     this.expSourceType.set(null);
     this.expPage.set(1);
+    this.allFilteredExpenses.set([]);
     this.loadExpenses();
   }
 
@@ -291,6 +347,7 @@ export class PeriodDetailComponent implements OnInit {
     this.incFilterOpen.set(false);
     this.incPage.set(1);
     this.loadIncomes();
+    this.loadAllFilteredIncomes();
   }
 
   onIncFilterClear(): void {
@@ -302,6 +359,7 @@ export class PeriodDetailComponent implements OnInit {
     this.incDesc.set('');
     this.incFortnight.set(null);
     this.incPage.set(1);
+    this.allFilteredIncomes.set([]);
     this.loadIncomes();
   }
 

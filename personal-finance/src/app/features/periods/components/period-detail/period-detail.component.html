@@ -32,7 +32,7 @@
             <span class="kpi-label">Receitas</span>
             <button class="mario-q" (click)="openMario('receitas')" title="Detalhes de Receitas">?</button>
           </div>
-          <div class="kpi-value kpi-value--olive">{{ summary()!.totalIncome | currencyBrl }}</div>
+          <div class="kpi-value kpi-value--olive">{{ kpiIncomeTotal() | currencyBrl }}</div>
           <div class="kpi-bar" style="background:linear-gradient(to right,rgba(123,140,95,0.7),rgba(123,140,95,0.1))"></div>
         </div>
 
@@ -42,7 +42,7 @@
             <span class="kpi-label">Despesas</span>
             <button class="mario-q" (click)="openMario('despesas')" title="Detalhes de Despesas">?</button>
           </div>
-          <div class="kpi-value kpi-value--terra">{{ summary()!.totalExpense | currencyBrl }}</div>
+          <div class="kpi-value kpi-value--terra">{{ kpiExpenseTotal() | currencyBrl }}</div>
           <div class="kpi-bar" style="background:linear-gradient(to right,rgba(196,103,74,0.7),rgba(196,103,74,0.1))"></div>
         </div>
 
@@ -52,7 +52,7 @@
             <span class="kpi-label">Pago</span>
             <button class="mario-q" (click)="openMario('pago')" title="Detalhes de Pago">?</button>
           </div>
-          <div class="kpi-value kpi-value--olive">{{ summary()!.totalPaid | currencyBrl }}</div>
+          <div class="kpi-value kpi-value--olive">{{ kpiPaid() | currencyBrl }}</div>
           <div class="kpi-bar" style="background:linear-gradient(to right,rgba(123,140,95,0.7),rgba(123,140,95,0.1))"></div>
         </div>
 
@@ -62,24 +62,24 @@
             <span class="kpi-label">A pagar</span>
             <button class="mario-q" (click)="openMario('apagar')" title="Detalhes de A pagar">?</button>
           </div>
-          <div class="kpi-value kpi-value--amber">{{ summary()!.totalOwed | currencyBrl }}</div>
+          <div class="kpi-value kpi-value--amber">{{ kpiOwed() | currencyBrl }}</div>
           <div class="kpi-bar" style="background:linear-gradient(to right,rgba(196,146,74,0.7),rgba(196,146,74,0.1))"></div>
         </div>
 
         <div class="kpi-card">
           <div class="kpi-header">
             <span class="kpi-dot"
-              [style.background]="summary()!.balance >= 0 ? 'var(--olive)' : 'var(--terracotta)'"
-              [style.box-shadow]="summary()!.balance >= 0 ? '0 0 8px rgba(123,140,95,0.5)' : '0 0 8px rgba(196,103,74,0.5)'"
+              [style.background]="kpiBalance() >= 0 ? 'var(--olive)' : 'var(--terracotta)'"
+              [style.box-shadow]="kpiBalance() >= 0 ? '0 0 8px rgba(123,140,95,0.5)' : '0 0 8px rgba(196,103,74,0.5)'"
             ></span>
             <span class="kpi-label">Saldo</span>
             <button class="mario-q" (click)="openMario('saldo')" title="Detalhes do Saldo">?</button>
           </div>
           <div class="kpi-value"
-            [class]="summary()!.balance >= 0 ? 'kpi-value--olive' : 'kpi-value--terra'"
-          >{{ summary()!.balance | currencyBrl: true }}</div>
+            [class]="kpiBalance() >= 0 ? 'kpi-value--olive' : 'kpi-value--terra'"
+          >{{ kpiBalance() | currencyBrl: true }}</div>
           <div class="kpi-bar"
-            [style.background]="summary()!.balance >= 0
+            [style.background]="kpiBalance() >= 0
               ? 'linear-gradient(to right,rgba(123,140,95,0.7),rgba(123,140,95,0.1))'
               : 'linear-gradient(to right,rgba(196,103,74,0.7),rgba(196,103,74,0.1))'"
           ></div>
@@ -88,17 +88,17 @@
         <div class="kpi-card">
           <div class="kpi-header">
             <span class="kpi-dot"
-              [style.background]="balanceAfterPayment() >= 0 ? 'var(--olive)' : 'var(--terracotta)'"
-              [style.box-shadow]="balanceAfterPayment() >= 0 ? '0 0 8px rgba(123,140,95,0.5)' : '0 0 8px rgba(196,103,74,0.5)'"
+              [style.background]="kpiBalanceAfterPayment() >= 0 ? 'var(--olive)' : 'var(--terracotta)'"
+              [style.box-shadow]="kpiBalanceAfterPayment() >= 0 ? '0 0 8px rgba(123,140,95,0.5)' : '0 0 8px rgba(196,103,74,0.5)'"
             ></span>
             <span class="kpi-label">Saldo após pag.</span>
             <button class="mario-q" (click)="openMario('saldoAposPagamento')" title="Detalhes do Saldo após pagamento">?</button>
           </div>
           <div class="kpi-value"
-            [class]="balanceAfterPayment() >= 0 ? 'kpi-value--olive' : 'kpi-value--terra'"
-          >{{ balanceAfterPayment() | currencyBrl: true }}</div>
+            [class]="kpiBalanceAfterPayment() >= 0 ? 'kpi-value--olive' : 'kpi-value--terra'"
+          >{{ kpiBalanceAfterPayment() | currencyBrl: true }}</div>
           <div class="kpi-bar"
-            [style.background]="balanceAfterPayment() >= 0
+            [style.background]="kpiBalanceAfterPayment() >= 0
               ? 'linear-gradient(to right,rgba(123,140,95,0.7),rgba(123,140,95,0.1))'
               : 'linear-gradient(to right,rgba(196,103,74,0.7),rgba(196,103,74,0.1))'"
           ></div>

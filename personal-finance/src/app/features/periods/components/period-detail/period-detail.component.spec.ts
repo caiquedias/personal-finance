@@ -242,23 +242,99 @@ describe('PeriodDetailComponent', () => {
     });
   });
 
-  describe('balanceAfterPayment computed', () => {
-    it('retorna 0 sem summary', () => {
-      expect(component.balanceAfterPayment()).toBe(0);
+  describe('KPI computeds — sem filtros ativos', () => {
+    beforeEach(fakeAsync(() => { fixture.detectChanges(); tick(); }));
+
+    it('kpiIncomeTotal retorna summary.totalIncome', () => {
+      expect(component.kpiIncomeTotal()).toBe(SUMMARY.totalIncome);
     });
 
-    it('retorna totalIncome - totalExpense', fakeAsync(() => {
-      fixture.detectChanges();
-      tick();
-      expect(component.balanceAfterPayment()).toBe(SUMMARY.totalIncome - SUMMARY.totalExpense);
-    }));
+    it('kpiExpenseTotal retorna summary.totalExpense', () => {
+      expect(component.kpiExpenseTotal()).toBe(SUMMARY.totalExpense);
+    });
 
+    it('kpiPaid retorna summary.totalPaid', () => {
+      expect(component.kpiPaid()).toBe(SUMMARY.totalPaid);
+    });
+
+    it('kpiOwed retorna summary.totalOwed', () => {
+      expect(component.kpiOwed()).toBe(SUMMARY.totalOwed);
+    });
+
+    it('kpiBalance retorna summary.balance', () => {
+      expect(component.kpiBalance()).toBe(SUMMARY.balance);
+    });
+
+    it('kpiBalanceAfterPayment retorna totalIncome - totalExpense', () => {
+      expect(component.kpiBalanceAfterPayment()).toBe(SUMMARY.totalIncome - SUMMARY.totalExpense);
+    });
+
+  });
+
+  describe('kpiBalanceAfterPayment — summary negativo', () => {
     it('retorna valor negativo quando despesas superam receitas', fakeAsync(() => {
       apiSpy.getPeriodSummary.and.returnValue(of({ ...SUMMARY, totalIncome: 500, totalExpense: 1500 }));
       fixture.detectChanges();
       tick();
-      expect(component.balanceAfterPayment()).toBe(-1000);
+      expect(component.kpiBalanceAfterPayment()).toBe(-1000);
     }));
+  });
+
+  describe('KPI computeds — com filtros de despesas ativos', () => {
+    beforeEach(fakeAsync(() => { fixture.detectChanges(); tick(); }));
+
+    it('kpiExpenseTotal soma allFilteredExpenses', () => {
+      component.expDesc.set('x');
+      component.allFilteredExpenses.set([
+        { ...EXPENSE, amount: 300 },
+        { ...EXPENSE, amount: 200, paymentStatus: PaymentStatus.Pending },
+      ]);
+      expect(component.kpiExpenseTotal()).toBe(500);
+    });
+
+    it('kpiPaid soma somente despesas Paid de allFilteredExpenses', () => {
+      component.expDesc.set('x');
+      component.allFilteredExpenses.set([
+        { ...EXPENSE, amount: 300, paymentStatus: PaymentStatus.Paid },
+        { ...EXPENSE, amount: 200, paymentStatus: PaymentStatus.Pending },
+      ]);
+      expect(component.kpiPaid()).toBe(300);
+    });
+
+    it('kpiOwed soma Pending e Partial de allFilteredExpenses', () => {
+      component.expDesc.set('x');
+      component.allFilteredExpenses.set([
+        { ...EXPENSE, amount: 300, paymentStatus: PaymentStatus.Paid },
+        { ...EXPENSE, amount: 200, paymentStatus: PaymentStatus.Pending },
+        { ...EXPENSE, amount: 100, paymentStatus: PaymentStatus.Partial },
+      ]);
+      expect(component.kpiOwed()).toBe(300);
+    });
+
+    it('kpiBalance deriva de kpiIncomeTotal - kpiExpenseTotal com filtros ativos', () => {
+      component.expDesc.set('x');
+      component.allFilteredExpenses.set([{ ...EXPENSE, amount: 400 }]);
+      expect(component.kpiBalance()).toBe(SUMMARY.totalIncome - 400);
+    });
+  });
+
+  describe('KPI computeds — com filtros de receitas ativos', () => {
+    beforeEach(fakeAsync(() => { fixture.detectChanges(); tick(); }));
+
+    it('kpiIncomeTotal soma allFilteredIncomes', () => {
+      component.incDesc.set('sal');
+      component.allFilteredIncomes.set([
+        { ...INCOME, amount: 1500 },
+        { ...INCOME, amount: 500 },
+      ]);
+      expect(component.kpiIncomeTotal()).toBe(2000);
+    });
+
+    it('kpiBalance deriva de kpiIncomeTotal - kpiExpenseTotal com filtros ativos', () => {
+      component.incDesc.set('sal');
+      component.allFilteredIncomes.set([{ ...INCOME, amount: 2000 }]);
+      expect(component.kpiBalance()).toBe(2000 - SUMMARY.totalExpense);
+    });
   });
 
   describe('expFilterFields computed', () => {
