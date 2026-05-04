@@ -89,7 +89,7 @@ describe('ThoughtBubbleComponent', () => {
   it('formattedDueDate deve formatar corretamente', () => {
     fixture.componentRef.setInput('dueDate', '2025-03-05');
     fixture.detectChanges();
-    expect(component.formattedDueDate()).toBe('05/03/25');
+    expect(component.formattedDueDate()).toBe('05/03');
   });
 
   it('formattedAmount deve formatar em BRL', () => {
