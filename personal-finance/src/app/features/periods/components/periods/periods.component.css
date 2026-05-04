@@ -49,15 +49,10 @@
 
 /* ── Barra de filtros ── */
 .filter-bar {
-  background: var(--v2-surface);
-  backdrop-filter: blur(24px);
-  border-radius: var(--v2-radius);
-  border: 1px solid var(--v2-border);
-  box-shadow: var(--v2-shadow);
-  padding: 18px 20px;
   display: flex;
-  flex-direction: column;
-  gap: 14px;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
   animation: fadeUp 0.5s var(--ease) 0.05s both;
 }
 
