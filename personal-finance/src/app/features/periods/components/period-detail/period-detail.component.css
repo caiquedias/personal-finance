@@ -263,6 +263,23 @@
 .table tbody tr:hover { background: rgba(255,255,255,0.03); }
 
 .cell-primary   { color: var(--text); font-weight: 500; }
+.desc-cell { display: flex; align-items: center; gap: 6px; }
+
+/* ── Ícone de categoria inline (mobile) ── */
+.cat-icon-mobile {
+  display: none;
+  position: relative;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.cat-circle-plain {
+  display: inline-block;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
 
 .category-dot {
   display: inline-block;
@@ -474,13 +491,19 @@
   .filters-grid { flex-direction: column; }
   .filter-field { min-width: unset; }
 
-  .col-hide-mobile { display: none; }
+  .col-hide-mobile { display: none !important; }
 
   .loading-state, .empty-state { padding: 32px; }
 
   .category-dot-wrap    { display: inline-flex; }
   .category-name-desktop { display: none; }
-  td:has(.category-dot-wrap) { text-align: center; }
+
+  .cat-icon-mobile { display: inline-flex; }
+  .cat-icon-mobile:hover .category-kbd,
+  .cat-icon-mobile.touched .category-kbd {
+    visibility: visible;
+    opacity: 1;
+  }
 }
 
 @media (max-width: 568px) {

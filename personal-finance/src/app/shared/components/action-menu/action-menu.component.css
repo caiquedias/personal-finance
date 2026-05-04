@@ -1,0 +1,59 @@
+.action-menu-wrap {
+  position: relative;
+  display: inline-block;
+}
+
+.action-menu-btn {
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--v2-border);
+  background: var(--v2-surface);
+  border-radius: var(--v2-radius-sm);
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  transition: var(--t);
+  backdrop-filter: blur(24px);
+  line-height: 1;
+}
+
+.action-menu-btn:hover {
+  background: rgba(196, 103, 74, 0.1);
+  border-color: var(--terracotta);
+  color: var(--terracotta);
+}
+
+.action-menu-dropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  background: var(--v2-surface);
+  border: 1px solid var(--v2-border);
+  border-radius: var(--v2-radius-sm);
+  box-shadow: var(--v2-shadow);
+  backdrop-filter: blur(24px);
+  min-width: 110px;
+  z-index: 200;
+  overflow: hidden;
+}
+
+.action-menu-item {
+  display: block;
+  width: 100%;
+  padding: 9px 14px;
+  text-align: left;
+  background: none;
+  border: none;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: var(--t);
+}
+
+.action-menu-item:hover         { background: var(--v2-border); }
+.action-menu-pay:hover          { color: var(--olive); }
+.action-menu-edit:hover         { color: var(--slate); }
+.action-menu-delete:hover       { color: var(--terracotta); }

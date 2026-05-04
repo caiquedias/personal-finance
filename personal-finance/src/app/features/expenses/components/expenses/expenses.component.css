@@ -305,6 +305,25 @@
 .desc-cell { display: flex; align-items: center; gap: 6px; }
 .desc-tooltip { display: none; }
 
+/* ── Ícone de categoria inline (mobile) ── */
+.cat-icon-mobile {
+  display: none;
+  position: relative;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.cat-circle-plain {
+  display: inline-block;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Ações desktop / mobile */
+.col-show-mobile { display: none; }
+
 /* ── Responsividade mobile ── */
 @media (max-width: 767px) {
   .page-content { padding: 16px; gap: 16px; }
@@ -312,11 +331,18 @@
   .filter-row { flex-wrap: wrap; }
   .period-select { width: 100%; min-width: unset; }
 
-  .col-hide-mobile { display: none; }
+  .col-hide-mobile { display: none !important; }
+  .col-show-mobile { display: inline-block; }
 
   .category-dot-wrap    { display: inline-flex; }
   .category-name-desktop { display: none; }
-  td:has(.category-dot-wrap) { text-align: center; }
+
+  .cat-icon-mobile { display: inline-flex; }
+  .cat-icon-mobile:hover .category-kbd,
+  .cat-icon-mobile.touched .category-kbd {
+    visibility: visible;
+    opacity: 1;
+  }
 
   .desc-tooltip { display: inline-block; }
 
