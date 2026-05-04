@@ -7,6 +7,19 @@
 }
 
 /* ── Seletor de período ── */
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.period-selected-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
 .period-selector {
   display: flex;
   flex-direction: column;

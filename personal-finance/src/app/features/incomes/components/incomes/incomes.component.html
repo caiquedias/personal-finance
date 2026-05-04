@@ -33,6 +33,7 @@
         [open]="filterOpen()"
         (apply)="onApplyFilters($event)"
         (clear)="onClearFilters()"
+        (closed)="filterOpen.set(false)"
       />
     </div>
   }

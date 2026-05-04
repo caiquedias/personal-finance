@@ -1,4 +1,18 @@
+.filter-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0, 0, 0, 0.25);
+}
+
 .filter-panel {
+  position: fixed;
+  top: 80px;
+  left: 16px;
+  z-index: 201;
+  min-width: 280px;
+  max-width: 480px;
+  width: calc(100vw - 32px);
   background: var(--v2-surface);
   backdrop-filter: blur(24px);
   border-radius: var(--v2-radius);
@@ -46,6 +60,13 @@
 }
 
 @media (max-width: 640px) {
+  .filter-panel {
+    top: 70px;
+    left: 8px;
+    right: 8px;
+    width: auto;
+  }
+
   .filter-fields-grid {
     grid-template-columns: 1fr;
   }

@@ -1,4 +1,5 @@
 @if (open()) {
+  <div class="filter-backdrop" @backdropAnim (click)="onClose()"></div>
   <div class="filter-panel" @panelAnim>
     <div class="filter-fields-grid">
       @for (field of fields(); track field.key) {

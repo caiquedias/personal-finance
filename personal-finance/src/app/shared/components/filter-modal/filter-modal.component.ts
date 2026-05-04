@@ -8,13 +8,17 @@ import { FilterFieldConfig } from './filter-field-config';
   templateUrl: './filter-modal.component.html',
   styleUrls: ['./filter-modal.component.css'],
   animations: [
+    trigger('backdropAnim', [
+      transition(':enter', [style({ opacity: 0 }), animate('180ms ease', style({ opacity: 1 }))]),
+      transition(':leave', [animate('150ms ease', style({ opacity: 0 }))])
+    ]),
     trigger('panelAnim', [
       transition(':enter', [
-        style({ opacity: 0, transform: 'translateY(-8px)' }),
-        animate('200ms ease', style({ opacity: 1, transform: 'translateY(0)' }))
+        style({ opacity: 0, transform: 'translateY(-8px) scale(0.97)' }),
+        animate('200ms ease', style({ opacity: 1, transform: 'translateY(0) scale(1)' }))
       ]),
       transition(':leave', [
-        animate('150ms ease-in', style({ opacity: 0, transform: 'translateY(-8px)' }))
+        animate('150ms ease-in', style({ opacity: 0, transform: 'translateY(-8px) scale(0.97)' }))
       ])
     ])
   ]
@@ -23,8 +27,9 @@ export class FilterModalComponent {
   readonly fields = input<FilterFieldConfig[]>([]);
   readonly open   = input(false);
 
-  readonly apply = output<Record<string, unknown>>();
-  readonly clear = output<void>();
+  readonly apply  = output<Record<string, unknown>>();
+  readonly clear  = output<void>();
+  readonly closed = output<void>();
 
   readonly draftValues = signal<Record<string, unknown>>({});
 
@@ -58,6 +63,7 @@ export class FilterModalComponent {
 
   onApply(): void {
     this.apply.emit(this.draftValues());
+    this.closed.emit();
   }
 
   onClear(): void {
@@ -67,6 +73,11 @@ export class FilterModalComponent {
     }
     this.draftValues.set(cleared);
     this.clear.emit();
+    this.closed.emit();
+  }
+
+  onClose(): void {
+    this.closed.emit();
   }
 
   getStringValue(key: string): string {

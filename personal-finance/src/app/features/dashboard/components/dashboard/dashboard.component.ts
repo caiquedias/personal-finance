@@ -9,6 +9,9 @@ import { AuthService } from '../../../../core/auth/auth.service';
 import { ThemeService } from '../../../../core/services/theme.service';
 import { HeaderComponent } from '../../../../shared/components/header/header.component';
 import { CurrencyBrlPipe } from '../../../../shared/pipes/currency-brl.pipe';
+import { FilterModalComponent } from '../../../../shared/components/filter-modal/filter-modal.component';
+import { FilterButtonComponent } from '../../../../shared/components/filter-modal/filter-button.component';
+import { FilterFieldConfig } from '../../../../shared/components/filter-modal/filter-field-config';
 import { PeriodResponse, PeriodSummary, MONTH_NAMES, PaymentStatus, ExpensesReport } from '../../../../core/models/models';
 
 export interface DashWidget {
@@ -30,6 +33,7 @@ const DEFAULT_WIDGETS: DashWidget[] = [
   imports: [
     HeaderComponent, CurrencyBrlPipe, DecimalPipe, RouterLink,
     NgxEchartsDirective, CdkDropList, CdkDrag,
+    FilterModalComponent, FilterButtonComponent,
   ],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css'],
@@ -52,6 +56,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   readonly loadingPeriods   = signal(true);
   readonly loadingSummary   = signal(false);
 
+  readonly filterOpen     = signal(false);
   readonly selectedMonth  = signal<number>(new Date().getMonth() + 1);
   readonly loadingChart1  = signal(false);
   readonly loadingChart2  = signal(false);
@@ -89,6 +94,25 @@ export class DashboardComponent implements OnInit, OnDestroy {
     const today = new Date().getMonth() + 1; // 1–12
     return [today - 2, today - 1, today].filter(m => m >= 1);
   });
+
+  readonly filterFields = computed<FilterFieldConfig[]>(() => [
+    {
+      key: 'year', label: 'Ano', type: 'select',
+      value: this.selectedYear(),
+      options: this.availableYears().map(y => ({ value: y, label: String(y) }))
+    },
+    {
+      key: 'periodId', label: 'Período', type: 'select',
+      value: this.selectedPeriodId() ?? '',
+      options: [
+        { value: '', label: '-- Selecione --' },
+        ...this.filteredPeriods().map(p => ({
+          value: p.id,
+          label: `${MONTH_NAMES[p.month - 1]}/${p.year}`
+        }))
+      ]
+    }
+  ]);
 
   constructor() {
     effect(() => {
@@ -141,6 +165,18 @@ export class DashboardComponent implements OnInit, OnDestroy {
   selectMonth(month: number): void {
     this.selectedMonth.set(month);
     this.loadChart2(this.selectedYear(), month);
+  }
+
+  onApplyFilters(values: Record<string, unknown>): void {
+    const year     = values['year']     ? +values['year']          : this.selectedYear();
+    const periodId = values['periodId'] ? String(values['periodId']) : null;
+    if (year !== this.selectedYear()) this.selectYear(year);
+    if (periodId) this.selectPeriod(periodId);
+  }
+
+  onClearFilters(): void {
+    const years = this.availableYears();
+    if (years.length) this.selectYear(years[0]);
   }
 
   monthName(month: number): string {
