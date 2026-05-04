@@ -53,7 +53,7 @@
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
-  animation: fadeUp 0.5s var(--ease) 0.05s both;
+  animation: fadeUp 0.5s var(--ease) 0.05s backwards;
 }
 
 .filter-controls {
