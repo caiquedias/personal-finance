@@ -1,5 +1,5 @@
 <div class="thought-bubble-wrap">
-  <button class="info-icon" (click)="toggle()" [class.active]="open()" aria-label="Ver descrição">
+  <button class="info-icon" (click)="toggle()" [class.active]="open()" aria-label="Ver detalhes">
     <span>i</span>
   </button>
 
@@ -17,23 +17,31 @@
       <!-- Nuvem (topo) -->
       @if (bubblesPhase() >= 4) {
         <div class="tb-cloud-wrap">
-          <!-- Protuberâncias cartoon -->
+          <!-- Protuberâncias atrás do corpo da nuvem -->
           <div class="tb-bumps">
             <div class="tb-bump tb-bump--a"></div>
             <div class="tb-bump tb-bump--b"></div>
             <div class="tb-bump tb-bump--c"></div>
           </div>
-          <!-- Corpo da nuvem -->
+
+          <!-- Corpo da nuvem (z-index maior → cobre a base dos bumps) -->
           <div class="tb-cloud-body">
             <button class="tb-close" (click)="close()" aria-label="Fechar">✕</button>
-            <p class="tb-text">{{ displayedText() }}<span class="tb-cursor" [class.hidden]="animDone()">|</span></p>
+
+            @if (notes()) {
+              <p class="tb-text">{{ displayedText() }}<span class="tb-cursor" [class.hidden]="animDone()">|</span></p>
+            }
+
             @if (showDueDate()) {
-              <p class="tb-due">
-                @if (isDueWarning()) {
-                  <span class="tb-warning">⚠</span>
-                }
-                Venc.: {{ formattedDueDate() }}
-              </p>
+              <div class="tb-footer">
+                <p class="tb-due">
+                  @if (isDueWarning()) {
+                    <span class="tb-warning">⚠</span>
+                  }
+                  Venc.: {{ formattedDueDate() }}
+                </p>
+                <p class="tb-amount">{{ formattedAmount() }}</p>
+              </div>
             }
           </div>
         </div>

@@ -11,8 +11,9 @@ describe('ThoughtBubbleComponent', () => {
     }).compileComponents();
 
     fixture = TestBed.createComponent(ThoughtBubbleComponent);
-    fixture.componentRef.setInput('description', 'Aluguel mensal');
+    fixture.componentRef.setInput('notes', 'Observação de teste');
     fixture.componentRef.setInput('dueDate', '2099-12-31');
+    fixture.componentRef.setInput('amount', 250.00);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
@@ -26,7 +27,7 @@ describe('ThoughtBubbleComponent', () => {
     component.toggle();
     expect(component.open()).toBeTrue();
     expect(component.bubblesPhase()).toBe(1);
-    tick(1000);
+    tick(2000);
     fixture.detectChanges();
   }));
 
@@ -44,8 +45,17 @@ describe('ThoughtBubbleComponent', () => {
   it('deve executar o typewriter e marcar animDone', fakeAsync(() => {
     component.toggle();
     tick(950);
-    const len = 'Aluguel mensal'.length;
+    const len = 'Observação de teste'.length;
     tick(len * 70 + 600);
+    expect(component.animDone()).toBeTrue();
+    expect(component.showDueDate()).toBeTrue();
+  }));
+
+  it('deve pular typewriter e mostrar rodapé imediatamente quando notes vazio', fakeAsync(() => {
+    fixture.componentRef.setInput('notes', '');
+    fixture.detectChanges();
+    component.toggle();
+    tick(950);
     expect(component.animDone()).toBeTrue();
     expect(component.showDueDate()).toBeTrue();
   }));
@@ -68,8 +78,7 @@ describe('ThoughtBubbleComponent', () => {
   it('isDueWarning deve ser true para vencimento dentro de 3 dias', () => {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
-    const iso = tomorrow.toISOString().slice(0, 10);
-    fixture.componentRef.setInput('dueDate', iso);
+    fixture.componentRef.setInput('dueDate', tomorrow.toISOString().slice(0, 10));
     fixture.detectChanges();
     expect(component.isDueWarning()).toBeTrue();
   });
@@ -78,5 +87,11 @@ describe('ThoughtBubbleComponent', () => {
     fixture.componentRef.setInput('dueDate', '2025-03-05');
     fixture.detectChanges();
     expect(component.formattedDueDate()).toBe('05/03/25');
+  });
+
+  it('formattedAmount deve formatar em BRL', () => {
+    fixture.componentRef.setInput('amount', 1500.50);
+    fixture.detectChanges();
+    expect(component.formattedAmount()).toContain('1.500,50');
   });
 });
