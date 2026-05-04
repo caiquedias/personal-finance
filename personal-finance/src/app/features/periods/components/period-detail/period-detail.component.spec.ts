@@ -234,10 +234,10 @@ describe('PeriodDetailComponent', () => {
 
     it('target "saldoAposPagamento" — exibe titulo e calculo correto', () => {
       component.openMario('saldoAposPagamento');
-      expect(component.marioTitle()).toBe('SALDO APOS PAGAMENTO');
+      expect(component.marioTitle()).toBe('SALDO APÓS PAGAMENTO');
       expect(component.marioContent()).toContain('Receitas');
       expect(component.marioContent()).toContain('Total de despesas');
-      expect(component.marioContent()).toContain('Saldo apos pagamento');
+      expect(component.marioContent()).toContain('Saldo após pagamento');
       expect(component.marioOpen()).toBeTrue();
     });
   });
@@ -316,7 +316,7 @@ describe('PeriodDetailComponent', () => {
       component.allFilteredExpenses.set([{ ...EXPENSE, amount: 400 }]);
       component.allFilteredIncomes.set([{ ...INCOME, amount: 2000 }]);
       component.openMario('saldoAposPagamento');
-      expect(component.marioTitle()).toBe('SALDO APOS PAGAMENTO');
+      expect(component.marioTitle()).toBe('SALDO APÓS PAGAMENTO');
       expect(component.marioContent()).toContain('[FILTROS APLICADOS]');
     });
   });
