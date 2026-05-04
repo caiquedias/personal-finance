@@ -7,28 +7,35 @@
     <div class="tb-backdrop" (click)="close()"></div>
 
     <div class="tb-container">
-      <!-- Dots que sobem -->
+      <!-- Dots (base — entre o ícone e a nuvem) -->
       <div class="tb-dots">
         <div class="tb-dot tb-dot--1" [class.visible]="bubblesPhase() >= 1"></div>
         <div class="tb-dot tb-dot--2" [class.visible]="bubblesPhase() >= 2"></div>
         <div class="tb-dot tb-dot--3" [class.visible]="bubblesPhase() >= 3"></div>
       </div>
 
-      <!-- Nuvem -->
+      <!-- Nuvem (topo) -->
       @if (bubblesPhase() >= 4) {
-        <div class="tb-cloud">
-          <button class="tb-close" (click)="close()" aria-label="Fechar">✕</button>
-
-          <p class="tb-text">{{ displayedText() }}<span class="tb-cursor" [class.hidden]="animDone()">|</span></p>
-
-          @if (showDueDate()) {
-            <p class="tb-due">
-              @if (isDueWarning()) {
-                <span class="tb-warning">⚠</span>
-              }
-              Venc.: {{ formattedDueDate() }}
-            </p>
-          }
+        <div class="tb-cloud-wrap">
+          <!-- Protuberâncias cartoon -->
+          <div class="tb-bumps">
+            <div class="tb-bump tb-bump--a"></div>
+            <div class="tb-bump tb-bump--b"></div>
+            <div class="tb-bump tb-bump--c"></div>
+          </div>
+          <!-- Corpo da nuvem -->
+          <div class="tb-cloud-body">
+            <button class="tb-close" (click)="close()" aria-label="Fechar">✕</button>
+            <p class="tb-text">{{ displayedText() }}<span class="tb-cursor" [class.hidden]="animDone()">|</span></p>
+            @if (showDueDate()) {
+              <p class="tb-due">
+                @if (isDueWarning()) {
+                  <span class="tb-warning">⚠</span>
+                }
+                Venc.: {{ formattedDueDate() }}
+              </p>
+            }
+          </div>
         </div>
       }
     </div>

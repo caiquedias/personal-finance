@@ -1,10 +1,9 @@
 import { Component, input, signal, computed, OnDestroy } from '@angular/core';
-import { DatePipe } from '@angular/common';
 
 @Component({
   selector: 'app-thought-bubble',
   standalone: true,
-  imports: [DatePipe],
+  imports: [],
   templateUrl: './thought-bubble.component.html',
   styleUrls: ['./thought-bubble.component.css'],
 })
@@ -64,12 +63,12 @@ export class ThoughtBubbleComponent implements OnDestroy {
     this.open.set(true);
     this.bubblesPhase.set(1);
 
-    const t1 = setTimeout(() => this.bubblesPhase.set(2), 250);
-    const t2 = setTimeout(() => this.bubblesPhase.set(3), 500);
+    const t1 = setTimeout(() => this.bubblesPhase.set(2), 300);
+    const t2 = setTimeout(() => this.bubblesPhase.set(3), 600);
     const t3 = setTimeout(() => {
       this.bubblesPhase.set(4);
       this.startTypewriter();
-    }, 800);
+    }, 950);
 
     this.timeouts.push(t1, t2, t3);
   }
@@ -88,10 +87,10 @@ export class ThoughtBubbleComponent implements OnDestroy {
       if (next >= full.length) {
         this.clearInterval();
         this.animDone.set(true);
-        const t = setTimeout(() => this.showDueDate.set(true), 200);
+        const t = setTimeout(() => this.showDueDate.set(true), 300);
         this.timeouts.push(t);
       }
-    }, 30);
+    }, 70);
   }
 
   ngOnDestroy(): void {
