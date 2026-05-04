@@ -10,6 +10,7 @@ import { SonicRingBurstComponent } from '../../../../shared/components/sonic-rin
 import { FilterModalComponent } from '../../../../shared/components/filter-modal/filter-modal.component';
 import { FilterButtonComponent } from '../../../../shared/components/filter-modal/filter-button.component';
 import { ThoughtBubbleComponent } from '../../../../shared/components/thought-bubble/thought-bubble.component';
+import { ActionMenuComponent } from '../../../../shared/components/action-menu/action-menu.component';
 import { FilterFieldConfig } from '../../../../shared/components/filter-modal/filter-field-config';
 import {
   ExpenseResponse, PeriodResponse, CategoryResponse,
@@ -22,7 +23,7 @@ type SortCol = 'description' | 'category' | 'sourceType' | 'fortnightType' | 'du
 @Component({
   selector: 'app-expenses',
   standalone: true,
-  imports: [HeaderComponent, CurrencyBrlPipe, ReactiveFormsModule, SonicModalComponent, PaginationComponent, SonicRingBurstComponent, FilterModalComponent, FilterButtonComponent, ThoughtBubbleComponent],
+  imports: [HeaderComponent, CurrencyBrlPipe, ReactiveFormsModule, SonicModalComponent, PaginationComponent, SonicRingBurstComponent, FilterModalComponent, FilterButtonComponent, ThoughtBubbleComponent, ActionMenuComponent],
   templateUrl: './expenses.component.html',
   styleUrls: ['./expenses.component.css'],
   animations: [

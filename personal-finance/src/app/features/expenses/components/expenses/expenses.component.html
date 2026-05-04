@@ -69,14 +69,14 @@
       <table class="table">
         <thead>
           <tr>
-            <th class="check-col">
+            <th class="check-col col-hide-mobile">
               <input type="checkbox" [checked]="allSelected()" (change)="toggleSelectAll()" />
             </th>
-            <th class="drag-col"></th>
+            <th class="drag-col col-hide-mobile"></th>
             <th class="sortable" (click)="toggleSort('description')">
               Descrição {{ sortIcon('description') }}
             </th>
-            <th class="sortable" (click)="toggleSort('category')">
+            <th class="sortable col-hide-mobile" (click)="toggleSort('category')">
               Categoria {{ sortIcon('category') }}
             </th>
             <th class="sortable col-hide-mobile" (click)="toggleSort('sourceType')">
@@ -85,10 +85,10 @@
             <th class="sortable col-hide-mobile" (click)="toggleSort('fortnightType')">
               Quinzena {{ sortIcon('fortnightType') }}
             </th>
-            <th class="sortable" (click)="toggleSort('dueDate')">
+            <th class="sortable col-hide-mobile" (click)="toggleSort('dueDate')">
               Vencimento {{ sortIcon('dueDate') }}
             </th>
-            <th class="sortable" (click)="toggleSort('amount')">
+            <th class="sortable col-hide-mobile" (click)="toggleSort('amount')">
               Valor {{ sortIcon('amount') }}
             </th>
             <th class="sortable" (click)="toggleSort('paymentStatus')">
@@ -106,14 +106,29 @@
               (drop)="onDrop(i)"
               [class.row-selected]="isSelected(expense.id)"
             >
-              <td class="check-col">
+              <td class="check-col col-hide-mobile">
                 <input type="checkbox" [checked]="isSelected(expense.id)" (change)="toggleSelect(expense.id)" />
               </td>
-              <td class="drag-col">
+              <td class="drag-col col-hide-mobile">
                 <span class="drag-handle" title="Arrastar para reordenar">⠿</span>
               </td>
               <td>
                 <div class="cell-primary desc-cell">
+                  <span class="cat-icon-mobile"
+                    [style.--cat-color]="categoryColor(expense.categoryId)"
+                    [class.touched]="touchedCatId() === expense.categoryId"
+                    (touchstart)="touchedCatId.set(expense.categoryId)"
+                    (touchend)="touchedCatId.set(null)"
+                  >
+                    @if (categoryIcon(expense.categoryId)) {
+                      <span class="category-dot category-dot--icon">
+                        <img class="category-dot-img" [src]="categoryIcon(expense.categoryId)" [alt]="categoryName(expense.categoryId)" />
+                      </span>
+                    } @else {
+                      <span class="cat-circle-plain" [style.background]="categoryColor(expense.categoryId)"></span>
+                    }
+                    <kbd class="category-kbd">{{ categoryName(expense.categoryId) }}</kbd>
+                  </span>
                   {{ expense.description }}
                   <app-thought-bubble
                     class="desc-tooltip"
@@ -124,10 +139,10 @@
                   />
                 </div>
                 @if (expense.notes) {
-                  <div class="cell-secondary">{{ expense.notes }}</div>
+                  <div class="cell-secondary col-hide-mobile">{{ expense.notes }}</div>
                 }
               </td>
-              <td>
+              <td class="col-hide-mobile">
                 <span class="category-dot-wrap"
                   [style.--cat-color]="categoryColor(expense.categoryId)"
                   [class.touched]="touchedCatId() === expense.categoryId"
@@ -150,15 +165,15 @@
               </td>
               <td class="text-muted text-sm col-hide-mobile">{{ sourceLabel(expense.sourceType) }}</td>
               <td class="text-muted text-sm col-hide-mobile">{{ fortnightLabel(expense.fortnightType) }}</td>
-              <td class="text-muted text-sm">{{ formatDate(expense.dueDate) }}</td>
-              <td class="font-semibold">{{ expense.amount | currencyBrl }}</td>
+              <td class="text-muted text-sm col-hide-mobile">{{ formatDate(expense.dueDate) }}</td>
+              <td class="font-semibold col-hide-mobile">{{ expense.amount | currencyBrl }}</td>
               <td>
                 <span class="badge" [class]="statusBadgeClass(expense.paymentStatus)">
                   {{ statusLabel(expense.paymentStatus) }}
                 </span>
               </td>
               <td>
-                <div class="row-actions">
+                <div class="row-actions col-hide-mobile">
                   @if (expense.paymentStatus === PaymentStatus.Pending || expense.paymentStatus === PaymentStatus.Partial) {
                     <button class="action-btn action-success" (click)="markAsPaid($event, expense)" title="Marcar como pago">
                       ✓
@@ -179,6 +194,13 @@
                     </svg>
                   </button>
                 </div>
+                <app-action-menu
+                  class="col-show-mobile"
+                  [showPay]="expense.paymentStatus === PaymentStatus.Pending || expense.paymentStatus === PaymentStatus.Partial"
+                  (pay)="markAsPaid($event, expense)"
+                  (edit)="openEditModal(expense)"
+                  (delete)="deleteExpense(expense.id)"
+                />
               </td>
             </tr>
           }
