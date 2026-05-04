@@ -113,7 +113,16 @@
                 <span class="drag-handle" title="Arrastar para reordenar">⠿</span>
               </td>
               <td>
-                <div class="cell-primary">{{ expense.description }}</div>
+                <div class="cell-primary desc-cell">
+                  {{ expense.description }}
+                  <app-thought-bubble
+                    class="desc-tooltip"
+                    [description]="expense.description"
+                    [notes]="expense.notes ?? ''"
+                    [dueDate]="expense.dueDate"
+                    [amount]="expense.amount"
+                  />
+                </div>
                 @if (expense.notes) {
                   <div class="cell-secondary">{{ expense.notes }}</div>
                 }
