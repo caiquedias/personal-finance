@@ -8,7 +8,7 @@
 .filter-panel {
   position: fixed;
   top: 80px;
-  right: 16px;
+  left: 16px;
   z-index: 201;
   min-width: 280px;
   max-width: 480px;
@@ -62,8 +62,8 @@
 @media (max-width: 640px) {
   .filter-panel {
     top: 70px;
-    right: 8px;
     left: 8px;
+    right: 8px;
     width: auto;
   }
 
