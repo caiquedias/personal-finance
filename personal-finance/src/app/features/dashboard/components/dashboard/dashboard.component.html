@@ -5,31 +5,25 @@
 <div class="page-content">
 
   <!-- Seletor de período -->
-  <div class="period-selector">
-    <div class="period-selector-top">
-      <span class="period-label">Período</span>
-      @if (availableYears().length > 1) {
-        <select class="year-select" [value]="selectedYear()" (change)="selectYear(+$any($event.target).value)">
-          @for (year of availableYears(); track year) {
-            <option [value]="year">{{ year }}</option>
-          }
-        </select>
-      }
-    </div>
-    <div class="month-chips">
-      @for (period of filteredPeriods(); track period.id) {
-        <button
-          class="month-chip"
-          [class.active]="selectedPeriodId() === period.id"
-          (click)="selectPeriod(period.id)"
-        >{{ monthName(period.month) }}/{{ period.year }}</button>
-      }
-      @if (filteredPeriods().length === 0 && !loadingPeriods()) {
-        <span class="text-muted" style="font-size:0.875rem">
-          Nenhum período. <a routerLink="/periods">Criar</a>
-        </span>
-      }
-    </div>
+  <div class="filter-bar">
+    <app-filter-button
+      [activeCount]="selectedPeriodId() ? 1 : 0"
+      (toggled)="filterOpen.update(v => !v)"
+    />
+    <app-filter-modal
+      [fields]="filterFields()"
+      [open]="filterOpen()"
+      (apply)="onApplyFilters($event)"
+      (clear)="onClearFilters()"
+      (closed)="filterOpen.set(false)"
+    />
+    @if (selectedPeriodId()) {
+      <span class="period-selected-label">{{ headerSubtitle() }}</span>
+    } @else if (!loadingPeriods()) {
+      <span class="text-muted" style="font-size:0.875rem">
+        Nenhum período selecionado. <a routerLink="/periods">Criar</a>
+      </span>
+    }
   </div>
 
   <!-- KPI Cards -->
