@@ -117,6 +117,7 @@
                   {{ expense.description }}
                   <app-thought-bubble
                     class="desc-tooltip"
+                    [description]="expense.description"
                     [notes]="expense.notes ?? ''"
                     [dueDate]="expense.dueDate"
                     [amount]="expense.amount"

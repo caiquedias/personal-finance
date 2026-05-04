@@ -8,9 +8,10 @@ import { Component, input, signal, computed, OnDestroy } from '@angular/core';
   styleUrls: ['./thought-bubble.component.css'],
 })
 export class ThoughtBubbleComponent implements OnDestroy {
-  readonly notes   = input.required<string>();
-  readonly dueDate = input.required<string>();
-  readonly amount  = input.required<number>();
+  readonly description = input.required<string>();
+  readonly notes       = input.required<string>();
+  readonly dueDate     = input.required<string>();
+  readonly amount      = input.required<number>();
 
   readonly open         = signal(false);
   readonly bubblesPhase = signal(0);
@@ -18,7 +19,9 @@ export class ThoughtBubbleComponent implements OnDestroy {
   readonly animDone     = signal(false);
   readonly showDueDate  = signal(false);
 
-  readonly displayedText = computed(() => this.notes().slice(0, this.charIndex()));
+  private readonly typewriterSource = computed(() => this.notes() || this.description());
+
+  readonly displayedText = computed(() => this.typewriterSource().slice(0, this.charIndex()));
 
   readonly formattedDueDate = computed(() => {
     const raw = this.dueDate();
@@ -79,7 +82,7 @@ export class ThoughtBubbleComponent implements OnDestroy {
   }
 
   private startTypewriter(): void {
-    const full = this.notes();
+    const full = this.typewriterSource();
     if (!full) {
       this.animDone.set(true);
       this.showDueDate.set(true);
