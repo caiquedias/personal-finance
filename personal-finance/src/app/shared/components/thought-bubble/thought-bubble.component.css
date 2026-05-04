@@ -86,9 +86,9 @@
   image-rendering: pixelated;
 }
 
-.tb-dot--1 .tb-dot-img { width: 16px; }
-.tb-dot--2 .tb-dot-img { width: 22px; }
-.tb-dot--3 .tb-dot-img { width: 28px; }
+.tb-dot--1 .tb-dot-img { width: 22px; }
+.tb-dot--2 .tb-dot-img { width: 44px; }
+.tb-dot--3 .tb-dot-img { width: 68px; }
 
 /* Bounce desincronizado entre os 3 dots */
 .tb-dot--1.visible .tb-dot-img { animation: tbDotBounce 0.70s ease-in-out 0.30s infinite; }
@@ -126,9 +126,9 @@
 /* ── Imagem da nuvem principal ── */
 .tb-cloud-img {
   display: block;
-  width: 211px;
+  width: 277px;
   /* altura reduzida para aproximar as duas nuvens do PNG */
-  height: 95px;
+  height: 197px;
   object-fit: fill;
   max-width: none;
   image-rendering: pixelated;
@@ -157,7 +157,7 @@
 .tb-content-top {
   position: absolute;
   top: 2%;
-  left: 19%;
+  left: 15%;
   right: 10%;
   bottom: 52%;
   display: flex;
@@ -169,7 +169,7 @@
 .tb-content-bottom {
   position: absolute;
   top: 63%;
-  left: 54%;
+  left: 52%;
   right: 8%;
   bottom: 5%;
   display: flex;
@@ -189,11 +189,12 @@
 .tb-text {
   margin: 0;
   font-family: 'Press Start 2P', monospace;
-  font-size: 7px;
+  font-size: 8px;
   font-weight: 700;
   color: #111;
   line-height: 1.6;
   word-break: break-word;
+  text-align: center;
 }
 
 .tb-cursor {
@@ -212,7 +213,7 @@
 .tb-amount {
   margin: 0;
   font-family: 'Press Start 2P', monospace;
-  font-size: 7px;
+  font-size: 10px;
   font-weight: 700;
   color: #111;
   white-space: nowrap;
@@ -221,7 +222,7 @@
 .tb-due {
   margin: 0;
   font-family: 'Press Start 2P', monospace;
-  font-size: 6px;
+  font-size: 8px;
   font-weight: 700;
   color: #333;
   display: flex;
@@ -233,7 +234,7 @@
 /* ── Alerta piscante ── */
 .tb-warning {
   animation: warnBlink 0.6s steps(1) infinite;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 @keyframes warnBlink {
