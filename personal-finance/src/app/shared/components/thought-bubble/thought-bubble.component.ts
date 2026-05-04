@@ -8,16 +8,17 @@ import { Component, input, signal, computed, OnDestroy } from '@angular/core';
   styleUrls: ['./thought-bubble.component.css'],
 })
 export class ThoughtBubbleComponent implements OnDestroy {
-  readonly description = input.required<string>();
-  readonly dueDate     = input.required<string>();
+  readonly notes   = input.required<string>();
+  readonly dueDate = input.required<string>();
+  readonly amount  = input.required<number>();
 
   readonly open         = signal(false);
-  readonly bubblesPhase = signal(0); // 0=hidden, 1=dot1, 2=dot2, 3=dot3, 4=cloud
+  readonly bubblesPhase = signal(0);
   readonly charIndex    = signal(0);
   readonly animDone     = signal(false);
   readonly showDueDate  = signal(false);
 
-  readonly displayedText = computed(() => this.description().slice(0, this.charIndex()));
+  readonly displayedText = computed(() => this.notes().slice(0, this.charIndex()));
 
   readonly formattedDueDate = computed(() => {
     const raw = this.dueDate();
@@ -28,6 +29,10 @@ export class ThoughtBubbleComponent implements OnDestroy {
     const yy = String(d.getFullYear()).slice(2);
     return `${dd}/${mm}/${yy}`;
   });
+
+  readonly formattedAmount = computed(() =>
+    this.amount().toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+  );
 
   readonly isDueWarning = computed(() => {
     const raw = this.dueDate();
@@ -74,7 +79,7 @@ export class ThoughtBubbleComponent implements OnDestroy {
   }
 
   private startTypewriter(): void {
-    const full = this.description();
+    const full = this.notes();
     if (!full) {
       this.animDone.set(true);
       this.showDueDate.set(true);
