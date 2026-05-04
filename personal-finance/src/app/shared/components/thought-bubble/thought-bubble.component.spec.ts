@@ -11,6 +11,7 @@ describe('ThoughtBubbleComponent', () => {
     }).compileComponents();
 
     fixture = TestBed.createComponent(ThoughtBubbleComponent);
+    fixture.componentRef.setInput('description', 'Aluguel mensal');
     fixture.componentRef.setInput('notes', 'Observação de teste');
     fixture.componentRef.setInput('dueDate', '2099-12-31');
     fixture.componentRef.setInput('amount', 250.00);
@@ -51,11 +52,13 @@ describe('ThoughtBubbleComponent', () => {
     expect(component.showDueDate()).toBeTrue();
   }));
 
-  it('deve pular typewriter e mostrar rodapé imediatamente quando notes vazio', fakeAsync(() => {
+  it('deve usar description como fallback quando notes vazio', fakeAsync(() => {
     fixture.componentRef.setInput('notes', '');
     fixture.detectChanges();
     component.toggle();
     tick(950);
+    const len = 'Aluguel mensal'.length;
+    tick(len * 70 + 600);
     expect(component.animDone()).toBeTrue();
     expect(component.showDueDate()).toBeTrue();
   }));
