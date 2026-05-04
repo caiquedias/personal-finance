@@ -92,6 +92,7 @@
 .tb-cloud-img {
   display: block;
   width: 960px;
+  max-width: none; /* sobrescreve o max-width: 100% do Tailwind Preflight */
   height: auto;
   image-rendering: pixelated;
 }
