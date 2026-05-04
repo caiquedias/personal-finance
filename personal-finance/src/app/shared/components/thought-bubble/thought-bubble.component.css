@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
 .thought-bubble-wrap {
   display: inline-block;
   position: relative;
@@ -51,7 +53,7 @@
   align-items: center;
 }
 
-/* ── Dots pixel art (branco + contorno preto) ── */
+/* ── Dots: wrapper faz o appear, img interna faz bounce ── */
 .tb-dots {
   position: relative;
   width: 56px;
@@ -61,13 +63,9 @@
 
 .tb-dot {
   position: absolute;
-  border-radius: 0;
   opacity: 0;
   transform: scale(0);
   transition: opacity 0.2s ease, transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
-  background: #fff;
-  border: 2px solid #111;
-  image-rendering: pixelated;
 }
 
 .tb-dot.visible {
@@ -76,24 +74,43 @@
 }
 
 /* Zigzag: dot1 (x:0,y:1) → dot2 (x:1,y:2) → dot3 (x:0,y:3) */
-.tb-dot--1 { width: 9px;  height: 9px;  bottom: 4px;  left: 10px; z-index: 1; }
-.tb-dot--2 { width: 13px; height: 13px; bottom: 16px; left: 32px; z-index: 2; }
-.tb-dot--3 { width: 17px; height: 17px; bottom: 32px; left: 8px;  z-index: 3; }
+.tb-dot--1 { bottom: 4px;  left: 8px; }
+.tb-dot--2 { bottom: 16px; left: 30px; }
+.tb-dot--3 { bottom: 32px; left: 6px; }
 
-/* ── Cloud wrap: imagem + conteúdo sobreposto ── */
+/* Imagem da nuvem em escala reduzida para cada dot */
+.tb-dot-img {
+  display: block;
+  max-width: none;
+  height: auto;
+  image-rendering: pixelated;
+}
+
+.tb-dot--1 .tb-dot-img { width: 16px; }
+.tb-dot--2 .tb-dot-img { width: 22px; }
+.tb-dot--3 .tb-dot-img { width: 28px; }
+
+/* Bounce desincronizado entre os 3 dots */
+.tb-dot--1.visible .tb-dot-img { animation: tbDotBounce 0.70s ease-in-out 0.30s infinite; }
+.tb-dot--2.visible .tb-dot-img { animation: tbDotBounce 0.85s ease-in-out 0.52s infinite; }
+.tb-dot--3.visible .tb-dot-img { animation: tbDotBounce 1.00s ease-in-out 0.78s infinite; }
+
+@keyframes tbDotBounce {
+  0%, 100% { transform: translateY(0); }
+  45%       { transform: translateY(-4px); }
+}
+
+/* ── Cloud wrap: faz o pop de entrada ── */
 .tb-cloud-wrap {
-  position: relative;
   pointer-events: all;
   margin-left: 12px;
   animation: cloudPop 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
-.tb-cloud-img {
-  display: block;
-  width: 211px;
-  max-width: none;
-  height: auto;
-  image-rendering: pixelated;
+/* ── Cloud inner: faz o bounce contínuo (separado do pop) ── */
+.tb-cloud-inner {
+  position: relative;
+  animation: tbCloudBounce 2.4s ease-in-out 0.4s infinite;
 }
 
 @keyframes cloudPop {
@@ -101,27 +118,42 @@
   to   { opacity: 1; transform: scale(1) translateY(0); }
 }
 
+@keyframes tbCloudBounce {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-6px); }
+}
+
+/* ── Imagem da nuvem principal ── */
+.tb-cloud-img {
+  display: block;
+  width: 211px;
+  /* altura reduzida para aproximar as duas nuvens do PNG */
+  height: 95px;
+  object-fit: fill;
+  max-width: none;
+  image-rendering: pixelated;
+}
+
 /* ── Botão fechar ── */
 .tb-close {
   position: absolute;
-  top: 18px;
-  right: 14px;
+  top: 10px;
+  right: 6px;
   z-index: 10;
   background: none;
   border: none;
   color: #333;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   cursor: pointer;
   padding: 2px 4px;
   line-height: 1;
-  border-radius: 3px;
+  pointer-events: all;
 }
 
 .tb-close:hover { color: #000; }
 
 /* ── Conteúdo na nuvem grande (cima) ── */
-/* Bounds estimados: top 20%–48%, left 10%–90% da imagem 920×530 */
 .tb-content-top {
   position: absolute;
   top: 20%;
@@ -134,7 +166,6 @@
 }
 
 /* ── Conteúdo na nuvem pequena (baixo) ── */
-/* Bounds estimados: top 63%–94%, left 43%–92% da imagem 920×530 */
 .tb-content-bottom {
   position: absolute;
   top: 64%;
@@ -154,14 +185,14 @@
   to   { opacity: 1; }
 }
 
-/* ── Texto typewriter ── */
+/* ── Fonte pixelizada em todo o texto ── */
 .tb-text {
   margin: 0;
-  font-size: 11px;
-  font-family: inherit;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 7px;
   font-weight: 700;
   color: #111;
-  line-height: 1.4;
+  line-height: 1.6;
   word-break: break-word;
 }
 
@@ -178,11 +209,10 @@
   50%       { opacity: 0; }
 }
 
-/* ── Valor e vencimento ── */
 .tb-amount {
   margin: 0;
-  font-size: 11px;
-  font-family: inherit;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 7px;
   font-weight: 700;
   color: #111;
   white-space: nowrap;
@@ -190,8 +220,8 @@
 
 .tb-due {
   margin: 0;
-  font-size: 10px;
-  font-family: inherit;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 6px;
   font-weight: 700;
   color: #333;
   display: flex;
