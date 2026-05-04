@@ -1,0 +1,244 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+.thought-bubble-wrap {
+  display: inline-block;
+  position: relative;
+}
+
+/* ── Ícone "i" ── */
+.info-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1.5px solid var(--v2-border, #555);
+  background: transparent;
+  color: var(--text-muted, #aaa);
+  font-size: 11px;
+  font-style: italic;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  flex-shrink: 0;
+}
+
+.info-icon.active,
+.info-icon:hover {
+  background: var(--accent, #7c6af7);
+  border-color: var(--accent, #7c6af7);
+  color: #fff;
+}
+
+/* ── Backdrop ── */
+.tb-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 998;
+}
+
+/* ── Container: column-reverse → dots na base, nuvem no topo ── */
+.tb-container {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 999;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+}
+
+/* ── Dots: wrapper faz o appear, img interna faz bounce ── */
+.tb-dots {
+  position: relative;
+  width: 56px;
+  height: 52px;
+  flex-shrink: 0;
+}
+
+.tb-dot {
+  position: absolute;
+  opacity: 0;
+  transform: scale(0);
+  transition: opacity 0.2s ease, transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.tb-dot.visible {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Zigzag: dot1 (x:0,y:1) → dot2 (x:1,y:2) → dot3 (x:0,y:3) */
+.tb-dot--1 { bottom: 4px;  left: 8px; }
+.tb-dot--2 { bottom: 16px; left: 30px; }
+.tb-dot--3 { bottom: 32px; left: 6px; }
+
+/* Imagem da nuvem em escala reduzida para cada dot */
+.tb-dot-img {
+  display: block;
+  max-width: none;
+  height: auto;
+  image-rendering: pixelated;
+}
+
+.tb-dot--1 .tb-dot-img { width: 22px; }
+.tb-dot--2 .tb-dot-img { width: 44px; }
+.tb-dot--3 .tb-dot-img { width: 68px; }
+
+/* Bounce desincronizado entre os 3 dots */
+.tb-dot--1.visible .tb-dot-img { animation: tbDotBounce 0.70s ease-in-out 0.30s infinite; }
+.tb-dot--2.visible .tb-dot-img { animation: tbDotBounce 0.85s ease-in-out 0.52s infinite; }
+.tb-dot--3.visible .tb-dot-img { animation: tbDotBounce 1.00s ease-in-out 0.78s infinite; }
+
+@keyframes tbDotBounce {
+  0%, 100% { transform: translateY(0); }
+  45%       { transform: translateY(-4px); }
+}
+
+/* ── Cloud wrap: faz o pop de entrada ── */
+.tb-cloud-wrap {
+  pointer-events: all;
+  margin-left: 12px;
+  animation: cloudPop 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* ── Cloud inner: faz o bounce contínuo (separado do pop) ── */
+.tb-cloud-inner {
+  position: relative;
+  animation: tbCloudBounce 2.4s ease-in-out 0.4s infinite;
+}
+
+@keyframes cloudPop {
+  from { opacity: 0; transform: scale(0.75) translateY(8px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes tbCloudBounce {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-6px); }
+}
+
+/* ── Imagem da nuvem principal ── */
+.tb-cloud-img {
+  display: block;
+  width: 277px;
+  /* altura reduzida para aproximar as duas nuvens do PNG */
+  height: 197px;
+  object-fit: fill;
+  max-width: none;
+  image-rendering: pixelated;
+}
+
+/* ── Botão fechar ── */
+.tb-close {
+  position: absolute;
+  top: 10px;
+  right: 6px;
+  z-index: 10;
+  background: none;
+  border: none;
+  color: #333;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 2px 4px;
+  line-height: 1;
+  pointer-events: all;
+}
+
+.tb-close:hover { color: #000; }
+
+/* ── Conteúdo na nuvem grande (cima) ── */
+.tb-content-top {
+  position: absolute;
+  top: 2%;
+  left: 15%;
+  right: 10%;
+  bottom: 52%;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+
+/* ── Conteúdo na nuvem pequena (baixo) ── */
+.tb-content-bottom {
+  position: absolute;
+  top: 63%;
+  left: 52%;
+  right: 8%;
+  bottom: 5%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0px;
+  overflow: hidden;
+  animation: fadeIn 0.2s ease both;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── Fonte pixelizada em todo o texto ── */
+.tb-text {
+  margin: 0;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  font-weight: 700;
+  color: #111;
+  line-height: 1.6;
+  word-break: break-word;
+  text-align: center;
+}
+
+.tb-cursor {
+  display: inline-block;
+  animation: blink 0.6s steps(1) infinite;
+  color: #555;
+}
+
+.tb-cursor.hidden { display: none; }
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
+.tb-amount {
+  margin: 0;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  color: #111;
+  white-space: nowrap;
+}
+
+.tb-due {
+  margin: 0;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  font-weight: 700;
+  color: #333;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
+}
+
+/* ── Alerta piscante ── */
+.tb-warning {
+  animation: warnBlink 0.6s steps(1) infinite;
+  font-size: 12px;
+}
+
+@keyframes warnBlink {
+  0%   { color: #e53935; }
+  50%  { color: #f9a825; }
+  100% { color: #e53935; }
+}
