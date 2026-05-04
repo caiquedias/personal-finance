@@ -124,8 +124,8 @@
 /* Bounds estimados: top 20%–48%, left 10%–90% da imagem 920×530 */
 .tb-content-top {
   position: absolute;
-  top: 20%;
-  left: 10%;
+  top: 2%;
+  left: 19%;
   right: 10%;
   bottom: 52%;
   display: flex;
@@ -137,14 +137,14 @@
 /* Bounds estimados: top 63%–94%, left 43%–92% da imagem 920×530 */
 .tb-content-bottom {
   position: absolute;
-  top: 64%;
-  left: 43%;
+  top: 63%;
+  left: 54%;
   right: 8%;
   bottom: 5%;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 2px;
+  gap: 0px;
   overflow: hidden;
   animation: fadeIn 0.2s ease both;
 }
