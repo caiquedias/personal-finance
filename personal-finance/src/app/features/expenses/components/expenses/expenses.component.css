@@ -301,6 +301,10 @@
 
 .period-select { width: auto; min-width: 180px; }
 
+/* ── Tooltip de descrição mobile ── */
+.desc-cell { display: flex; align-items: center; gap: 6px; }
+.desc-tooltip { display: none; }
+
 /* ── Responsividade mobile ── */
 @media (max-width: 767px) {
   .page-content { padding: 16px; gap: 16px; }
@@ -313,6 +317,8 @@
   .category-dot-wrap    { display: inline-flex; }
   .category-name-desktop { display: none; }
   td:has(.category-dot-wrap) { text-align: center; }
+
+  .desc-tooltip { display: inline-block; }
 
   .batch-action-bar { flex-wrap: wrap; }
 

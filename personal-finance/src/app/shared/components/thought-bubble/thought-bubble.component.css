@@ -1,0 +1,198 @@
+.thought-bubble-wrap {
+  display: inline-block;
+  position: relative;
+}
+
+/* ── Ícone "i" ── */
+.info-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1.5px solid var(--v2-border, #555);
+  background: transparent;
+  color: var(--text-muted, #aaa);
+  font-size: 11px;
+  font-style: italic;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  flex-shrink: 0;
+}
+
+.info-icon.active,
+.info-icon:hover {
+  background: var(--accent, #7c6af7);
+  border-color: var(--accent, #7c6af7);
+  color: #fff;
+}
+
+/* ── Backdrop ── */
+.tb-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 998;
+}
+
+/* ── Container posicionado acima do ícone ── */
+.tb-container {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 999;
+  pointer-events: none;
+}
+
+/* ── Dots (bolhas que sobem) ── */
+.tb-dots {
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.tb-dot {
+  border-radius: 50%;
+  background: var(--v2-surface-raised, #2a2a3a);
+  border: 1.5px solid var(--v2-border, #555);
+  opacity: 0;
+  transform: scale(0);
+  transition: opacity 0.18s ease, transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.tb-dot.visible {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.tb-dot--1 { width: 6px;  height: 6px;  }
+.tb-dot--2 { width: 9px;  height: 9px;  }
+.tb-dot--3 { width: 13px; height: 13px; }
+
+/* ── Nuvem ── */
+.tb-cloud {
+  position: relative;
+  pointer-events: all;
+  background: var(--v2-surface-raised, #2a2a3a);
+  border: 1.5px solid var(--v2-border, #555);
+  border-radius: 16px;
+  padding: 10px 12px 10px 12px;
+  min-width: 180px;
+  max-width: 260px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.35);
+  animation: cloudPop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* Protuberâncias estilo nuvem de pensamento */
+.tb-cloud::before,
+.tb-cloud::after {
+  content: '';
+  position: absolute;
+  background: var(--v2-surface-raised, #2a2a3a);
+  border: 1.5px solid var(--v2-border, #555);
+  border-radius: 50%;
+}
+
+.tb-cloud::before {
+  width: 18px;
+  height: 18px;
+  bottom: -10px;
+  left: calc(50% - 24px);
+  /* cobre a borda inferior da nuvem */
+  clip-path: inset(0 0 4px 0);
+}
+
+.tb-cloud::after {
+  width: 12px;
+  height: 12px;
+  bottom: -18px;
+  left: calc(50% - 14px);
+}
+
+@keyframes cloudPop {
+  from { opacity: 0; transform: scale(0.7); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* ── Botão fechar ── */
+.tb-close {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  background: none;
+  border: none;
+  color: var(--text-subtle, #888);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 2px 4px;
+  line-height: 1;
+  border-radius: 4px;
+}
+
+.tb-close:hover {
+  color: var(--text-primary, #fff);
+}
+
+/* ── Texto typewriter ── */
+.tb-text {
+  margin: 0 16px 0 0;
+  font-size: 12px;
+  color: var(--text-primary, #e0e0e0);
+  line-height: 1.5;
+  word-break: break-word;
+  min-height: 1.5em;
+}
+
+.tb-cursor {
+  display: inline-block;
+  animation: blink 0.6s steps(1) infinite;
+  color: var(--accent, #7c6af7);
+}
+
+.tb-cursor.hidden {
+  display: none;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
+/* ── Linha de vencimento ── */
+.tb-due {
+  margin: 6px 0 0;
+  font-size: 11px;
+  color: var(--text-muted, #aaa);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border-top: 1px solid var(--v2-border, #555);
+  padding-top: 5px;
+  animation: fadeIn 0.2s ease both;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Ícone de alerta ── */
+.tb-warning {
+  animation: warnBlink 0.6s steps(1) infinite;
+  font-size: 12px;
+}
+
+@keyframes warnBlink {
+  0%   { color: #e53935; }
+  50%  { color: #f9a825; }
+  100% { color: #e53935; }
+}
