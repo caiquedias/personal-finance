@@ -62,49 +62,17 @@
   <!-- Barra de filtros -->
   @if (!loadingList() && periods().length > 0) {
     <div class="filter-bar">
-      <div class="filter-controls">
-        <div class="filter-field">
-          <label class="filter-label">Ano</label>
-          <select class="input-sm" [value]="selectedYear() ?? ''" (change)="setYear($any($event.target).value)">
-            <option value="">Todos</option>
-            @for (y of availableYears(); track y) {
-              <option [value]="y">{{ y }}</option>
-            }
-          </select>
-        </div>
-
-        <div class="filter-field">
-          <label class="filter-label">De</label>
-          <select class="input-sm" [value]="monthFrom() ?? ''" (change)="setMonthFrom($any($event.target).value)">
-            <option value="">--</option>
-            @for (m of monthsShort; track m.value) {
-              <option [value]="m.value">{{ m.label }}</option>
-            }
-          </select>
-        </div>
-
-        <div class="filter-field">
-          <label class="filter-label">Até</label>
-          <select class="input-sm" [value]="monthTo() ?? ''" (change)="setMonthTo($any($event.target).value)">
-            <option value="">--</option>
-            @for (m of monthsShort; track m.value) {
-              <option [value]="m.value">{{ m.label }}</option>
-            }
-          </select>
-        </div>
-
-        <div class="filter-field">
-          <label class="filter-label">Status</label>
-          <select class="input-sm" [value]="filterStatus()" (change)="setStatus($any($event.target).value)">
-            <option value="all">Todos</option>
-            <option value="active">Ativo</option>
-            <option value="inactive">Inativo</option>
-          </select>
-        </div>
-
-        <button class="filter-clear" (click)="clearFilters()">Limpar</button>
-      </div>
-
+      <app-filter-button
+        [activeCount]="activeFilterCount()"
+        (toggled)="filterOpen.update(v => !v)"
+      />
+      <app-filter-modal
+        [fields]="filterFields()"
+        [open]="filterOpen()"
+        (apply)="onApplyFilters($event)"
+        (clear)="onClearFilters()"
+        (closed)="filterOpen.set(false)"
+      />
       <p class="filter-count">
         {{ filteredPeriods().length }} período(s) encontrado(s)
         @if (totalPages() > 1) {
