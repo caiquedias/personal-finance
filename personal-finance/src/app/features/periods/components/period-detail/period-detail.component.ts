@@ -205,7 +205,7 @@ export class PeriodDetailComponent implements OnInit {
 
   readonly kpiBalance = computed(() => {
     if (this.expHasFilters() || this.incHasFilters())
-      return this.kpiIncomeTotal() - this.kpiExpenseTotal();
+      return this.kpiIncomeTotal() - this.kpiPaid();
     return this.summary()?.balance ?? 0;
   });
 
@@ -542,8 +542,8 @@ export class PeriodDetailComponent implements OnInit {
           `Receitas:`,
           `  ${this.fmt(this.kpiIncomeTotal())}`,
           '',
-          `(-) Despesas:`,
-          `  ${this.fmt(this.kpiExpenseTotal())}`,
+          `(-) Despesas Pagas:`,
+          `  ${this.fmt(this.kpiPaid())}`,
           '',
           `(=) Saldo:`,
           `  ${this.fmt(this.kpiBalance())}`,
@@ -551,7 +551,7 @@ export class PeriodDetailComponent implements OnInit {
         break;
       }
       case 'saldoAposPagamento': {
-        title = 'SALDO APOS PAGAMENTO';
+        title = 'SALDO APÓS PAGAMENTO';
         lines = [
           ...this.marioFilterInfo('balance'),
           `Receitas:`,
@@ -560,7 +560,7 @@ export class PeriodDetailComponent implements OnInit {
           `(-) Total de despesas:`,
           `  ${this.fmt(this.kpiExpenseTotal())}`,
           '',
-          `(=) Saldo apos pagamento:`,
+          `(=) Saldo após pagamento:`,
           `  ${this.fmt(this.kpiBalanceAfterPayment())}`,
         ];
         break;
