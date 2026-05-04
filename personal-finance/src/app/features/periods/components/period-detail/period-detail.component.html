@@ -132,6 +132,7 @@
         [open]="expFilterOpen()"
         (apply)="onExpFilterApply($event)"
         (clear)="onExpFilterClear()"
+        (closed)="expFilterOpen.set(false)"
       />
 
       @if (expLoadingList()) {
@@ -219,6 +220,7 @@
         [open]="incFilterOpen()"
         (apply)="onIncFilterApply($event)"
         (clear)="onIncFilterClear()"
+        (closed)="incFilterOpen.set(false)"
       />
 
       @if (incLoadingList()) {
