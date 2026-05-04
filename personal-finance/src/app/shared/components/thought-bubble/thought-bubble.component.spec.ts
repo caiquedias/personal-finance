@@ -32,20 +32,20 @@ describe('ThoughtBubbleComponent', () => {
 
   it('deve progredir as fases das bolhas', fakeAsync(() => {
     component.toggle();
-    tick(250);
-    expect(component.bubblesPhase()).toBe(2);
-    tick(250);
-    expect(component.bubblesPhase()).toBe(3);
     tick(300);
+    expect(component.bubblesPhase()).toBe(2);
+    tick(300);
+    expect(component.bubblesPhase()).toBe(3);
+    tick(350);
     expect(component.bubblesPhase()).toBe(4);
-    tick(1000);
+    tick(2000);
   }));
 
   it('deve executar o typewriter e marcar animDone', fakeAsync(() => {
     component.toggle();
-    tick(800);
+    tick(950);
     const len = 'Aluguel mensal'.length;
-    tick(len * 30 + 500);
+    tick(len * 70 + 600);
     expect(component.animDone()).toBeTrue();
     expect(component.showDueDate()).toBeTrue();
   }));
