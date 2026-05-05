@@ -1,4 +1,4 @@
-import { Component, input, signal, computed, OnDestroy } from '@angular/core';
+import { Component, input, signal, computed, OnDestroy, ViewChild, ElementRef } from '@angular/core';
 
 @Component({
   selector: 'app-thought-bubble',
@@ -20,6 +20,8 @@ export class ThoughtBubbleComponent implements OnDestroy {
   readonly showDueDate  = signal(false);
   readonly anchorBottom = signal(0);
   readonly anchorLeft   = signal(0);
+
+  @ViewChild('triggerBtn') private triggerBtn!: ElementRef<HTMLButtonElement>;
 
   private readonly typewriterSource = computed(() => this.notes() || this.description());
 
@@ -51,16 +53,13 @@ export class ThoughtBubbleComponent implements OnDestroy {
   private timeouts: ReturnType<typeof setTimeout>[] = [];
   private intervalId: ReturnType<typeof setInterval> | null = null;
 
-  toggle(event?: MouseEvent): void {
+  toggle(): void {
     if (this.open()) {
       this.close();
     } else {
-      if (event) {
-        const btn  = event.currentTarget as HTMLElement;
-        const rect = btn.getBoundingClientRect();
-        this.anchorBottom.set(window.innerHeight - rect.top + 8);
-        this.anchorLeft.set(rect.left + rect.width / 2);
-      }
+      const rect = this.triggerBtn.nativeElement.getBoundingClientRect();
+      this.anchorBottom.set(window.innerHeight - rect.top + 8);
+      this.anchorLeft.set(rect.left + rect.width / 2);
       this.openBubble();
     }
   }
