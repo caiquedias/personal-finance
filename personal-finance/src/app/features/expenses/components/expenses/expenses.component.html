@@ -196,6 +196,7 @@
                 </div>
                 <app-action-menu
                   class="col-show-mobile"
+                  [showPay]="expense.paymentStatus === PaymentStatus.Pending || expense.paymentStatus === PaymentStatus.Partial"
                   (pay)="markAsPaid($event, expense)"
                   (edit)="openEditModal(expense)"
                   (delete)="deleteExpense(expense.id)"

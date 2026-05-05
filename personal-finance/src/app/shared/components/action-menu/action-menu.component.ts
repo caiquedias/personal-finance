@@ -1,4 +1,4 @@
-import { Component, Output, EventEmitter, signal, HostListener } from '@angular/core';
+import { Component, Output, EventEmitter, signal, HostListener, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 @Component({
@@ -9,6 +9,7 @@ import { CommonModule } from '@angular/common';
   styleUrls: ['./action-menu.component.css'],
 })
 export class ActionMenuComponent {
+  @Input() showPay = true;
   @Output() pay    = new EventEmitter<MouseEvent>();
   @Output() edit   = new EventEmitter<void>();
   @Output() delete = new EventEmitter<void>();
