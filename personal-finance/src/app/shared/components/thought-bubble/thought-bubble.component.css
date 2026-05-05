@@ -42,9 +42,7 @@
 
 /* ── Container: column-reverse → dots na base, nuvem no topo ── */
 .tb-container {
-  position: absolute;
-  bottom: calc(100% + 8px);
-  left: 50%;
+  position: fixed;
   transform: translateX(-50%);
   z-index: 999;
   pointer-events: none;

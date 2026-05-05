@@ -18,6 +18,8 @@ export class ThoughtBubbleComponent implements OnDestroy {
   readonly charIndex    = signal(0);
   readonly animDone     = signal(false);
   readonly showDueDate  = signal(false);
+  readonly anchorBottom = signal(0);
+  readonly anchorLeft   = signal(0);
 
   private readonly typewriterSource = computed(() => this.notes() || this.description());
 
@@ -49,10 +51,16 @@ export class ThoughtBubbleComponent implements OnDestroy {
   private timeouts: ReturnType<typeof setTimeout>[] = [];
   private intervalId: ReturnType<typeof setInterval> | null = null;
 
-  toggle(): void {
+  toggle(event?: MouseEvent): void {
     if (this.open()) {
       this.close();
     } else {
+      if (event) {
+        const btn  = event.currentTarget as HTMLElement;
+        const rect = btn.getBoundingClientRect();
+        this.anchorBottom.set(window.innerHeight - rect.top + 8);
+        this.anchorLeft.set(rect.left + rect.width / 2);
+      }
       this.openBubble();
     }
   }

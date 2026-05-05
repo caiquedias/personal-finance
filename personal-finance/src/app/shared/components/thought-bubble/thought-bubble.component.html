@@ -1,12 +1,12 @@
 <div class="thought-bubble-wrap">
-  <button class="info-icon" (click)="toggle()" [class.active]="open()" aria-label="Ver detalhes">
+  <button class="info-icon" (click)="toggle($event)" [class.active]="open()" aria-label="Ver detalhes">
     <span>i</span>
   </button>
 
   @if (open()) {
     <div class="tb-backdrop" (click)="close()"></div>
 
-    <div class="tb-container">
+    <div class="tb-container" [style.bottom.px]="anchorBottom()" [style.left.px]="anchorLeft()">
       <!-- Dots pixel art com cloud.png em escala menor -->
       <div class="tb-dots">
         <div class="tb-dot tb-dot--1" [class.visible]="bubblesPhase() >= 1">
