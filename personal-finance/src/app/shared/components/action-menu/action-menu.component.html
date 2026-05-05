@@ -2,9 +2,7 @@
   <button class="action-menu-btn" (click)="toggle($event)" title="Ações">⋮</button>
   @if (open()) {
     <div class="action-menu-dropdown">
-      @if (showPay) {
         <button class="action-menu-item action-menu-pay" (click)="onPay($event)">Pagar</button>
-      }
       <button class="action-menu-item action-menu-edit" (click)="onEdit()">Editar</button>
       <button class="action-menu-item action-menu-delete" (click)="onDelete()">Excluir</button>
     </div>

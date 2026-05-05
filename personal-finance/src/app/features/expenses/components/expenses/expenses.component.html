@@ -69,10 +69,10 @@
       <table class="table">
         <thead>
           <tr>
-            <th class="check-col col-hide-mobile">
+            <th class="check-col">
               <input type="checkbox" [checked]="allSelected()" (change)="toggleSelectAll()" />
             </th>
-            <th class="drag-col col-hide-mobile"></th>
+            <th class="drag-col"></th>
             <th class="sortable" (click)="toggleSort('description')">
               Descrição {{ sortIcon('description') }}
             </th>
@@ -106,10 +106,10 @@
               (drop)="onDrop(i)"
               [class.row-selected]="isSelected(expense.id)"
             >
-              <td class="check-col col-hide-mobile">
+              <td class="check-col">
                 <input type="checkbox" [checked]="isSelected(expense.id)" (change)="toggleSelect(expense.id)" />
               </td>
-              <td class="drag-col col-hide-mobile">
+              <td class="drag-col">
                 <span class="drag-handle" title="Arrastar para reordenar">⠿</span>
               </td>
               <td>
@@ -196,7 +196,6 @@
                 </div>
                 <app-action-menu
                   class="col-show-mobile"
-                  [showPay]="expense.paymentStatus === PaymentStatus.Pending || expense.paymentStatus === PaymentStatus.Partial"
                   (pay)="markAsPaid($event, expense)"
                   (edit)="openEditModal(expense)"
                   (delete)="deleteExpense(expense.id)"
