@@ -225,6 +225,50 @@
 
 .modal-center > * { pointer-events: all; }
 
+/* ── Botão ? Mario (detalhes da despesa) ── */
+.mario-q {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  background: #f5c518;
+  color: #5c3800;
+  font-size: 0.65rem;
+  font-weight: 900;
+  border: 2px solid #8a5400;
+  border-radius: 3px;
+  cursor: pointer;
+  box-shadow: 0 2px 0 #8a5400;
+  transition: transform 80ms ease, box-shadow 80ms ease;
+  line-height: 1;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.mario-q:hover  { transform: translateY(-2px); box-shadow: 0 4px 0 #8a5400; }
+.mario-q:active { transform: translateY(1px);  box-shadow: 0 1px 0 #8a5400; }
+
+/* ── Mario modal overlay ── */
+.mario-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  z-index: 900;
+}
+
+.mario-center {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 901;
+  pointer-events: none;
+}
+
+.mario-center > * { pointer-events: all; }
+
 /* ── Modal form ── */
 .modal-form-grid {
   display: grid;

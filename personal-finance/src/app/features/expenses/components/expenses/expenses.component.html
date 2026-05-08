@@ -130,13 +130,7 @@
                     <kbd class="category-kbd">{{ categoryName(expense.categoryId) }}</kbd>
                   </span>
                   {{ expense.description }}
-                  <app-thought-bubble
-                    class="desc-tooltip"
-                    [description]="expense.description"
-                    [notes]="expense.notes ?? ''"
-                    [dueDate]="expense.dueDate"
-                    [amount]="expense.amount"
-                  />
+                  <button class="mario-q desc-tooltip" (click)="openMarioForExpense(expense)" title="Detalhes">?</button>
                 </div>
                 @if (expense.notes) {
                   <div class="cell-secondary col-hide-mobile">{{ expense.notes }}</div>
@@ -367,5 +361,18 @@
         </div>
       </form>
     </app-sonic-modal>
+  </div>
+}
+
+<!-- Mario modal — detalhes da despesa -->
+@if (marioOpen()) {
+  <div class="mario-overlay" @backdropAnim (click)="marioOpen.set(false)"></div>
+  <div class="mario-center" @modalAnim>
+    <app-mario-modal
+      [title]="marioTitle()"
+      [content]="marioContent()"
+      [showWarning]="marioShowWarning()"
+      (closed)="marioOpen.set(false)"
+    />
   </div>
 }
