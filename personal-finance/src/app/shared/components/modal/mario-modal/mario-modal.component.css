@@ -44,17 +44,14 @@
 .mario-footer {
   position: absolute;
   bottom: 16px;
-  left: 20px;
   right: 20px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 12px;
 }
 
 .mario-warning {
   animation: warnBlink 0.6s steps(1) infinite;
-  font-size: 1.1rem;
 }
 
 @keyframes warnBlink {

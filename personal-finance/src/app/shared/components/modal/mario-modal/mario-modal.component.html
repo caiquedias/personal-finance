@@ -2,11 +2,8 @@
   @if (title()) {
     <div class="mario-title">{{ title() }}</div>
   }
-  <div class="mario-content" #contentEl>{{ displayedText() }}</div>
+  <div class="mario-content" #contentEl>{{ displayedText() }}@if (showWarning() && animDone()) {<span class="mario-warning"> ⚠</span>}</div>
   <div class="mario-footer">
-    @if (showWarning() && animDone()) {
-      <span class="mario-warning">⚠</span>
-    }
     @if (!animDone()) {
       <button class="skip-btn" (click)="skipAnimation()" title="Pular animação">▼</button>
     }
