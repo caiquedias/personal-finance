@@ -9,7 +9,8 @@ import { CurrencyBrlPipe } from '../../../../shared/pipes/currency-brl.pipe';
 import { SonicRingBurstComponent } from '../../../../shared/components/sonic-ring-burst/sonic-ring-burst.component';
 import { FilterModalComponent } from '../../../../shared/components/filter-modal/filter-modal.component';
 import { FilterButtonComponent } from '../../../../shared/components/filter-modal/filter-button.component';
-import { ThoughtBubbleComponent } from '../../../../shared/components/thought-bubble/thought-bubble.component';
+import { MarioModalComponent } from '../../../../shared/components/modal/mario-modal/mario-modal.component';
+import { ActionMenuComponent } from '../../../../shared/components/action-menu/action-menu.component';
 import { FilterFieldConfig } from '../../../../shared/components/filter-modal/filter-field-config';
 import {
   ExpenseResponse, PeriodResponse, CategoryResponse,
@@ -22,7 +23,7 @@ type SortCol = 'description' | 'category' | 'sourceType' | 'fortnightType' | 'du
 @Component({
   selector: 'app-expenses',
   standalone: true,
-  imports: [HeaderComponent, CurrencyBrlPipe, ReactiveFormsModule, SonicModalComponent, PaginationComponent, SonicRingBurstComponent, FilterModalComponent, FilterButtonComponent, ThoughtBubbleComponent],
+  imports: [HeaderComponent, CurrencyBrlPipe, ReactiveFormsModule, SonicModalComponent, PaginationComponent, SonicRingBurstComponent, FilterModalComponent, FilterButtonComponent, MarioModalComponent, ActionMenuComponent],
   templateUrl: './expenses.component.html',
   styleUrls: ['./expenses.component.css'],
   animations: [
@@ -101,6 +102,12 @@ export class ExpensesComponent implements OnInit {
   // Sonic ring burst — animação de pagamento
   private _burstId = 0;
   readonly bursts = signal<{ id: number; origin: { x: number; y: number } }[]>([]);
+
+  // Mario modal — detalhes da despesa
+  readonly marioOpen        = signal(false);
+  readonly marioTitle       = signal('');
+  readonly marioContent     = signal('');
+  readonly marioShowWarning = signal(false);
 
   incrementAmount(): void {
     const cur = this.form.get('amount')?.value ?? 0;
@@ -565,6 +572,28 @@ export class ExpensesComponent implements OnInit {
       },
       error: () => this.savingOrder.set(false)
     });
+  }
+
+  openMarioForExpense(expense: ExpenseResponse): void {
+    const amount = expense.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    const raw    = expense.dueDate.substring(0, 10);
+    const [, m, d] = raw.split('-').map(Number);
+    const dueFormatted = `${String(d).padStart(2, '0')}/${String(m).padStart(2, '0')}`;
+
+    const lines: string[] = [];
+    if (expense.notes) { lines.push(expense.notes); lines.push(''); }
+    lines.push(amount, `Venc.: ${dueFormatted}`);
+
+    const due   = new Date(raw + 'T00:00:00');
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const diff      = (due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24);
+    const isPending = expense.paymentStatus !== PaymentStatus.Paid && expense.paymentStatus !== PaymentStatus.Cancelled;
+
+    this.marioTitle.set(expense.description);
+    this.marioContent.set(lines.join('\n'));
+    this.marioShowWarning.set(diff >= 0 && diff <= 3 && isPending);
+    this.marioOpen.set(true);
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────

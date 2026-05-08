@@ -76,7 +76,7 @@
             <th class="sortable" (click)="toggleSort('description')">
               Descrição {{ sortIcon('description') }}
             </th>
-            <th class="sortable" (click)="toggleSort('category')">
+            <th class="sortable col-hide-mobile" (click)="toggleSort('category')">
               Categoria {{ sortIcon('category') }}
             </th>
             <th class="sortable col-hide-mobile" (click)="toggleSort('sourceType')">
@@ -85,10 +85,10 @@
             <th class="sortable col-hide-mobile" (click)="toggleSort('fortnightType')">
               Quinzena {{ sortIcon('fortnightType') }}
             </th>
-            <th class="sortable" (click)="toggleSort('dueDate')">
+            <th class="sortable col-hide-mobile" (click)="toggleSort('dueDate')">
               Vencimento {{ sortIcon('dueDate') }}
             </th>
-            <th class="sortable" (click)="toggleSort('amount')">
+            <th class="sortable col-hide-mobile" (click)="toggleSort('amount')">
               Valor {{ sortIcon('amount') }}
             </th>
             <th class="sortable" (click)="toggleSort('paymentStatus')">
@@ -114,20 +114,29 @@
               </td>
               <td>
                 <div class="cell-primary desc-cell">
+                  <span class="cat-icon-mobile"
+                    [style.--cat-color]="categoryColor(expense.categoryId)"
+                    [class.touched]="touchedCatId() === expense.categoryId"
+                    (touchstart)="touchedCatId.set(expense.categoryId)"
+                    (touchend)="touchedCatId.set(null)"
+                  >
+                    @if (categoryIcon(expense.categoryId)) {
+                      <span class="category-dot category-dot--icon">
+                        <img class="category-dot-img" [src]="categoryIcon(expense.categoryId)" [alt]="categoryName(expense.categoryId)" />
+                      </span>
+                    } @else {
+                      <span class="cat-circle-plain" [style.background]="categoryColor(expense.categoryId)"></span>
+                    }
+                    <kbd class="category-kbd">{{ categoryName(expense.categoryId) }}</kbd>
+                  </span>
                   {{ expense.description }}
-                  <app-thought-bubble
-                    class="desc-tooltip"
-                    [description]="expense.description"
-                    [notes]="expense.notes ?? ''"
-                    [dueDate]="expense.dueDate"
-                    [amount]="expense.amount"
-                  />
+                  <button class="mario-q desc-tooltip" (click)="openMarioForExpense(expense)" title="Detalhes">?</button>
                 </div>
                 @if (expense.notes) {
-                  <div class="cell-secondary">{{ expense.notes }}</div>
+                  <div class="cell-secondary col-hide-mobile">{{ expense.notes }}</div>
                 }
               </td>
-              <td>
+              <td class="col-hide-mobile">
                 <span class="category-dot-wrap"
                   [style.--cat-color]="categoryColor(expense.categoryId)"
                   [class.touched]="touchedCatId() === expense.categoryId"
@@ -150,15 +159,15 @@
               </td>
               <td class="text-muted text-sm col-hide-mobile">{{ sourceLabel(expense.sourceType) }}</td>
               <td class="text-muted text-sm col-hide-mobile">{{ fortnightLabel(expense.fortnightType) }}</td>
-              <td class="text-muted text-sm">{{ formatDate(expense.dueDate) }}</td>
-              <td class="font-semibold">{{ expense.amount | currencyBrl }}</td>
+              <td class="text-muted text-sm col-hide-mobile">{{ formatDate(expense.dueDate) }}</td>
+              <td class="font-semibold col-hide-mobile">{{ expense.amount | currencyBrl }}</td>
               <td>
                 <span class="badge" [class]="statusBadgeClass(expense.paymentStatus)">
                   {{ statusLabel(expense.paymentStatus) }}
                 </span>
               </td>
               <td>
-                <div class="row-actions">
+                <div class="row-actions col-hide-mobile">
                   @if (expense.paymentStatus === PaymentStatus.Pending || expense.paymentStatus === PaymentStatus.Partial) {
                     <button class="action-btn action-success" (click)="markAsPaid($event, expense)" title="Marcar como pago">
                       ✓
@@ -179,6 +188,13 @@
                     </svg>
                   </button>
                 </div>
+                <app-action-menu
+                  class="col-show-mobile"
+                  [showPay]="expense.paymentStatus === PaymentStatus.Pending || expense.paymentStatus === PaymentStatus.Partial"
+                  (pay)="markAsPaid($event, expense)"
+                  (edit)="openEditModal(expense)"
+                  (delete)="deleteExpense(expense.id)"
+                />
               </td>
             </tr>
           }
@@ -345,5 +361,18 @@
         </div>
       </form>
     </app-sonic-modal>
+  </div>
+}
+
+<!-- Mario modal — detalhes da despesa -->
+@if (marioOpen()) {
+  <div class="mario-overlay" @backdropAnim (click)="marioOpen.set(false)"></div>
+  <div class="mario-center" @modalAnim>
+    <app-mario-modal
+      [title]="marioTitle()"
+      [content]="marioContent()"
+      [showWarning]="marioShowWarning()"
+      (closed)="marioOpen.set(false)"
+    />
   </div>
 }
