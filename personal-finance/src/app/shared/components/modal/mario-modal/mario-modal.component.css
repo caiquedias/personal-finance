@@ -52,6 +52,7 @@
 
 .mario-warning {
   animation: warnBlink 0.6s steps(1) infinite;
+  font-size: 1.5rem;
 }
 
 @keyframes warnBlink {
