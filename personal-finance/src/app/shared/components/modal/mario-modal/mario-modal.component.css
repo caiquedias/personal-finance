@@ -50,6 +50,17 @@
   gap: 12px;
 }
 
+.mario-warning {
+  animation: warnBlink 0.6s steps(1) infinite;
+  font-size: 1.5rem;
+}
+
+@keyframes warnBlink {
+  0%   { color: #e53935; }
+  50%  { color: #f9a825; }
+  100% { color: #e53935; }
+}
+
 .skip-btn {
   background: transparent;
   border: none;

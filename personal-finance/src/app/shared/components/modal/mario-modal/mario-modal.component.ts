@@ -9,9 +9,10 @@ import { Component, computed, ElementRef, input, OnDestroy, OnInit, output, sign
 export class MarioModalComponent implements OnInit, OnDestroy {
   @ViewChild('contentEl') contentEl!: ElementRef<HTMLDivElement>;
 
-  readonly title   = input<string>('');
-  readonly content = input.required<string>();
-  readonly closed  = output<void>();
+  readonly title       = input<string>('');
+  readonly content     = input.required<string>();
+  readonly showWarning = input<boolean>(false);
+  readonly closed      = output<void>();
 
   readonly charIndex = signal(0);
   readonly animDone  = signal(false);
