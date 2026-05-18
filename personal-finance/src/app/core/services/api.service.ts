@@ -88,6 +88,8 @@ export class ApiService {
     if (filters?.paymentStatus != null) params = params.set('paymentStatus', filters.paymentStatus);
     if (filters?.fortnightType != null) params = params.set('fortnightType', filters.fortnightType);
     if (filters?.sourceType != null)    params = params.set('sourceType',    filters.sourceType);
+    if (filters?.sortColumn != null)    params = params.set('sortColumn',    filters.sortColumn);
+    if (filters?.sortDirection != null) params = params.set('sortDirection', filters.sortDirection);
     return this.http.get<PagedResult<ExpenseResponse>>(`${this.base}/expenses`, { params });
   }
 

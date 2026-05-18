@@ -6,7 +6,7 @@ export interface FilterFieldOption {
 export interface FilterFieldConfig {
   key: string;
   label: string;
-  type: 'text' | 'select' | 'multiSelect';
+  type: 'text' | 'select' | 'multiSelect' | 'sectionHeader';
   options?: FilterFieldOption[];
   value?: unknown;
 }

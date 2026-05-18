@@ -36,6 +36,7 @@ namespace PersonalFinance.Application.UseCases.Financial.Expenses
                 filter.Description, filter.CategoryId,
                 filter.PaymentStatus, filter.FortnightType,
                 filter.SourceType,
+                filter.SortColumn, filter.SortDirection,
                 ct);
 
             return new PagedResult<ExpenseResponseDto>(
