@@ -243,7 +243,7 @@
 }
 
 .coin-x-flying {
-  animation: coin-fly-x 1.5s linear forwards;
+  animation: coin-fly-x var(--flight-duration) linear forwards;
 }
 
 @keyframes coin-fly-x {
@@ -259,7 +259,7 @@
 }
 
 .coin-y-flying {
-  animation: coin-fly-y 1.5s linear forwards;
+  animation: coin-fly-y var(--flight-duration) linear forwards;
 }
 
 /* easeOutCubic = deceleração (subida / quique para cima) */
@@ -286,7 +286,7 @@
   font-size: 18px;
   color: #f5c842;
   text-shadow: 0 0 6px #f5c842, 0 0 12px #fff;
-  animation: sparkle-anim 0.5s ease forwards;
+  animation: sparkle-anim 0.9s ease forwards;
   pointer-events: none;
 }
 

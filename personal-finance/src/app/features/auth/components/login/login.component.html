@@ -12,7 +12,8 @@
               class="coin-x"
               [class.coin-x-flying]="coin.phase === 'flying'"
               [style.--cx]="coin.x + 'px'"
-[style.transform]="coin.phase !== 'flying' ? 'translateX(' + coin.x + 'px)' : null"
+              [style.--flight-duration]="coin.duration + 'ms'"
+              [style.transform]="coin.phase !== 'flying' ? 'translateX(' + coin.x + 'px)' : null"
             >
               @if (coin.phase === 'flying') {
                 <img src="coin.gif" class="coin-y coin-y-flying" alt="" />
