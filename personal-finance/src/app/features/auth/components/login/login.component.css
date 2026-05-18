@@ -243,7 +243,7 @@
 }
 
 .coin-x-flying {
-  animation: coin-fly-x var(--flight-duration) linear forwards;
+  animation: coin-fly-x 1.5s linear forwards;
 }
 
 @keyframes coin-fly-x {
@@ -259,7 +259,7 @@
 }
 
 .coin-y-flying {
-  animation: coin-fly-y var(--flight-duration) linear forwards;
+  animation: coin-fly-y 1.5s linear forwards;
 }
 
 /* easeOutCubic = deceleração (subida / quique para cima) */
