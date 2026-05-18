@@ -35,13 +35,46 @@ public class GetExpensesByPeriodUseCaseTests
         _expenseRepo.Setup(r => r.GetPagedByPeriodAsync(
             periodId, userId, filter.PageNumber, filter.PageSize,
             filter.Description, filter.CategoryId,
-            filter.PaymentStatus, filter.FortnightType, filter.SourceType, default))
+            filter.PaymentStatus, filter.FortnightType, filter.SourceType,
+            filter.SortColumn, filter.SortDirection, default))
             .ReturnsAsync((new List<Expense> { expense }, 1));
 
         var result = await _sut.ExecuteAsync(periodId, userId, filter);
 
         result.Items.Should().HaveCount(1);
         result.TotalCount.Should().Be(1);
+    }
+
+    [Fact(DisplayName = "Deve repassar SortColumn e SortDirection ao repositório")]
+    public async Task Execute_WithSortParams_ShouldForwardToRepository()
+    {
+        var periodId   = Guid.NewGuid();
+        var userId     = Guid.NewGuid();
+        var categoryId = Guid.NewGuid();
+        var filter     = new ExpenseFilterDto(
+            SortColumn: ExpenseSortColumn.Description,
+            SortDirection: SortDirection.Descending);
+        var expense = Expense.Create(
+            periodId, userId, categoryId,
+            SourceType.Personal, FortnightType.First, PaymentStatus.Pending,
+            "Aluguel", 1000m, DateOnly.FromDateTime(DateTime.UtcNow), null, null);
+
+        _periodRepo.Setup(r => r.ExistsByIdAndUserAsync(periodId, userId, default)).ReturnsAsync(true);
+        _expenseRepo.Setup(r => r.GetPagedByPeriodAsync(
+            periodId, userId, filter.PageNumber, filter.PageSize,
+            filter.Description, filter.CategoryId,
+            filter.PaymentStatus, filter.FortnightType, filter.SourceType,
+            ExpenseSortColumn.Description, SortDirection.Descending, default))
+            .ReturnsAsync((new List<Expense> { expense }, 1));
+
+        var result = await _sut.ExecuteAsync(periodId, userId, filter);
+
+        result.Items.Should().HaveCount(1);
+        _expenseRepo.Verify(r => r.GetPagedByPeriodAsync(
+            periodId, userId, It.IsAny<int>(), It.IsAny<int>(),
+            It.IsAny<string?>(), It.IsAny<Guid?>(),
+            It.IsAny<PaymentStatus?>(), It.IsAny<FortnightType?>(), It.IsAny<SourceType?>(),
+            ExpenseSortColumn.Description, SortDirection.Descending, default), Times.Once);
     }
 
     [Fact(DisplayName = "Deve lançar exceção se período não pertence ao usuário")]

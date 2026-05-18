@@ -8,6 +8,7 @@ import { ApiService } from '../../../../core/services/api.service';
 import {
   ExpenseResponse, PeriodResponse, CategoryResponse,
   PaymentStatus, FortnightType, SourceType,
+  ExpenseSortColumn, SortDirection,
 } from '../../../../core/models/models';
 
 const PERIOD: PeriodResponse = { id: 'p-1', userId: 'u', year: 2024, month: 4, isActive: true };
@@ -368,6 +369,93 @@ describe('ExpensesComponent', () => {
       component.filterCategoryId.set('cat-1');
       component.filterStatus.set(PaymentStatus.Paid);
       expect(component.activeFilterCount()).toBe(3);
+    });
+  });
+
+  describe('ordenação server-side (popup de filtro)', () => {
+    it('filterFields inclui sectionHeader "Ordenar por:"', () => {
+      const fields = component.filterFields();
+      const header = fields.find(f => f.type === 'sectionHeader' && f.key === 'sortHeader');
+      expect(header).toBeTruthy();
+      expect(header!.label).toBe('Ordenar por:');
+    });
+
+    it('filterFields inclui campo sortColumn após o sectionHeader', () => {
+      const fields = component.filterFields();
+      const headerIdx = fields.findIndex(f => f.key === 'sortHeader');
+      const sortColIdx = fields.findIndex(f => f.key === 'sortColumn');
+      expect(sortColIdx).toBeGreaterThan(headerIdx);
+    });
+
+    it('filterFields inclui campo sortDirection após sortColumn', () => {
+      const fields = component.filterFields();
+      const sortColIdx = fields.findIndex(f => f.key === 'sortColumn');
+      const sortDirIdx = fields.findIndex(f => f.key === 'sortDirection');
+      expect(sortDirIdx).toBeGreaterThan(sortColIdx);
+    });
+
+    it('sortColumn tem todas as 8 colunas disponíveis como opções', () => {
+      const fields = component.filterFields();
+      const sortColField = fields.find(f => f.key === 'sortColumn');
+      expect(sortColField?.options?.length).toBeGreaterThanOrEqual(8);
+    });
+
+    it('sortDirection tem opções Crescente e Decrescente', () => {
+      const fields = component.filterFields();
+      const sortDirField = fields.find(f => f.key === 'sortDirection');
+      const labels = sortDirField?.options?.map(o => o.label) ?? [];
+      expect(labels).toContain('Crescente');
+      expect(labels).toContain('Decrescente');
+    });
+
+    it('onApplyFilters define filterSortColumn e filterSortDirection', () => {
+      component.onApplyFilters({ sortColumn: String(ExpenseSortColumn.Amount), sortDirection: String(SortDirection.Descending) });
+      expect(component.filterSortColumn()).toBe(ExpenseSortColumn.Amount);
+      expect(component.filterSortDirection()).toBe(SortDirection.Descending);
+    });
+
+    it('onApplyFilters define null quando sortColumn não informado', () => {
+      component.filterSortColumn.set(ExpenseSortColumn.Amount);
+      component.onApplyFilters({ sortColumn: '', sortDirection: '' });
+      expect(component.filterSortColumn()).toBeNull();
+      expect(component.filterSortDirection()).toBeNull();
+    });
+
+    it('onClearFilters reseta filterSortColumn e filterSortDirection para null', () => {
+      component.filterSortColumn.set(ExpenseSortColumn.DueDate);
+      component.filterSortDirection.set(SortDirection.Ascending);
+      component.onClearFilters();
+      expect(component.filterSortColumn()).toBeNull();
+      expect(component.filterSortDirection()).toBeNull();
+    });
+
+    it('loadPage passa sortColumn e sortDirection ao getExpensesByPeriod quando definidos', fakeAsync(() => {
+      component.filterSortColumn.set(ExpenseSortColumn.Amount);
+      component.filterSortDirection.set(SortDirection.Ascending);
+      component.selectedPeriodId = 'p-1';
+      (component as any)['loadPage']();
+      tick();
+      expect(apiSpy.getExpensesByPeriod).toHaveBeenCalledWith('p-1', jasmine.objectContaining({
+        sortColumn: ExpenseSortColumn.Amount,
+        sortDirection: SortDirection.Ascending,
+      }));
+    }));
+
+    it('loadPage não passa sortColumn quando não definido', fakeAsync(() => {
+      component.filterSortColumn.set(null);
+      component.filterSortDirection.set(null);
+      component.selectedPeriodId = 'p-1';
+      (component as any)['loadPage']();
+      tick();
+      const callArgs = apiSpy.getExpensesByPeriod.calls.mostRecent().args[1] as any;
+      expect(callArgs.sortColumn).toBeUndefined();
+      expect(callArgs.sortDirection).toBeUndefined();
+    }));
+
+    it('sort não incrementa activeFilterCount', () => {
+      component.filterSortColumn.set(ExpenseSortColumn.Description);
+      component.filterSortDirection.set(SortDirection.Ascending);
+      expect(component.activeFilterCount()).toBe(0);
     });
   });
 

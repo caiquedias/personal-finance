@@ -33,3 +33,21 @@ public enum PaymentStatus
     Cancelled = 3,
     Partial   = 4
 }
+
+public enum ExpenseSortColumn
+{
+    Description      = 1,
+    Category         = 2,
+    Source           = 3,
+    Fortnight        = 4,
+    DueDate          = 5,
+    Amount           = 6,
+    Status           = 7,
+    DragAndDropOrder = 8
+}
+
+public enum SortDirection
+{
+    Ascending  = 1,
+    Descending = 2
+}
