@@ -12,17 +12,18 @@
               class="coin-x"
               [class.coin-x-flying]="coin.phase === 'flying'"
               [style.--cx]="coin.x + 'px'"
+              [style.--flight-duration]="coin.duration + 'ms'"
               [style.transform]="coin.phase !== 'flying' ? 'translateX(' + coin.x + 'px)' : null"
             >
-              <img
-                src="coin.gif"
-                class="coin-y"
-                [class.coin-y-flying]="coin.phase === 'flying'"
-                [class.coin-slow]="coin.phase === 'slow'"
-                [class.coin-medium]="coin.phase === 'medium'"
-                [class.coin-fast]="coin.phase === 'fast'"
-                alt=""
-              />
+              @if (coin.phase === 'flying') {
+                <img src="coin.gif" class="coin-y coin-y-flying" alt="" />
+              }
+              @if (coin.phase === 'sparkle') {
+                <div class="coin-sparkle">✦</div>
+              }
+              @if (coin.phase === 'points') {
+                <div class="coin-points">+10</div>
+              }
             </div>
           }
         </div>
