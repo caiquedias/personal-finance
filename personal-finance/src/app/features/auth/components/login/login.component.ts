@@ -124,7 +124,7 @@ export class LoginComponent implements OnDestroy {
 
     const id       = this.coinId++;
     const x        = Math.floor(Math.random() * 161) - 80;
-    const duration = Math.floor(Math.random() * 301) + 200;
+    const duration = Math.floor(Math.random() * 501) + 500;
 
     this.coins.update(c => [...c, { id, x, duration, phase: 'flying' }]);
 
