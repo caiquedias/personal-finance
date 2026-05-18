@@ -70,16 +70,18 @@ public sealed class ExpenseRepository : IExpenseRepository
                .ToListAsync(ct);
 
     public async Task<(IEnumerable<Expense> Items, int TotalCount)> GetPagedByPeriodAsync(
-        Guid          periodId,
-        Guid          userId,
-        int           pageNumber,
-        int           pageSize,
-        string?       description,
-        Guid?         categoryId,
-        PaymentStatus? paymentStatus,
-        FortnightType? fortnightType,
-        SourceType?    sourceType,
-        CancellationToken ct = default)
+        Guid                periodId,
+        Guid                userId,
+        int                 pageNumber,
+        int                 pageSize,
+        string?             description,
+        Guid?               categoryId,
+        PaymentStatus?      paymentStatus,
+        FortnightType?      fortnightType,
+        SourceType?         sourceType,
+        ExpenseSortColumn?  sortColumn    = null,
+        SortDirection?      sortDirection = null,
+        CancellationToken   ct            = default)
     {
         var baseQuery = _context.Expenses
             .Where(e => e.PeriodId == periodId && e.UserId == userId);
@@ -101,24 +103,73 @@ public sealed class ExpenseRepository : IExpenseRepository
 
         var totalCount = await baseQuery.CountAsync(ct);
 
-        // LEFT JOIN com ExpenseOrders — ordena pelo campo Order quando disponível,
-        // itens sem ordem ficam ao final (ordenados por FortnightType/DueDate)
+        var skip = (pageNumber - 1) * pageSize;
+
+        // Ordenação por coluna explícita
+        if (sortColumn.HasValue && sortColumn != ExpenseSortColumn.DragAndDropOrder)
+        {
+            bool desc = sortDirection == SortDirection.Descending;
+
+            IQueryable<Expense> sorted = sortColumn switch
+            {
+                ExpenseSortColumn.Description => desc
+                    ? baseQuery.OrderByDescending(e => e.Description)
+                    : baseQuery.OrderBy(e => e.Description),
+
+                ExpenseSortColumn.Category => desc
+                    ? (from e in baseQuery
+                       join c in _context.Categories on e.CategoryId equals c.Id
+                       orderby c.Name descending
+                       select e)
+                    : (from e in baseQuery
+                       join c in _context.Categories on e.CategoryId equals c.Id
+                       orderby c.Name ascending
+                       select e),
+
+                ExpenseSortColumn.Source => desc
+                    ? baseQuery.OrderByDescending(e => e.SourceType)
+                    : baseQuery.OrderBy(e => e.SourceType),
+
+                ExpenseSortColumn.Fortnight => desc
+                    ? baseQuery.OrderByDescending(e => e.FortnightType)
+                    : baseQuery.OrderBy(e => e.FortnightType),
+
+                ExpenseSortColumn.DueDate => desc
+                    ? baseQuery.OrderByDescending(e => e.DueDate)
+                    : baseQuery.OrderBy(e => e.DueDate),
+
+                ExpenseSortColumn.Amount => desc
+                    ? baseQuery.OrderByDescending(e => e.Amount)
+                    : baseQuery.OrderBy(e => e.Amount),
+
+                ExpenseSortColumn.Status => desc
+                    ? baseQuery.OrderByDescending(e => e.PaymentStatus)
+                    : baseQuery.OrderBy(e => e.PaymentStatus),
+
+                _ => baseQuery.OrderBy(e => e.FortnightType).ThenBy(e => e.DueDate)
+            };
+
+            var items = await sorted.Skip(skip).Take(pageSize).ToListAsync(ct);
+            return (items, totalCount);
+        }
+
+        // Ordenação padrão — LEFT JOIN com ExpenseOrders (DragAndDropOrder ou sem sortColumn)
         var joined = from e in baseQuery
                      join eo in _context.ExpenseOrders on e.Id equals eo.ExpenseId into og
                      from eo in og.DefaultIfEmpty()
                      select new { Expense = e, Order = (int?)eo.Order };
 
-        var items = await joined
+        var defaultItems = await joined
             .OrderBy(x => x.Order == null ? 1 : 0)
             .ThenBy(x => x.Order)
             .ThenBy(x => x.Expense.FortnightType)
             .ThenBy(x => x.Expense.DueDate)
-            .Skip((pageNumber - 1) * pageSize)
+            .Skip(skip)
             .Take(pageSize)
             .Select(x => x.Expense)
             .ToListAsync(ct);
 
-        return (items, totalCount);
+        return (defaultItems, totalCount);
     }
 
     public async Task<bool> HasExpensesByCategoryAsync(
