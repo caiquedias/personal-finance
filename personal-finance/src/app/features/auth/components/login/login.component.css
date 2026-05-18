@@ -243,7 +243,7 @@
 }
 
 .coin-x-flying {
-  animation: coin-fly-x 1.5s linear forwards;
+  animation: coin-fly-x var(--flight-duration) linear forwards;
 }
 
 @keyframes coin-fly-x {
@@ -259,7 +259,7 @@
 }
 
 .coin-y-flying {
-  animation: coin-fly-y 1.5s linear forwards;
+  animation: coin-fly-y var(--flight-duration) linear forwards;
 }
 
 /* easeOutCubic = deceleração (subida / quique para cima) */
@@ -274,11 +274,44 @@
   100% { transform: translateY(60px); }
 }
 
-@keyframes blink-rest {
-  0%, 100% { transform: translateY(60px); opacity: 1; }
-  50%       { transform: translateY(60px); opacity: 0; }
+.coin-sparkle {
+  position: absolute;
+  top: 60px;
+  left: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: #f5c842;
+  text-shadow: 0 0 6px #f5c842, 0 0 12px #fff;
+  animation: sparkle-anim 0.5s ease forwards;
+  pointer-events: none;
 }
 
-.coin-slow   { animation: blink-rest 0.8s  linear infinite; }
-.coin-medium { animation: blink-rest 0.35s linear infinite; }
-.coin-fast   { animation: blink-rest 0.15s linear infinite; }
+@keyframes sparkle-anim {
+  0%   { opacity: 0; transform: scale(0.4); }
+  40%  { opacity: 1; transform: scale(1.3); }
+  100% { opacity: 0; transform: scale(1.0); }
+}
+
+.coin-points {
+  position: absolute;
+  top: 60px;
+  left: 0;
+  width: 24px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #f5c842;
+  text-shadow: 0 0 4px rgba(0,0,0,0.6);
+  font-family: var(--font-b);
+  animation: points-rise 0.5s ease forwards;
+  pointer-events: none;
+}
+
+@keyframes points-rise {
+  0%   { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-30px); }
+}

@@ -6,7 +6,8 @@ import { AuthService } from '../../../../core/auth/auth.service';
 interface Coin {
   id: number;
   x: number;
-  phase: 'flying' | 'slow' | 'medium' | 'fast';
+  duration: number;
+  phase: 'flying' | 'sparkle' | 'points';
 }
 
 const MAX_COINS = 10;
@@ -121,10 +122,11 @@ export class LoginComponent implements OnDestroy {
     if (this.clickCount >= MAX_COINS) return;
     this.clickCount++;
 
-    const id = this.coinId++;
-    const x  = Math.floor(Math.random() * 161) - 80;
+    const id       = this.coinId++;
+    const x        = Math.floor(Math.random() * 161) - 80;
+    const duration = Math.floor(Math.random() * 501) + 500;
 
-    this.coins.update(c => [...c, { id, x, phase: 'flying' }]);
+    this.coins.update(c => [...c, { id, x, duration, phase: 'flying' }]);
 
     const setPhase = (phase: Coin['phase'], delay: number) => {
       const t = setTimeout(() => {
@@ -133,13 +135,12 @@ export class LoginComponent implements OnDestroy {
       this.timers.push(t);
     };
 
-    setPhase('slow',   1500);
-    setPhase('medium', 4500);
-    setPhase('fast',   7500);
+    setPhase('sparkle', duration);
+    setPhase('points',  duration + 500);
 
     const t = setTimeout(() => {
       this.coins.update(c => c.filter(coin => coin.id !== id));
-    }, 11500);
+    }, duration + 1000);
     this.timers.push(t);
   }
 
