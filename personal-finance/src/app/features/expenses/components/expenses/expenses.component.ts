@@ -15,7 +15,8 @@ import { FilterFieldConfig } from '../../../../shared/components/filter-modal/fi
 import {
   ExpenseResponse, PeriodResponse, CategoryResponse,
   MONTH_NAMES, PAYMENT_STATUS_LABELS, FORTNIGHT_TYPE_LABELS, SOURCE_TYPE_LABELS,
-  PaymentStatus, SourceType, FortnightType, ExpenseOrderItem
+  PaymentStatus, SourceType, FortnightType, ExpenseOrderItem,
+  ExpenseSortColumn, SortDirection,
 } from '../../../../core/models/models';
 
 type SortCol = 'description' | 'category' | 'sourceType' | 'fortnightType' | 'dueDate' | 'amount' | 'paymentStatus';
@@ -68,11 +69,13 @@ export class ExpensesComponent implements OnInit {
   readonly pageSize    = signal(20);
 
   // Filtros externos (server-side)
-  readonly filterDescription   = signal('');
-  readonly filterCategoryId    = signal('');
-  readonly filterStatus        = signal<PaymentStatus | null>(null);
-  readonly filterFortnightType = signal<FortnightType | null>(null);
-  readonly filterSourceType    = signal<SourceType | null>(null);
+  readonly filterDescription    = signal('');
+  readonly filterCategoryId     = signal('');
+  readonly filterStatus         = signal<PaymentStatus | null>(null);
+  readonly filterFortnightType  = signal<FortnightType | null>(null);
+  readonly filterSourceType     = signal<SourceType | null>(null);
+  readonly filterSortColumn     = signal<ExpenseSortColumn | null>(null);
+  readonly filterSortDirection  = signal<SortDirection | null>(null);
 
   // Ordenação client-side (página atual)
   readonly sortCol = signal<SortCol | null>(null);
@@ -169,6 +172,27 @@ export class ExpensesComponent implements OnInit {
     { key: 'fortnightType', label: 'Quinzena',   type: 'select',
       options: [{ value: '', label: 'Ambas' }, { value: FortnightType.First, label: '1ª Quinzena' }, { value: FortnightType.Second, label: '2ª Quinzena' }],
       value: this.filterFortnightType() ?? '' },
+    { key: 'sortHeader',    label: 'Ordenar por:', type: 'sectionHeader' },
+    { key: 'sortColumn',    label: 'Coluna',     type: 'select',
+      options: [
+        { value: '',                              label: 'Padrão (arrastar e soltar)' },
+        { value: ExpenseSortColumn.Description,   label: 'Descrição'  },
+        { value: ExpenseSortColumn.Category,      label: 'Categoria'  },
+        { value: ExpenseSortColumn.Source,        label: 'Origem'     },
+        { value: ExpenseSortColumn.Fortnight,     label: 'Quinzena'   },
+        { value: ExpenseSortColumn.DueDate,       label: 'Vencimento' },
+        { value: ExpenseSortColumn.Amount,        label: 'Valor'      },
+        { value: ExpenseSortColumn.Status,        label: 'Status'     },
+        { value: ExpenseSortColumn.DragAndDropOrder, label: 'Arrastar e soltar' },
+      ],
+      value: this.filterSortColumn() ?? '' },
+    { key: 'sortDirection', label: 'Ordem',      type: 'select',
+      options: [
+        { value: '',                      label: 'Padrão'      },
+        { value: SortDirection.Ascending,  label: 'Crescente'  },
+        { value: SortDirection.Descending, label: 'Decrescente' },
+      ],
+      value: this.filterSortDirection() ?? '' },
   ]);
 
   /** Aplica ordenação client-side sobre os itens da página atual */
@@ -240,6 +264,8 @@ export class ExpensesComponent implements OnInit {
       paymentStatus: this.filterStatus()        ?? undefined,
       fortnightType: this.filterFortnightType() ?? undefined,
       sourceType:    this.filterSourceType()    ?? undefined,
+      sortColumn:    this.filterSortColumn()    ?? undefined,
+      sortDirection: this.filterSortDirection() ?? undefined,
     }).subscribe({
       next: result => {
         this.expenses.set(result.items);
@@ -312,6 +338,10 @@ export class ExpensesComponent implements OnInit {
     this.filterFortnightType.set(fortnight !== '' && fortnight != null ? Number(fortnight) as FortnightType : null);
     const source = values['sourceType'];
     this.filterSourceType.set(source !== '' && source != null ? Number(source) as SourceType : null);
+    const sortCol = values['sortColumn'];
+    this.filterSortColumn.set(sortCol !== '' && sortCol != null ? Number(sortCol) as ExpenseSortColumn : null);
+    const sortDir = values['sortDirection'];
+    this.filterSortDirection.set(sortDir !== '' && sortDir != null ? Number(sortDir) as SortDirection : null);
     this.currentPage.set(1);
     this.loadPage();
   }
@@ -322,6 +352,8 @@ export class ExpensesComponent implements OnInit {
     this.filterStatus.set(null);
     this.filterFortnightType.set(null);
     this.filterSourceType.set(null);
+    this.filterSortColumn.set(null);
+    this.filterSortDirection.set(null);
     this.currentPage.set(1);
     this.loadPage();
   }

@@ -78,13 +78,15 @@ public sealed record ReplicateExpensesDto(
 );
 
 public sealed record ExpenseFilterDto(
-    int            PageNumber    = 1,
-    int            PageSize      = 20,
-    string?        Description   = null,
-    Guid?          CategoryId    = null,
-    PaymentStatus? PaymentStatus = null,
-    FortnightType? FortnightType = null,
-    SourceType?    SourceType    = null
+    int                 PageNumber    = 1,
+    int                 PageSize      = 20,
+    string?             Description   = null,
+    Guid?               CategoryId    = null,
+    PaymentStatus?      PaymentStatus = null,
+    FortnightType?      FortnightType = null,
+    SourceType?         SourceType    = null,
+    ExpenseSortColumn?  SortColumn    = null,
+    SortDirection?      SortDirection = null
 );
 
 public sealed record IncomeFilterDto(

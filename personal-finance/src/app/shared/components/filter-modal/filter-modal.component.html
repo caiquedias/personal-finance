@@ -3,6 +3,9 @@
   <div class="filter-panel" @panelAnim>
     <div class="filter-fields-grid">
       @for (field of fields(); track field.key) {
+        @if (field.type === 'sectionHeader') {
+          <div class="filter-section-header">{{ field.label }}</div>
+        } @else {
         <div class="filter-field">
           <label class="field-label">{{ field.label }}</label>
 
@@ -38,6 +41,7 @@
             </div>
           }
         </div>
+        }
       }
     </div>
 
