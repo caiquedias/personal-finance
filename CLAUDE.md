@@ -173,6 +173,8 @@ Integration: `WebApplicationFactory<Program>` + banco InMemory. Unit: xUnit + Mo
 
 - **Nunca alterar fora do escopo** — apresentar como novo plano, Caique aprova caso a caso
 - **Verificar PR antes de push** — se fechado/mergeado, abrir novo PR para os ajustes
+- **Pré-ação obrigatória** — antes de post em issue, board update ou push: exibir ação e aguardar OK do Caique
+→ Fluxo completo: [`docs/session-flow.md`](docs/session-flow.md)
 
 ---
 
@@ -213,10 +215,8 @@ Integration: `WebApplicationFactory<Program>` + banco InMemory. Unit: xUnit + Mo
 ## Estilo de comunicação
 
 - Direto e técnico — sem rodeios, elogios ou introduções
-- Diagnóstico de erro: **causa + fix cirúrgico**
 - Nunca suposições silenciosas — alinhar antes de implementar
 - **Caique decide** a arquitetura — Claude propõe opções, Caique confirma
-- Explicações didáticas apenas quando solicitado
 
 ---
 
@@ -239,8 +239,6 @@ Regra geral: **worktree é espaço de implementação autônomo**. Volta ao modo
 - `str_replace` cirúrgico — nunca reescrever arquivo completo
 - Output de testes: filtrar com `grep -E "SUCCESS|FAILED|ERROR"`
 - Issues L/XL (>15 arquivos): propor divisão antes de implementar
-- Inputs grandes: usar apenas partes relevantes para a tarefa atual
-- Planning Mode: máximo 5 passos, 1 linha por passo
 
 ---
 
@@ -249,7 +247,4 @@ Regra geral: **worktree é espaço de implementação autônomo**. Volta ao modo
 - [`docs/claude-md-guide.md`](docs/claude-md-guide.md) — **consultar antes de qualquer alteração neste arquivo**
 - [`docs/test-factory.md`](docs/test-factory.md) — TestWebApplicationFactory setup
 - [`docs/patterns.md`](docs/patterns.md) — Padrão de modal Angular + Armadilhas conhecidas
-
----
-
-*CLAUDE.md — Personal Finance System — MonkeyBomb — Abril 2026*
+- [`docs/session-flow.md`](docs/session-flow.md) — Fluxo de sessão: regra de pré-ação e revisão de planning
