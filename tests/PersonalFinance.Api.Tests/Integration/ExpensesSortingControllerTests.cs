@@ -250,6 +250,45 @@ namespace PersonalFinance.Api.Tests.Integration
             items[2].GetProperty("id").GetString().Should().Be(id1);
         }
 
+        // ── UpdatedAt ─────────────────────────────────────────────────────────────
+
+        [Fact(DisplayName = "Sort por UpdatedAt ASC deve retornar da mais antiga para a mais recente")]
+        public async Task Sort_ByUpdatedAt_Ascending_ShouldReturnOldestFirst()
+        {
+            var (client, pid, cid) = await SetupAsync();
+            var id1 = await CreateExpenseAsync(client, pid, cid, "Primeira", 100m, "2026-09-10");
+            await Task.Delay(50);
+            var id2 = await CreateExpenseAsync(client, pid, cid, "Segunda", 200m, "2026-09-11");
+            await Task.Delay(50);
+            await CreateExpenseAsync(client, pid, cid, "Terceira", 300m, "2026-09-12");
+
+            // sortColumn=9 (UpdatedAt), sortDirection=1 (Ascending)
+            var r = await client.GetAsync($"/api/v1/expenses?periodId={pid}&sortColumn=9&sortDirection=1&pageSize=10");
+            r.StatusCode.Should().Be(HttpStatusCode.OK);
+            var items = (await r.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("items");
+
+            items[0].GetProperty("id").GetString().Should().Be(id1);
+        }
+
+        [Fact(DisplayName = "Sort por UpdatedAt DESC deve retornar da mais recente para a mais antiga")]
+        public async Task Sort_ByUpdatedAt_Descending_ShouldReturnNewestFirst()
+        {
+            var (client, pid, cid) = await SetupAsync();
+            var id1 = await CreateExpenseAsync(client, pid, cid, "Primeira", 100m, "2026-09-10");
+            await Task.Delay(50);
+            await CreateExpenseAsync(client, pid, cid, "Segunda", 200m, "2026-09-11");
+            await Task.Delay(50);
+            var id3 = await CreateExpenseAsync(client, pid, cid, "Terceira", 300m, "2026-09-12");
+
+            // sortColumn=9 (UpdatedAt), sortDirection=2 (Descending)
+            var r = await client.GetAsync($"/api/v1/expenses?periodId={pid}&sortColumn=9&sortDirection=2&pageSize=10");
+            r.StatusCode.Should().Be(HttpStatusCode.OK);
+            var items = (await r.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("items");
+
+            items[0].GetProperty("id").GetString().Should().Be(id3);
+            items[2].GetProperty("id").GetString().Should().Be(id1);
+        }
+
         // ── Default (sem sort) ────────────────────────────────────────────────────
 
         [Fact(DisplayName = "Sem sortColumn deve manter comportamento padrão (DragAndDropOrder → FortnightType → DueDate)")]
