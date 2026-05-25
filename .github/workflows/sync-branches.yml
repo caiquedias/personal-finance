@@ -29,11 +29,11 @@ jobs:
         run: |
           git checkout develop
           git merge --ff-only origin/master || git merge -m "chore(ci): sync develop ← master [skip ci]" origin/master
-          git push origin develop
+          for i in 1 2 3; do git push origin develop && break || (echo "Tentativa $i falhou, aguardando..." && sleep 10); done
 
       - name: Sync release ← master
         run: |
           git checkout release
           git merge --ff-only origin/master || git merge -m "chore(ci): sync release ← master [skip ci]" origin/master
-          git push origin release
+          for i in 1 2 3; do git push origin release && break || (echo "Tentativa $i falhou, aguardando..." && sleep 10); done
 
