@@ -43,7 +43,8 @@ public enum ExpenseSortColumn
     DueDate          = 5,
     Amount           = 6,
     Status           = 7,
-    DragAndDropOrder = 8
+    DragAndDropOrder = 8,
+    UpdatedAt        = 9
 }
 
 public enum SortDirection

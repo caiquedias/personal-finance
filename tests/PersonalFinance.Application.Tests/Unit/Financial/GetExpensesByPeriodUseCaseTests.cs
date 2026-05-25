@@ -77,6 +77,32 @@ public class GetExpensesByPeriodUseCaseTests
             ExpenseSortColumn.Description, SortDirection.Descending, default), Times.Once);
     }
 
+    [Fact(DisplayName = "Deve incluir UpdatedAt no DTO de resposta")]
+    public async Task Execute_ShouldMapUpdatedAtToResponseDto()
+    {
+        var periodId   = Guid.NewGuid();
+        var userId     = Guid.NewGuid();
+        var categoryId = Guid.NewGuid();
+        var filter     = new ExpenseFilterDto();
+        var expense    = Expense.Create(
+            periodId, userId, categoryId,
+            SourceType.Personal, FortnightType.First, PaymentStatus.Pending,
+            "Aluguel", 1000m, DateOnly.FromDateTime(DateTime.UtcNow), null, null);
+
+        _periodRepo.Setup(r => r.ExistsByIdAndUserAsync(periodId, userId, default)).ReturnsAsync(true);
+        _expenseRepo.Setup(r => r.GetPagedByPeriodAsync(
+            periodId, userId, filter.PageNumber, filter.PageSize,
+            filter.Description, filter.CategoryId,
+            filter.PaymentStatus, filter.FortnightType, filter.SourceType,
+            filter.SortColumn, filter.SortDirection, default))
+            .ReturnsAsync((new List<Expense> { expense }, 1));
+
+        var result = await _sut.ExecuteAsync(periodId, userId, filter);
+
+        result.Items.Should().HaveCount(1);
+        result.Items.First().UpdatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
+    }
+
     [Fact(DisplayName = "Deve lançar exceção se período não pertence ao usuário")]
     public async Task Execute_WithUnauthorizedPeriod_ShouldThrow()
     {

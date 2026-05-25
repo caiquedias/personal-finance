@@ -146,6 +146,10 @@ public sealed class ExpenseRepository : IExpenseRepository
                     ? baseQuery.OrderByDescending(e => e.PaymentStatus)
                     : baseQuery.OrderBy(e => e.PaymentStatus),
 
+                ExpenseSortColumn.UpdatedAt => desc
+                    ? baseQuery.OrderByDescending(e => e.UpdatedAt)
+                    : baseQuery.OrderBy(e => e.UpdatedAt),
+
                 _ => baseQuery.OrderBy(e => e.FortnightType).ThenBy(e => e.DueDate)
             };
 

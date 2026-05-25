@@ -226,6 +226,11 @@
       (closed)="closeModal()"
     >
       <form [formGroup]="form" (ngSubmit)="onSubmit()">
+        @if (modalMode() === 'edit' && editingUpdatedAt()) {
+          <div class="expense-updated-at">
+            Última atualização: {{ editingUpdatedAt() | date:'dd/MM/yyyy HH:mm:ss' }}
+          </div>
+        }
         <div class="modal-form-grid">
 
           @if (modalMode() === 'create') {

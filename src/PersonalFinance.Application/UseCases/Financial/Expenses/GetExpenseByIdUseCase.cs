@@ -23,7 +23,7 @@ namespace PersonalFinance.Application.UseCases.Financial.Expenses
                 expense.Id, expense.PeriodId, expense.UserId, expense.CategoryId,
                 expense.SourceType, expense.FortnightType, expense.PaymentStatus,
                 expense.Description, expense.Amount, expense.DueDate, expense.PaymentDate,
-                expense.Notes, expense.IsActive, expense.IsRecurring);
+                expense.Notes, expense.IsActive, expense.IsRecurring, expense.UpdatedAt);
         }
     }
 }
