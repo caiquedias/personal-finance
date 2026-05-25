@@ -78,7 +78,7 @@ public sealed class CreateExpenseUseCase
         new(e.Id, e.PeriodId, e.UserId, e.CategoryId,
             e.SourceType, e.FortnightType, e.PaymentStatus,
             e.Description, e.Amount, e.DueDate, e.PaymentDate,
-            e.Notes, e.IsActive, e.IsRecurring);
+            e.Notes, e.IsActive, e.IsRecurring, e.UpdatedAt);
 }
 
 // ══════════════════════════════════════════════════════════════════════════════

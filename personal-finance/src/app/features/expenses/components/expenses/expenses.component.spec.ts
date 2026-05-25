@@ -17,7 +17,7 @@ const EXPENSE: ExpenseResponse = {
   id: 'e-1', periodId: 'p-1', userId: 'u', categoryId: 'cat-1', description: 'Aluguel',
   amount: 1000, dueDate: '2024-04-05T00:00:00', paymentStatus: PaymentStatus.Pending,
   paymentDate: null, sourceType: SourceType.Personal, fortnightType: FortnightType.First,
-  notes: null, isActive: true, isRecurring: false,
+  notes: null, isActive: true, isRecurring: false, updatedAt: '2024-04-05T10:00:00',
 };
 
 describe('ExpensesComponent', () => {
@@ -394,10 +394,17 @@ describe('ExpensesComponent', () => {
       expect(sortDirIdx).toBeGreaterThan(sortColIdx);
     });
 
-    it('sortColumn tem todas as 8 colunas disponíveis como opções', () => {
+    it('sortColumn tem todas as 9 colunas disponíveis como opções', () => {
       const fields = component.filterFields();
       const sortColField = fields.find(f => f.key === 'sortColumn');
-      expect(sortColField?.options?.length).toBeGreaterThanOrEqual(8);
+      expect(sortColField?.options?.length).toBeGreaterThanOrEqual(9);
+    });
+
+    it('sortColumn inclui opção "Data Última Atualização"', () => {
+      const fields = component.filterFields();
+      const sortColField = fields.find(f => f.key === 'sortColumn');
+      const labels = sortColField?.options?.map(o => o.label) ?? [];
+      expect(labels).toContain('Data Última Atualização');
     });
 
     it('sortDirection tem opções Crescente e Decrescente', () => {
@@ -484,6 +491,48 @@ describe('ExpensesComponent', () => {
     it('formatDate retorna data formatada', () => {
       const result = component.formatDate('2024-04-05T00:00:00');
       expect(result).toContain('2024');
+    });
+  });
+
+  describe('updatedAt — modal de edição', () => {
+    it('editingUpdatedAt é definido ao abrir modal em modo edit', () => {
+      component.openEditModal(EXPENSE);
+      expect(component.editingUpdatedAt()).toBe('2024-04-05T10:00:00');
+    });
+
+    it('editingUpdatedAt é null ao abrir modal em modo create', () => {
+      component.openCreateModal();
+      expect(component.editingUpdatedAt()).toBeNull();
+    });
+
+    it('editingUpdatedAt é null após fechar modal', () => {
+      component.openEditModal(EXPENSE);
+      component.closeModal();
+      expect(component.editingUpdatedAt()).toBeNull();
+    });
+  });
+
+  describe('ordenação client-side por updatedAt', () => {
+    const EXPENSE_B: ExpenseResponse = { ...EXPENSE, id: 'e-2', updatedAt: '2024-04-06T10:00:00' };
+
+    beforeEach(() => {
+      component.expenses.set([EXPENSE_B, EXPENSE]);
+    });
+
+    it('displayedExpenses ordena por updatedAt asc quando sortCol = updatedAt', () => {
+      component.sortCol.set('updatedAt');
+      component.sortDir.set('asc');
+      const result = component.displayedExpenses();
+      expect(result[0].id).toBe('e-1');
+      expect(result[1].id).toBe('e-2');
+    });
+
+    it('displayedExpenses ordena por updatedAt desc quando sortCol = updatedAt', () => {
+      component.sortCol.set('updatedAt');
+      component.sortDir.set('desc');
+      const result = component.displayedExpenses();
+      expect(result[0].id).toBe('e-2');
+      expect(result[1].id).toBe('e-1');
     });
   });
 });

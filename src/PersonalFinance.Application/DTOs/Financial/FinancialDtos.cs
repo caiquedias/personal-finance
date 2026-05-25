@@ -61,7 +61,8 @@ public sealed record ExpenseResponseDto(
     DateOnly?     PaymentDate,
     string?       Notes,
     bool          IsActive,
-    bool          IsRecurring
+    bool          IsRecurring,
+    DateTime      UpdatedAt
 );
 
 public sealed record RecurringExpenseDto(

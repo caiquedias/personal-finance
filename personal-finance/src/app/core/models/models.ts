@@ -108,6 +108,7 @@ export interface ExpenseResponse {
   notes:          string | null;
   isActive:       boolean;
   isRecurring:    boolean;
+  updatedAt:      string;
 }
 
 export interface RecurringExpenseResponse {
@@ -167,7 +168,8 @@ export enum ExpenseSortColumn {
   DueDate          = 5,
   Amount           = 6,
   Status           = 7,
-  DragAndDropOrder = 8,
+  DragAndDropOrder    = 8,
+  UpdatedAt           = 9,
 }
 
 export enum SortDirection {

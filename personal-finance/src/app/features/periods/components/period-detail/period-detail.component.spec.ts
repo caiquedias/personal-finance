@@ -39,6 +39,7 @@ const EXPENSE: ExpenseResponse = {
   notes:          null,
   isActive:       true,
   isRecurring:    false,
+  updatedAt:      '2024-04-05T10:00:00',
 };
 
 const INCOME: IncomeResponse = {

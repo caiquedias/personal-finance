@@ -1,4 +1,5 @@
 import { Component, inject, signal, computed, OnInit, input, ViewChild, ElementRef } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { trigger, style, animate, transition } from '@angular/animations';
 import { ApiService } from '../../../../core/services/api.service';
@@ -19,12 +20,12 @@ import {
   ExpenseSortColumn, SortDirection,
 } from '../../../../core/models/models';
 
-type SortCol = 'description' | 'category' | 'sourceType' | 'fortnightType' | 'dueDate' | 'amount' | 'paymentStatus';
+type SortCol = 'description' | 'category' | 'sourceType' | 'fortnightType' | 'dueDate' | 'amount' | 'paymentStatus' | 'updatedAt';
 
 @Component({
   selector: 'app-expenses',
   standalone: true,
-  imports: [HeaderComponent, CurrencyBrlPipe, ReactiveFormsModule, SonicModalComponent, PaginationComponent, SonicRingBurstComponent, FilterModalComponent, FilterButtonComponent, MarioModalComponent, ActionMenuComponent],
+  imports: [HeaderComponent, CurrencyBrlPipe, ReactiveFormsModule, SonicModalComponent, PaginationComponent, SonicRingBurstComponent, FilterModalComponent, FilterButtonComponent, MarioModalComponent, ActionMenuComponent, DatePipe],
   templateUrl: './expenses.component.html',
   styleUrls: ['./expenses.component.css'],
   animations: [
@@ -84,8 +85,9 @@ export class ExpensesComponent implements OnInit {
   readonly loadingList = signal(false);
   readonly saving      = signal(false);
   readonly apiError    = signal<string | null>(null);
-  readonly modalOpen   = signal(false);
-  readonly modalMode   = signal<'create' | 'edit'>('create');
+  readonly modalOpen        = signal(false);
+  readonly modalMode        = signal<'create' | 'edit'>('create');
+  readonly editingUpdatedAt = signal<string | null>(null);
 
   private editingId: string | null = null;
   selectedPeriodId: string | null = null;
@@ -184,6 +186,7 @@ export class ExpensesComponent implements OnInit {
         { value: ExpenseSortColumn.Amount,        label: 'Valor'      },
         { value: ExpenseSortColumn.Status,        label: 'Status'     },
         { value: ExpenseSortColumn.DragAndDropOrder, label: 'Arrastar e soltar' },
+        { value: ExpenseSortColumn.UpdatedAt,        label: 'Data Última Atualização' },
       ],
       value: this.filterSortColumn() ?? '' },
     { key: 'sortDirection', label: 'Ordem',      type: 'select',
@@ -215,6 +218,7 @@ export class ExpensesComponent implements OnInit {
         case 'dueDate':       va = a.dueDate;                     vb = b.dueDate;                     break;
         case 'amount':        va = a.amount;                      vb = b.amount;                      break;
         case 'paymentStatus': va = a.paymentStatus;               vb = b.paymentStatus;               break;
+        case 'updatedAt':     va = a.updatedAt;                   vb = b.updatedAt;                   break;
         default:              return 0;
       }
 
@@ -278,6 +282,7 @@ export class ExpensesComponent implements OnInit {
 
   openCreateModal(): void {
     this.editingId = null;
+    this.editingUpdatedAt.set(null);
     this.modalMode.set('create');
     this.apiError.set(null);
     this.form.reset({
@@ -290,6 +295,7 @@ export class ExpensesComponent implements OnInit {
 
   openEditModal(expense: ExpenseResponse): void {
     this.editingId = expense.id;
+    this.editingUpdatedAt.set(expense.updatedAt);
     this.modalMode.set('edit');
     this.apiError.set(null);
     this.form.patchValue({
@@ -310,6 +316,7 @@ export class ExpensesComponent implements OnInit {
   closeModal(): void {
     this.modalOpen.set(false);
     this.editingId = null;
+    this.editingUpdatedAt.set(null);
     this.apiError.set(null);
   }
 
