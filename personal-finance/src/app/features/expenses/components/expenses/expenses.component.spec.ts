@@ -535,4 +535,18 @@ describe('ExpensesComponent', () => {
       expect(result[1].id).toBe('e-1');
     });
   });
+
+  describe('openBatchModal()', () => {
+    it('exibe MarioModal quando não há período selecionado', () => {
+      component.selectedPeriodId = null;
+      component.openBatchModal();
+      expect(component.marioOpen()).toBeTrue();
+    });
+
+    it('abre modal de lote quando há período selecionado', () => {
+      component.selectedPeriodId = 'p-1';
+      component.openBatchModal();
+      expect(component.batchModalOpen()).toBeTrue();
+    });
+  });
 });

@@ -202,6 +202,80 @@ public sealed class DeleteExpenseUseCase
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
+// CREATE EXPENSES BATCH
+// ══════════════════════════════════════════════════════════════════════════════
+
+public sealed class CreateExpensesBatchUseCase
+{
+    private readonly IExpenseRepository  _expenseRepository;
+    private readonly IPeriodRepository   _periodRepository;
+    private readonly ICategoryRepository _categoryRepository;
+    private readonly IUnitOfWork         _unitOfWork;
+
+    public CreateExpensesBatchUseCase(
+        IExpenseRepository  expenseRepository,
+        IPeriodRepository   periodRepository,
+        ICategoryRepository categoryRepository,
+        IUnitOfWork         unitOfWork)
+    {
+        _expenseRepository  = expenseRepository;
+        _periodRepository   = periodRepository;
+        _categoryRepository = categoryRepository;
+        _unitOfWork         = unitOfWork;
+    }
+
+    public async Task<IReadOnlyList<ExpenseResponseDto>> ExecuteAsync(
+        CreateExpensesBatchDto dto,
+        CancellationToken ct = default)
+    {
+        if (dto.Items.Count == 0)
+            throw new DomainException("A lista de despesas não pode ser vazia.");
+
+        var periodExists = await _periodRepository
+            .ExistsByIdAndUserAsync(dto.PeriodId, dto.UserId, ct);
+
+        if (!periodExists)
+            throw new DomainException("Período não encontrado ou sem permissão de acesso.");
+
+        // Valida todas as categorias antes de criar qualquer despesa (rollback semântico)
+        foreach (var item in dto.Items)
+        {
+            var categoryAccessible = await _categoryRepository
+                .IsAccessibleByUserAsync(item.CategoryId, dto.UserId, ct);
+
+            if (!categoryAccessible)
+                throw new DomainException("Categoria não encontrada ou sem permissão de acesso.");
+        }
+
+        var expenses = dto.Items.Select(item => Expense.Create(
+            periodId:      dto.PeriodId,
+            userId:        dto.UserId,
+            categoryId:    item.CategoryId,
+            sourceType:    item.SourceType,
+            fortnightType: item.FortnightType,
+            paymentStatus: PaymentStatus.Pending,
+            description:   item.Description,
+            amount:        item.Amount,
+            dueDate:       item.DueDate,
+            paymentDate:   null,
+            notes:         item.Notes,
+            isRecurring:   item.IsRecurring
+        )).ToList();
+
+        await _expenseRepository.AddRangeAsync(expenses, ct);
+        await _unitOfWork.CommitAsync(ct);
+
+        return expenses.Select(ToDto).ToList();
+    }
+
+    private static ExpenseResponseDto ToDto(Expense e) =>
+        new(e.Id, e.PeriodId, e.UserId, e.CategoryId,
+            e.SourceType, e.FortnightType, e.PaymentStatus,
+            e.Description, e.Amount, e.DueDate, e.PaymentDate,
+            e.Notes, e.IsActive, e.IsRecurring, e.UpdatedAt);
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
 // DELETE EXPENSES BATCH
 // ══════════════════════════════════════════════════════════════════════════════
 

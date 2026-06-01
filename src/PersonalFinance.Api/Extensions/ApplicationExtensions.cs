@@ -60,6 +60,7 @@ public static class ApplicationExtensions
         services.AddScoped<GetExpensesByPeriodUseCase>();
         services.AddScoped<GetExpenseByIdUseCase>();
         services.AddScoped<CreateExpenseUseCase>();
+        services.AddScoped<CreateExpensesBatchUseCase>();
         services.AddScoped<UpdateExpenseUseCase>();
         services.AddScoped<DeleteExpenseUseCase>();
         services.AddScoped<DeleteExpensesBatchUseCase>();

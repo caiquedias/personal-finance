@@ -146,6 +146,22 @@ export interface MarkAsPaidRequest {
   paymentDate: string;
 }
 
+export interface BatchExpenseItemRequest {
+  categoryId:    string;
+  sourceType:    SourceType;
+  fortnightType: FortnightType;
+  description:   string;
+  amount:        number;
+  dueDate:       string;
+  notes?:        string;
+  isRecurring?:  boolean;
+}
+
+export interface CreateExpensesBatchRequest {
+  periodId: string;
+  items:    BatchExpenseItemRequest[];
+}
+
 export interface ExpenseOrderItem {
   expenseId: string;
   order: number;
