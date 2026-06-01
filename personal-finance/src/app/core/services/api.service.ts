@@ -6,6 +6,7 @@ import {
   CategoryResponse, CreateCategoryRequest, UpdateCategoryRequest,
   PeriodResponse, CreatePeriodRequest, PeriodSummary, RecurringExpenseResponse,
   ExpenseResponse, CreateExpenseRequest, UpdateExpenseRequest, MarkAsPaidRequest, ExpenseOrderItem,
+  BatchExpenseItemRequest, CreateExpensesBatchRequest,
   PagedResult, ExpenseFilterParams, IncomeFilterParams,
   IncomeResponse, CreateIncomeRequest,
   LookupItem,
@@ -135,6 +136,10 @@ export class ApiService {
 
   batchDeleteExpenses(ids: string[]): Observable<void> {
     return this.http.delete<void>(`${this.base}/expenses/batch`, { body: { expenseIds: ids } });
+  }
+
+  createExpensesBatch(data: CreateExpensesBatchRequest): Observable<ExpenseResponse[]> {
+    return this.http.post<ExpenseResponse[]>(`${this.base}/expenses/batch/create`, data);
   }
 
   // ── Incomes ───────────────────────────────────────────────────────────────

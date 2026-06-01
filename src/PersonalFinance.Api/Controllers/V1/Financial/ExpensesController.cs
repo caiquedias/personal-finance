@@ -14,6 +14,7 @@ public sealed class ExpensesController(
     GetExpensesByPeriodUseCase getByPeriodUseCase,
     GetExpenseByIdUseCase getByIdUseCase,
     CreateExpenseUseCase createUseCase,
+    CreateExpensesBatchUseCase createBatchUseCase,
     UpdateExpenseUseCase updateUseCase,
     DeleteExpenseUseCase deleteUseCase,
     DeleteExpensesBatchUseCase deleteBatchUseCase,
@@ -26,6 +27,7 @@ public sealed class ExpensesController(
     private readonly GetExpensesByPeriodUseCase _getByPeriodUseCase = getByPeriodUseCase;
     private readonly GetExpenseByIdUseCase _getByIdUseCase = getByIdUseCase;
     private readonly CreateExpenseUseCase _createUseCase = createUseCase;
+    private readonly CreateExpensesBatchUseCase _createBatchUseCase = createBatchUseCase;
     private readonly UpdateExpenseUseCase _updateUseCase = updateUseCase;
     private readonly DeleteExpenseUseCase _deleteUseCase = deleteUseCase;
     private readonly DeleteExpensesBatchUseCase _deleteBatchUseCase = deleteBatchUseCase;
@@ -127,6 +129,18 @@ public sealed class ExpensesController(
         await _expenseRepository.UpdateAsync(expense, ct);
         await _unitOfWork.CommitAsync(ct);
         return NoContent();
+    }
+
+    /// <summary>Cria múltiplas despesas em lote. Em caso de erro, nenhuma despesa é persistida.</summary>
+    [HttpPost("batch/create")]
+    [ProducesResponseType(typeof(IReadOnlyList<ExpenseResponseDto>), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> CreateBatch(
+        [FromBody] CreateExpensesBatchDto dto, CancellationToken ct)
+    {
+        var result = await _createBatchUseCase.ExecuteAsync(
+            dto with { UserId = CurrentUserId }, ct);
+        return StatusCode(StatusCodes.Status201Created, result);
     }
 
     /// <summary>Exclui logicamente múltiplas despesas em lote.</summary>

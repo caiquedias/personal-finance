@@ -11,6 +11,7 @@ import { SonicRingBurstComponent } from '../../../../shared/components/sonic-rin
 import { FilterModalComponent } from '../../../../shared/components/filter-modal/filter-modal.component';
 import { FilterButtonComponent } from '../../../../shared/components/filter-modal/filter-button.component';
 import { MarioModalComponent } from '../../../../shared/components/modal/mario-modal/mario-modal.component';
+import { BatchExpensesModalComponent } from '../../../../shared/components/modal/batch-expenses-modal/batch-expenses-modal.component';
 import { ActionMenuComponent } from '../../../../shared/components/action-menu/action-menu.component';
 import { FilterFieldConfig } from '../../../../shared/components/filter-modal/filter-field-config';
 import {
@@ -25,7 +26,7 @@ type SortCol = 'description' | 'category' | 'sourceType' | 'fortnightType' | 'du
 @Component({
   selector: 'app-expenses',
   standalone: true,
-  imports: [HeaderComponent, CurrencyBrlPipe, ReactiveFormsModule, SonicModalComponent, PaginationComponent, SonicRingBurstComponent, FilterModalComponent, FilterButtonComponent, MarioModalComponent, ActionMenuComponent, DatePipe],
+  imports: [HeaderComponent, CurrencyBrlPipe, ReactiveFormsModule, SonicModalComponent, PaginationComponent, SonicRingBurstComponent, FilterModalComponent, FilterButtonComponent, MarioModalComponent, BatchExpensesModalComponent, ActionMenuComponent, DatePipe],
   templateUrl: './expenses.component.html',
   styleUrls: ['./expenses.component.css'],
   animations: [
@@ -113,6 +114,9 @@ export class ExpensesComponent implements OnInit {
   readonly marioTitle       = signal('');
   readonly marioContent     = signal('');
   readonly marioShowWarning = signal(false);
+
+  // Modal de despesas em lote
+  readonly batchModalOpen = signal(false);
 
   incrementAmount(): void {
     const cur = this.form.get('amount')?.value ?? 0;
@@ -278,6 +282,21 @@ export class ExpensesComponent implements OnInit {
       },
       error: () => this.loadingList.set(false)
     });
+  }
+
+  openBatchModal(): void {
+    if (!this.selectedPeriodId) {
+      this.marioTitle.set('Atenção');
+      this.marioContent.set('Selecione um período para adicionar despesas em lote.');
+      this.marioOpen.set(true);
+      return;
+    }
+    this.batchModalOpen.set(true);
+  }
+
+  onBatchSaved(newExpenses: ExpenseResponse[]): void {
+    this.batchModalOpen.set(false);
+    this.loadPage();
   }
 
   openCreateModal(): void {

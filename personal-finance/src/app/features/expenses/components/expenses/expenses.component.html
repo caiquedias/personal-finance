@@ -6,6 +6,9 @@
   <button class="btn btn-primary btn-sm" (click)="openCreateModal()">
     + Nova despesa
   </button>
+  <button class="btn btn-secondary btn-sm" (click)="openBatchModal()">
+    + Adicionar em Lote
+  </button>
 </app-header>
 
 <div class="page-content">
@@ -380,4 +383,13 @@
       (closed)="marioOpen.set(false)"
     />
   </div>
+}
+
+@if (batchModalOpen()) {
+  <app-batch-expenses-modal
+    [periodId]="selectedPeriodId!"
+    [categories]="categories()"
+    (closed)="batchModalOpen.set(false)"
+    (saved)="onBatchSaved($event)"
+  />
 }
