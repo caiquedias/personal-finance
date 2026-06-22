@@ -208,4 +208,10 @@ public sealed class ExpenseRepository : IExpenseRepository
 
     public async Task AddRangeAsync(IEnumerable<Expense> expenses, CancellationToken ct = default)
         => await _context.Expenses.AddRangeAsync(expenses, ct);
+
+    public Task DeleteAsync(Expense expense, CancellationToken ct = default)
+    {
+        _context.Expenses.Remove(expense);
+        return Task.CompletedTask;
+    }
 }

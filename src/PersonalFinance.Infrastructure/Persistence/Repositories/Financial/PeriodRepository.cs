@@ -62,4 +62,10 @@ public sealed class PeriodRepository : IPeriodRepository
     Guid id, Guid userId, CancellationToken ct = default)
     => await _context.Periods
            .AnyAsync(p => p.Id == id && p.UserId == userId, ct);
+
+    public Task DeleteAsync(Period period, CancellationToken ct = default)
+    {
+        _context.Periods.Remove(period);
+        return Task.CompletedTask;
+    }
 }
