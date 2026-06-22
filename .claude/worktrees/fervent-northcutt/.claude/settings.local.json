@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(cmd /c \"del /F C:\\\\Projetos\\\\PersonalFinance\\\\.git\\\\index.lock\")",
-      "Read(//c/Projetos/PersonalFinance/**)",
-      "Bash(gh pr create --base release --title 'feat\\(ci\\): GitHub Action sync develop e release ← master' --body ':*)"
-    ]
-  }
-}
