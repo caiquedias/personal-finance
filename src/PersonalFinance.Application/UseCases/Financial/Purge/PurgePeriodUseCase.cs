@@ -35,6 +35,7 @@ public sealed class PurgePeriodUseCase
     public async Task ExecuteAsync(
         Guid periodId,
         Guid userId,
+        string csvFileName,
         CancellationToken ct = default)
     {
         var period = await _periodRepository.GetByIdAndUserAsync(periodId, userId, ct)
@@ -62,8 +63,6 @@ public sealed class PurgePeriodUseCase
         {
             categorySummaryJson = "{}";
         }
-
-        var csvFileName = $"expurgo_{period.Year}_{period.Month:D2}.csv";
 
         var purgeRecord = PurgeRecord.Create(
             userId:              userId,

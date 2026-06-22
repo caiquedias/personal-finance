@@ -62,7 +62,7 @@ public class PurgePeriodUseCaseTests
         _incomeRepo.Setup(r => r.GetByPeriodAsync(PeriodId, UserId, default))
                    .ReturnsAsync(incomes);
 
-        await _sut.ExecuteAsync(PeriodId, UserId);
+        await _sut.ExecuteAsync(PeriodId, UserId, "expurgo_2026_04.csv");
 
         // Deve inserir 1 PurgeRecord
         _purgeRepo.Verify(r => r.AddAsync(
@@ -91,7 +91,7 @@ public class PurgePeriodUseCaseTests
         _incomeRepo.Setup(r => r.GetByPeriodAsync(PeriodId, UserId, default))
                    .ReturnsAsync(Enumerable.Empty<Income>());
 
-        await _sut.ExecuteAsync(PeriodId, UserId);
+        await _sut.ExecuteAsync(PeriodId, UserId, "expurgo_2026_04.csv");
 
         _purgeRepo.Verify(r => r.AddAsync(
             It.Is<PurgeRecord>(pr =>
@@ -99,10 +99,11 @@ public class PurgePeriodUseCaseTests
             default), Times.Once);
     }
 
-    [Fact(DisplayName = "Deve gerar CsvFileName com ano e mês do período")]
-    public async Task Execute_ValidPeriod_ShouldGenerateCsvFileName()
+    [Fact(DisplayName = "Deve armazenar CsvFileName recebido como parâmetro")]
+    public async Task Execute_ValidPeriod_ShouldStoreCsvFileName()
     {
         var period = Period.Create(UserId, 2026, 4);
+        const string csvFileName = "expurgo_2026_04.csv";
 
         _periodRepo.Setup(r => r.GetByIdAndUserAsync(PeriodId, UserId, default))
                    .ReturnsAsync(period);
@@ -111,12 +112,10 @@ public class PurgePeriodUseCaseTests
         _incomeRepo.Setup(r => r.GetByPeriodAsync(PeriodId, UserId, default))
                    .ReturnsAsync(Enumerable.Empty<Income>());
 
-        await _sut.ExecuteAsync(PeriodId, UserId);
+        await _sut.ExecuteAsync(PeriodId, UserId, csvFileName);
 
         _purgeRepo.Verify(r => r.AddAsync(
-            It.Is<PurgeRecord>(pr =>
-                pr.CsvFileName.Contains("2026") &&
-                pr.CsvFileName.Contains("04")),
+            It.Is<PurgeRecord>(pr => pr.CsvFileName == csvFileName),
             default), Times.Once);
     }
 
@@ -128,7 +127,7 @@ public class PurgePeriodUseCaseTests
         _periodRepo.Setup(r => r.GetByIdAndUserAsync(PeriodId, UserId, default))
                    .ReturnsAsync((Period?)null);
 
-        var act = () => _sut.ExecuteAsync(PeriodId, UserId);
+        var act = () => _sut.ExecuteAsync(PeriodId, UserId, "expurgo_2026_04.csv");
 
         await act.Should().ThrowAsync<DomainException>();
         _purgeRepo.Verify(r => r.AddAsync(It.IsAny<PurgeRecord>(), default), Times.Never);
@@ -151,7 +150,7 @@ public class PurgePeriodUseCaseTests
         _purgeRepo.Setup(r => r.AddAsync(It.IsAny<PurgeRecord>(), default))
                   .ThrowsAsync(new InvalidOperationException("Erro no banco"));
 
-        var act = () => _sut.ExecuteAsync(PeriodId, UserId);
+        var act = () => _sut.ExecuteAsync(PeriodId, UserId, "expurgo_2026_04.csv");
 
         await act.Should().ThrowAsync<InvalidOperationException>();
         _uow.Verify(u => u.CommitAsync(default), Times.Never);
@@ -171,7 +170,7 @@ public class PurgePeriodUseCaseTests
         _incomeRepo.Setup(r => r.GetByPeriodAsync(PeriodId, UserId, default))
                    .ReturnsAsync(Enumerable.Empty<Income>());
 
-        var act = () => _sut.ExecuteAsync(PeriodId, UserId);
+        var act = () => _sut.ExecuteAsync(PeriodId, UserId, "expurgo_2026_04.csv");
 
         await act.Should().NotThrowAsync();
         _purgeRepo.Verify(r => r.AddAsync(
