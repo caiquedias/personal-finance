@@ -1,0 +1,92 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/post-write.sh"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/pre-bash.sh"
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "Bash(cat *)",
+      "Bash(ls *)",
+      "Bash(wc *)",
+      "Bash(which *)",
+      "Bash(find *)",
+      "Bash(git fetch *)",
+      "Bash(git pull *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git checkout *)",
+      "Bash(git branch *)",
+      "Bash(git push *)",
+      "Bash(git status*)",
+      "Bash(git log *)",
+      "Bash(git diff *)",
+      "Bash(git worktree *)",
+      "Bash(git -C * add *)",
+      "Bash(git -C * commit *)",
+      "Bash(git -C * log *)",
+      "Bash(git -C * diff *)",
+      "Bash(git -C * push *)",
+      "Bash(git -C * status*)",
+      "Bash(git -C * fetch *)",
+      "Bash(dotnet-coverage collect *)",
+      "Bash(grep *)",
+      "Bash(dotnet build *)",
+      "Bash(dotnet test *)",
+      "Bash(dotnet format *)",
+      "Bash(dotnet ef migrations add *)",
+      "Bash(npm run *)",
+      "Bash(npm install *)",
+      "Bash(npx eslint *)",
+      "Bash(/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe *)",
+      "Bash(/c/Windows/System32/WindowsPowerShell/v1.0/powershell *)",
+      "Bash(powershell.exe *)",
+      "Bash(cd * && git branch *)",
+      "Bash(cd * && git log *)",
+      "Bash(cd * && git push *)",
+      "Bash(cd * && git worktree *)",
+      "Bash(cd * && dotnet test *)",
+      "Bash(cd * && git add *)",
+      "Bash(cd * && git fetch *)",
+      "Bash(cd * && npm run *)",
+      "Bash(cd * && git checkout *)",
+      "Bash(cd * && git diff *)",
+      "Bash(cd * && /c/Windows/System32/WindowsPowerShell/v1.0/powershell *)",
+      "Bash(cd * && git status*)",
+      "Bash(cd * && /c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe *)",
+      "Bash(cd * && git stash *)",
+      "Bash(cd * && git pull *)",
+      "Bash(cd * && git remote *)",
+      "Bash(cd * && dotnet build *)"
+    ],
+    "deny": [
+      "Bash(rm *)",
+      "Bash(git push --force*)",
+      "Bash(git push -f *)",
+      "Bash(git clean *)",
+      "Bash(git reset --hard*)",
+      "Bash(git rm *)",
+      "Bash(dotnet ef database update*)",
+      "Bash(dotnet ef migrations remove*)"
+    ]
+  }
+}
