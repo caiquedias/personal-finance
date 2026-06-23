@@ -80,4 +80,10 @@ public sealed class IncomeRepository : IIncomeRepository
         _context.Incomes.Update(income);
         return Task.CompletedTask;
     }
+
+    public Task DeleteAsync(Income income, CancellationToken ct = default)
+    {
+        _context.Incomes.Remove(income);
+        return Task.CompletedTask;
+    }
 }

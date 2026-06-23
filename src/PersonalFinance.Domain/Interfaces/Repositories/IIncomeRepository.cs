@@ -27,6 +27,6 @@ public interface IIncomeRepository
         CancellationToken ct = default);
 
     Task AddAsync(Income income, CancellationToken ct = default);
-
     Task UpdateAsync(Income income, CancellationToken ct = default);
+    Task DeleteAsync(Income income, CancellationToken ct = default);
 }
