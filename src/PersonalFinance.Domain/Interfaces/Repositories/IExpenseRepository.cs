@@ -37,6 +37,7 @@ public interface IExpenseRepository
 
     Task AddAsync(Expense expense, CancellationToken ct = default);
     Task UpdateAsync(Expense expense, CancellationToken ct = default);
+    Task DeleteAsync(Expense expense, CancellationToken ct = default);
     Task UpdateRangeAsync(IEnumerable<Expense> expenses, CancellationToken ct = default);
 
     Task<IEnumerable<Expense>> GetByIdsAndUserAsync(

@@ -22,6 +22,7 @@ public interface IPeriodRepository
 
     Task AddAsync(Period period, CancellationToken ct = default);
     Task UpdateAsync(Period period, CancellationToken ct = default);
+    Task DeleteAsync(Period period, CancellationToken ct = default);
 
     /// <summary>
     /// Retorna true se o período existir e pertencer ao usuário informado.
