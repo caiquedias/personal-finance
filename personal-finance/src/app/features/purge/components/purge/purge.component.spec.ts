@@ -2,6 +2,7 @@ import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { ComponentFixture } from '@angular/core/testing';
 import { RouterModule } from '@angular/router';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
+import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { of, throwError } from 'rxjs';
 import { PurgeComponent } from './purge.component';
 import { ApiService } from '../../../../core/services/api.service';
@@ -48,7 +49,7 @@ describe('PurgeComponent', () => {
     apiSpy.getEligiblePeriods.and.returnValue(of([PERIOD_1, PERIOD_2]));
 
     await TestBed.configureTestingModule({
-      imports: [PurgeComponent, RouterModule.forRoot([])],
+      imports: [PurgeComponent, RouterModule.forRoot([]), NoopAnimationsModule],
       providers: [{ provide: ApiService, useValue: apiSpy }],
       schemas: [NO_ERRORS_SCHEMA],
     }).compileComponents();
@@ -232,6 +233,95 @@ describe('PurgeComponent', () => {
 
       expect(component.apiError()).toBeTruthy();
       expect(component.confirmModalOpen()).toBeFalse();
+    }));
+  });
+
+  // ── GAP 1 — Angular Animations obrigatórias ───────────────────────────────
+
+  describe('GAP 1 — animations: backdropAnim e modalAnim', () => {
+    it('declara trigger backdropAnim no metadata do componente', () => {
+      // Verifica que o @Component possui animations com trigger "backdropAnim"
+      const animations: any[] = (PurgeComponent as any).ɵcmp?.data?.animations ?? [];
+      const names = animations.map((a: any) => a?.name ?? '');
+      expect(names).toContain('backdropAnim');
+    });
+
+    it('declara trigger modalAnim no metadata do componente', () => {
+      // Verifica que o @Component possui animations com trigger "modalAnim"
+      const animations: any[] = (PurgeComponent as any).ɵcmp?.data?.animations ?? [];
+      const names = animations.map((a: any) => a?.name ?? '');
+      expect(names).toContain('modalAnim');
+    });
+
+    it('elemento do overlay tem atributo ng-trigger-backdropAnim quando modal está aberto', () => {
+      component.openConfirmModal(PERIOD_1);
+      fixture.detectChanges();
+      const overlay = fixture.nativeElement.querySelector('.modal-overlay');
+      expect(overlay).not.toBeNull();
+      // Deve possuir o atributo gerado pelas Angular Animations
+      expect(overlay.hasAttribute('ng-trigger-backdropAnim')).toBeTrue();
+    });
+
+    it('elemento do modal tem atributo ng-trigger-modalAnim quando modal está aberto', () => {
+      component.openConfirmModal(PERIOD_1);
+      fixture.detectChanges();
+      const modal = fixture.nativeElement.querySelector('.modal');
+      expect(modal).not.toBeNull();
+      // Deve possuir o atributo gerado pelas Angular Animations
+      expect(modal.hasAttribute('ng-trigger-modalAnim')).toBeTrue();
+    });
+  });
+
+  // ── GAP 2 — Texto destrutivo exato no modal ────────────────────────────────
+
+  describe('GAP 2 — texto destrutivo no modal de confirmação', () => {
+    it('exibe aviso destrutivo exato com mês e ano no modal', () => {
+      component.openConfirmModal(PERIOD_1);
+      fixture.detectChanges();
+
+      // PERIOD_1: year=2024, month=3 → "Março/2024"
+      const text = fixture.nativeElement.textContent as string;
+      expect(text).toContain(
+        'Confirmo que o arquivo CSV foi salvo com sucesso. Desejo excluir permanentemente os dados de'
+      );
+    });
+
+    it('texto destrutivo inclui nome do mês e ano do período selecionado', () => {
+      component.openConfirmModal(PERIOD_1);
+      fixture.detectChanges();
+
+      const confirmText = fixture.nativeElement.querySelector('.modal-confirm-text');
+      expect(confirmText).not.toBeNull();
+      expect(confirmText.textContent).toContain('2024');
+    });
+  });
+
+  // ── GAP 3 — Botão "Confirmar" com classe btn-danger ────────────────────────
+
+  describe('GAP 3 — botão de confirmação tem classe btn-danger', () => {
+    it('botão que chama confirmPurge() tem classe btn-danger', () => {
+      component.openConfirmModal(PERIOD_1);
+      fixture.detectChanges();
+
+      const dangerBtn = fixture.nativeElement.querySelector('button.btn-danger');
+      expect(dangerBtn).not.toBeNull();
+    });
+
+    it('botão btn-danger dispara confirmPurge ao ser clicado', fakeAsync(() => {
+      apiSpy.exportPurgeCsv.and.returnValue(of(new Blob(['csv'])));
+      apiSpy.executePurge.and.returnValue(of(PURGE_RESULT));
+
+      component.openConfirmModal(PERIOD_1);
+      component.downloadCsv(PERIOD_1);
+      tick();
+      fixture.detectChanges();
+
+      const dangerBtn: HTMLButtonElement = fixture.nativeElement.querySelector('button.btn-danger');
+      expect(dangerBtn).not.toBeNull();
+      dangerBtn.click();
+      tick();
+
+      expect(apiSpy.executePurge).toHaveBeenCalledWith('p-1');
     }));
   });
 
