@@ -241,14 +241,14 @@ describe('PurgeComponent', () => {
   describe('GAP 1 — animations: backdropAnim e modalAnim', () => {
     it('declara trigger backdropAnim no metadata do componente', () => {
       // Verifica que o @Component possui animations com trigger "backdropAnim"
-      const animations: any[] = (PurgeComponent as any).ɵcmp?.data?.animations ?? [];
+      const animations: any[] = (PurgeComponent as any).ɵcmp?.data?.animation ?? [];
       const names = animations.map((a: any) => a?.name ?? '');
       expect(names).toContain('backdropAnim');
     });
 
     it('declara trigger modalAnim no metadata do componente', () => {
       // Verifica que o @Component possui animations com trigger "modalAnim"
-      const animations: any[] = (PurgeComponent as any).ɵcmp?.data?.animations ?? [];
+      const animations: any[] = (PurgeComponent as any).ɵcmp?.data?.animation ?? [];
       const names = animations.map((a: any) => a?.name ?? '');
       expect(names).toContain('modalAnim');
     });
@@ -258,8 +258,8 @@ describe('PurgeComponent', () => {
       fixture.detectChanges();
       const overlay = fixture.nativeElement.querySelector('.modal-overlay');
       expect(overlay).not.toBeNull();
-      // Deve possuir o atributo gerado pelas Angular Animations
-      expect(overlay.hasAttribute('ng-trigger-backdropAnim')).toBeTrue();
+      // Deve possuir a classe CSS gerada pelas Angular Animations
+      expect(overlay.classList.contains('ng-trigger-backdropAnim')).toBeTrue();
     });
 
     it('elemento do modal tem atributo ng-trigger-modalAnim quando modal está aberto', () => {
@@ -267,8 +267,8 @@ describe('PurgeComponent', () => {
       fixture.detectChanges();
       const modal = fixture.nativeElement.querySelector('.modal');
       expect(modal).not.toBeNull();
-      // Deve possuir o atributo gerado pelas Angular Animations
-      expect(modal.hasAttribute('ng-trigger-modalAnim')).toBeTrue();
+      // Deve possuir a classe CSS gerada pelas Angular Animations
+      expect(modal.classList.contains('ng-trigger-modalAnim')).toBeTrue();
     });
   });
 
