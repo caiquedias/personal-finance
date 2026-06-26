@@ -59,6 +59,9 @@ public static class InfrastructureExtensions
         // ── Import (legado Excel) ─────────────────────────────────────────────────────
         services.AddScoped<IExcelParserService, ExcelParserService>();
 
+        // ── Expurgo ───────────────────────────────────────────────────────────
+        services.AddScoped<ICsvExportService, CsvExportService>();
+        services.AddScoped<IPurgeRepository, PurgeRepository>();
 
         return services;
     }

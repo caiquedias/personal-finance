@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using PersonalFinance.Api.Tests.Integration.Fakes;
 using PersonalFinance.Application.Interfaces;
 using PersonalFinance.Domain.Entities.Auth;
 using PersonalFinance.Domain.Entities.Lookup;
+using PersonalFinance.Domain.Interfaces.Repositories;
 using PersonalFinance.Domain.Interfaces.Services;
 using PersonalFinance.Infrastructure.Persistence.Context;
 
@@ -49,6 +51,15 @@ public sealed class TestWebApplicationFactory : WebApplicationFactory<Program>
                 services.Remove(reportDescriptor);
 
             services.AddScoped<IReportRepository, FakeReportRepository>();
+
+            // Substitui PurgeRepository pelo fake compatível com InMemory.
+            var purgeDescriptor = services.SingleOrDefault(
+                d => d.ServiceType == typeof(IPurgeRepository));
+
+            if (purgeDescriptor is not null)
+                services.Remove(purgeDescriptor);
+
+            services.AddScoped<IPurgeRepository, FakePurgeRepository>();
 
             // Remove o DatabaseInitializer — ele chama MigrateAsync() e
             // ExecuteSqlRawAsync() que são métodos relacionais e explodem com InMemory.
