@@ -70,6 +70,30 @@ describe('SidebarComponent', () => {
     });
   });
 
+  describe('item Expurgo no sidebar', () => {
+    it('item "Expurgo" está presente nos itens visíveis para usuário normal', async () => {
+      setupWithAuth(false);
+      await compile();
+      const purgeItem = component.visibleItems().find((i: any) => i.route === '/purge');
+      expect(purgeItem).toBeDefined();
+      expect(purgeItem?.label).toBe('Expurgo');
+    });
+
+    it('item "Expurgo" possui ícone definido', async () => {
+      setupWithAuth(false);
+      await compile();
+      const purgeItem = component.visibleItems().find((i: any) => i.route === '/purge');
+      expect(purgeItem?.icon).toBeTruthy();
+    });
+
+    it('item "Expurgo" não é adminOnly', async () => {
+      setupWithAuth(false);
+      await compile();
+      const purgeItem = component.visibleItems().find((i: any) => i.route === '/purge');
+      expect(purgeItem?.adminOnly).toBeFalsy();
+    });
+  });
+
   describe('getIcon()', () => {
     beforeEach(async () => {
       setupWithAuth(false);
