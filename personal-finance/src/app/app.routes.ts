@@ -62,6 +62,12 @@ export const routes: Routes = [
             .then(m => m.ImportComponent)
       },
       {
+        path: 'purge',
+        loadComponent: () =>
+          import('./features/purge/components/purge/purge.component')
+            .then(m => m.PurgeComponent)
+      },
+      {
         path: 'admin/users',
         canActivate: [adminGuard],
         loadComponent: () =>

@@ -15,6 +15,7 @@ import {
   AdminUserResponse, AdminUserFilterParams, AssignRoleRequest, ResetPasswordRequest,
   CreateUserByAdminRequest, UpdateUserByAdminRequest,
   ExpensesReport,
+  EligiblePeriodResponse, PurgeResultResponse,
 } from '../models/models';
 
 @Injectable({ providedIn: 'root' })
@@ -257,5 +258,19 @@ export class ApiService {
     let params = new HttpParams().set('year', year);
     if (month != null) params = params.set('month', month);
     return this.http.get<ExpensesReport>(`${this.base}/reports/expenses`, { params });
+  }
+
+  // ── Purge ─────────────────────────────────────────────────────────────────
+
+  getEligiblePeriods(): Observable<EligiblePeriodResponse[]> {
+    return this.http.get<EligiblePeriodResponse[]>(`${this.base}/purge/eligible-periods`);
+  }
+
+  exportPurgeCsv(periodId: string): Observable<Blob> {
+    return this.http.get(`${this.base}/purge/${periodId}/export`, { responseType: 'blob' });
+  }
+
+  executePurge(periodId: string): Observable<PurgeResultResponse> {
+    return this.http.post<PurgeResultResponse>(`${this.base}/purge/${periodId}`, {});
   }
 }
