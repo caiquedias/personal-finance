@@ -99,6 +99,3 @@ public sealed class PurgeController(
         return NoContent();
     }
 }
-
-/// <summary>DTO para o body do endpoint de expurgo.</summary>
-public sealed record PurgeRequestDto(string CsvFileName);

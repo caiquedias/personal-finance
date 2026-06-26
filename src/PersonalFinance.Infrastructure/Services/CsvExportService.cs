@@ -79,7 +79,7 @@ public sealed class CsvExportService : ICsvExportService
     }
 
     // ── Linha de Expense ─────────────────────────────────────────────────────────
-    // SourceType vazio para Expense conforme contrato do CSV
+    // SourceType preenchido para Expense; FortnightType, PaymentStatus, DueDate, PaymentDate preenchidos
     private static string BuildExpenseLine(Expense expense, short year, byte month)
     {
         return string.Join(",",
