@@ -10,6 +10,7 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 |---|---|---|---|
 | #329 | [BE] Expurgo: Infrastructure + API | 2026-06-26 | [329.md](329.md) |
 | #330 | [FE] Expurgo: MOD-01 — Tela de Expurgo | 2026-06-26 | [330.md](330.md) |
+| #331 | [FE] Expurgo: MOD-02 — Análise Offline de CSV | 2026-06-26 | [331.md](331.md) |
 
 ---
 
@@ -17,7 +18,7 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 
 | Módulo | Issues relacionadas | Última atualização |
 |---|---|---|
-| Expurgo (Purge) | #329, #330 | 2026-06-26 |
+| Expurgo (Purge) | #329, #330, #331 | 2026-06-26 |
 
 ---
 
@@ -50,9 +51,9 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 - **Auth:** JWT Bearer; AuthController [AllowAnonymous]; Admin [Authorize(Roles="Admin")]
 
 ### Frontend (Angular 21)
-- **Rotas (app.routes.ts):** `/purge` (lazy, authGuard)
-- **Componentes standalone:** PurgeComponent (`features/purge/components/purge/`)
-- **Serviços:** ApiService (wrapper HTTP) com métodos purge (`getEligiblePeriods`, `exportPurgeCsv`, `executePurge`); ThemeService (dark/light)
+- **Rotas (app.routes.ts):** `/purge` (lazy, authGuard); `purge/analysis` (PurgeAnalysisComponent, providers: [CsvReaderService]); `purge/analysis/detail` (PurgeDetailComponent)
+- **Componentes standalone:** PurgeComponent (`features/purge/components/purge/`); PurgeAnalysisComponent, PurgeDetailComponent, PurgeWarningBannerComponent (`features/purge/`)
+- **Serviços:** ApiService (wrapper HTTP) com métodos purge (`getEligiblePeriods`, `exportPurgeCsv`, `executePurge`); ThemeService (dark/light); CsvReaderService (parse CSV offline, sem `providedIn: 'root'`)
 - **Sidebar:** item "Expurgo" com ícone `archive` e rota `/purge`
 - **Auth:** authInterceptor injeta token automaticamente
 
