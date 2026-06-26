@@ -4,6 +4,7 @@ using PersonalFinance.Application.UseCases.Config;
 using PersonalFinance.Application.UseCases.Financial.Expenses;
 using PersonalFinance.Application.UseCases.Financial.Incomes;
 using PersonalFinance.Application.UseCases.Financial.Periods;
+using PersonalFinance.Application.UseCases.Financial.Purge;
 using PersonalFinance.Application.UseCases.Import;
 using PersonalFinance.Application.UseCases.Reports;
 
@@ -81,6 +82,12 @@ public static class ApplicationExtensions
 
         // ── Reports ───────────────────────────────────────────────────────────
         services.AddScoped<GetExpensesReportUseCase>();
+
+        // ── Purge ─────────────────────────────────────────────────────────────
+        services.AddScoped<ExportPeriodUseCase>();
+        services.AddScoped<PurgePeriodUseCase>();
+        services.AddScoped<GetPurgeRecordsUseCase>();
+        services.AddScoped<DeletePurgeRecordUseCase>();
 
         return services;
     }
