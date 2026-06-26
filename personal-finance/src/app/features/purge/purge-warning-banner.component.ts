@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewEncapsulation } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewEncapsulation } from '@angular/core';
 
 @Component({
   selector: 'app-purge-warning-banner',
@@ -44,20 +44,28 @@ import { Component, OnInit, ViewEncapsulation } from '@angular/core';
     </div>
   `,
 })
-export class PurgeWarningBannerComponent implements OnInit {
+export class PurgeWarningBannerComponent implements OnInit, OnDestroy {
 
   readonly fullText = 'Atenção: Exibição de período expurgado';
   displayedText = '';
+  private intervalId: ReturnType<typeof setInterval> | null = null;
 
   ngOnInit(): void {
     let index = 0;
-    const interval = setInterval(() => {
+    this.intervalId = setInterval(() => {
       if (index < this.fullText.length) {
         this.displayedText += this.fullText[index];
         index++;
       } else {
-        clearInterval(interval);
+        clearInterval(this.intervalId!);
+        this.intervalId = null;
       }
     }, 60);
+  }
+
+  ngOnDestroy(): void {
+    if (this.intervalId !== null) {
+      clearInterval(this.intervalId);
+    }
   }
 }
