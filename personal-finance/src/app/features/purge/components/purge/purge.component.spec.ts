@@ -132,6 +132,47 @@ describe('PurgeComponent', () => {
       tick();
       expect(component.csvReady()).toBeFalse();
     }));
+
+    it('should create an anchor element and trigger download', fakeAsync(() => {
+      // Blob retornado pela API
+      const blob = new Blob(['csv,data'], { type: 'text/csv' });
+      apiSpy.exportPurgeCsv.and.returnValue(of(blob));
+
+      // Spy em URL.createObjectURL e URL.revokeObjectURL
+      const fakeUrl = 'blob:fake-url';
+      spyOn(URL, 'createObjectURL').and.returnValue(fakeUrl);
+      spyOn(URL, 'revokeObjectURL');
+
+      // Cria um <a> falso para capturar a chamada a document.createElement
+      const fakeAnchor = document.createElement('a');
+      spyOn(fakeAnchor, 'click');
+      spyOn(document, 'createElement').and.callFake((tag: string) => {
+        if (tag === 'a') return fakeAnchor;
+        return document.createElement(tag);
+      });
+
+      component.downloadCsv(PERIOD_1);
+      tick();
+
+      // createObjectURL deve ter recebido o blob
+      expect(URL.createObjectURL).toHaveBeenCalledWith(blob);
+
+      // O elemento <a> deve ter href apontando para a URL do blob
+      expect(fakeAnchor.href).toBe(fakeUrl);
+
+      // O atributo download deve conter o periodId ou extensão .csv
+      const downloadAttr = fakeAnchor.getAttribute('download') ?? '';
+      expect(downloadAttr.length).toBeGreaterThan(0);
+      const hasCsvOrPeriodId =
+        downloadAttr.includes('.csv') || downloadAttr.includes(PERIOD_1.periodId);
+      expect(hasCsvOrPeriodId).toBeTrue();
+
+      // O clique deve ter sido acionado programaticamente
+      expect(fakeAnchor.click).toHaveBeenCalled();
+
+      // A URL temporária deve ser revogada após o download
+      expect(URL.revokeObjectURL).toHaveBeenCalledWith(fakeUrl);
+    }));
   });
 
   // ── modal de confirmação ───────────────────────────────────────────────────
