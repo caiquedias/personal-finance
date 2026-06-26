@@ -266,6 +266,22 @@ export interface UpdatePaymentStatusRequest { name: string; description: string;
 export interface UpdateSourceTypeRequest    { name: string; }
 export interface UpdateFortnightTypeRequest { name: string; }
 
+// ── Purge ─────────────────────────────────────────────────────────────────────
+
+export interface EligiblePeriodResponse {
+  periodId:      string;
+  year:          number;
+  month:         number;
+  totalIncome:   number;
+  totalExpense:  number;
+  itemCount:     number;
+}
+
+export interface PurgeResultResponse {
+  periodId:         string;
+  estimatedSpaceKb: number;
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 export interface ApiError {

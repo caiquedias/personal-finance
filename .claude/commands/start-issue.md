@@ -10,7 +10,12 @@ _(formato esperado: `<issue-number>` ou `<issue-url>`)_
 
 1. Leia a issue via `gh issue view <number> --repo caiquedias/personal-finance --json number,title,body,labels`
 2. Derive o nome da branch: `feat/<id>-<slug>` (slug em kebab-case do título)
-3. Apresente ao Caique um passo a passo resumido (máximo 5 itens, 1 linha cada)
+3. Apresente ao Caique **exatamente este plano** (5 itens fixos, 1 linha cada):
+   1. Criar branches `feat/<id>-<slug>` e worktree `claude/<id>-<slug>` a partir de `origin/develop`
+   2. **Red** — escrever testes falhando para: `<tasks da issue>`
+   3. **Green (task a task)** — implementar: `<tasks da issue>`
+   4. **QA** → **UX Validator** (se frontend) → **Reviewer**
+   5. Push + PR `claude/` → `feat/` + mover issue para **In Review**
 4. **Aguarde confirmação do Caique antes de avançar**
 
 ---

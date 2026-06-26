@@ -215,4 +215,26 @@ describe('ApiService', () => {
     expect(req.request.method).toBe('PATCH');
     req.flush(null);
   });
+
+  // ── Purge ─────────────────────────────────────────────────────────────────
+
+  it('getEligiblePeriods faz GET /purge/eligible-periods', () => {
+    service.getEligiblePeriods().subscribe();
+    httpMock.expectOne(`${BASE}/purge/eligible-periods`).flush([]);
+  });
+
+  it('exportPurgeCsv faz GET /purge/:id/export com responseType blob', () => {
+    service.exportPurgeCsv('p-1').subscribe();
+    const req = httpMock.expectOne(`${BASE}/purge/p-1/export`);
+    expect(req.request.method).toBe('GET');
+    expect(req.request.responseType).toBe('blob');
+    req.flush(new Blob(['csv']));
+  });
+
+  it('executePurge faz POST /purge/:id', () => {
+    service.executePurge('p-1').subscribe();
+    const req = httpMock.expectOne(`${BASE}/purge/p-1`);
+    expect(req.request.method).toBe('POST');
+    req.flush({ periodId: 'p-1', estimatedSpaceKb: 128 });
+  });
 });
