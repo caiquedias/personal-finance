@@ -96,7 +96,15 @@ export class PurgeComponent implements OnInit {
 
   downloadCsv(period: EligiblePeriodResponse): void {
     this.api.exportPurgeCsv(period.periodId).subscribe({
-      next:  () => this.csvReady.set(true),
+      next: (blob) => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.setAttribute('download', `expurgo-${period.periodId}.csv`);
+        a.click();
+        URL.revokeObjectURL(url);
+        this.csvReady.set(true);
+      },
       error: () => this.csvReady.set(false),
     });
   }
