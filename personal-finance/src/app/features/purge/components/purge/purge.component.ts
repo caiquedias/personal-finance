@@ -1,5 +1,6 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
+import { trigger, transition, style, animate } from '@angular/animations';
 import { ApiService } from '../../../../core/services/api.service';
 import { EligiblePeriodResponse, PurgeResultResponse, MONTH_NAMES } from '../../../../core/models/models';
 
@@ -7,6 +8,23 @@ import { EligiblePeriodResponse, PurgeResultResponse, MONTH_NAMES } from '../../
   selector: 'app-purge',
   standalone: true,
   imports: [DecimalPipe],
+  animations: [
+    trigger('backdropAnim', [
+      transition(':enter', [style({opacity:0}), animate('200ms ease', style({opacity:1}))]),
+      transition(':leave', [animate('180ms ease', style({opacity:0}))])
+    ]),
+    trigger('modalAnim', [
+      transition(':enter', [
+        style({opacity:0, transform:'scale(0.88) translateY(-16px)'}),
+        animate('260ms cubic-bezier(0.34,1.56,0.64,1)',
+          style({opacity:1, transform:'scale(1) translateY(0)'}))
+      ]),
+      transition(':leave', [
+        animate('180ms ease-in',
+          style({opacity:0, transform:'scale(0.93) translateY(10px)'}))
+      ])
+    ])
+  ],
   template: `
     <div class="purge-container">
       @if (apiError()) {
@@ -37,16 +55,18 @@ import { EligiblePeriodResponse, PurgeResultResponse, MONTH_NAMES } from '../../
       }
 
       @if (confirmModalOpen()) {
-        <div class="modal-overlay">
-          <div class="modal">
-            <h2>Confirmar Expurgo</h2>
-            @if (selectedPeriod()) {
-              <p>{{ selectedPeriod()!.year }} — {{ monthName(selectedPeriod()!.month) }}</p>
-            }
-            <button (click)="downloadCsv(selectedPeriod()!)">Baixar CSV</button>
-            <button [disabled]="!csvReady()" (click)="confirmPurge()">Confirmar</button>
-            <button (click)="closeConfirmModal()">Cancelar</button>
-          </div>
+        <div class="modal-overlay" @backdropAnim (click)="closeConfirmModal()"></div>
+        <div class="modal" @modalAnim>
+          <h2>Confirmar Expurgo</h2>
+          @if (selectedPeriod()) {
+            <p>{{ selectedPeriod()!.year }} — {{ monthName(selectedPeriod()!.month) }}</p>
+          }
+          <p class="modal-confirm-text">
+            Confirmo que o arquivo CSV foi salvo com sucesso. Desejo excluir permanentemente os dados de {{ monthName(selectedPeriod()!.month) }}/{{ selectedPeriod()!.year }} do banco de dados.
+          </p>
+          <button (click)="downloadCsv(selectedPeriod()!)">Baixar CSV</button>
+          <button class="btn-danger" [disabled]="!csvReady()" (click)="confirmPurge()">Confirmar</button>
+          <button (click)="closeConfirmModal()">Cancelar</button>
         </div>
       }
     </div>
