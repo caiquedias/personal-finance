@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard, adminGuard } from './core/auth/auth.guard';
+import { CsvReaderService } from './core/services/csv-reader.service';
 
 export const routes: Routes = [
   // Rota pública
@@ -66,6 +67,24 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/purge/components/purge/purge.component')
             .then(m => m.PurgeComponent)
+      },
+      {
+        path: 'purge/analysis',
+        providers: [CsvReaderService],
+        children: [
+          {
+            path: '',
+            loadComponent: () =>
+              import('./features/purge/purge-analysis.component')
+                .then(m => m.PurgeAnalysisComponent)
+          },
+          {
+            path: 'detail',
+            loadComponent: () =>
+              import('./features/purge/purge-detail.component')
+                .then(m => m.PurgeDetailComponent)
+          },
+        ]
       },
       {
         path: 'admin/users',
