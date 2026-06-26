@@ -2,12 +2,14 @@ import { Component, inject, signal, OnInit } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { trigger, transition, style, animate } from '@angular/animations';
 import { ApiService } from '../../../../core/services/api.service';
-import { EligiblePeriodResponse, PurgeResultResponse, MONTH_NAMES } from '../../../../core/models/models';
+import { EligiblePeriodResponse, PurgeResultResponse, PurgeRecordResponse, MONTH_NAMES } from '../../../../core/models/models';
+import { PurgeWarningBannerComponent } from '../../purge-warning-banner.component';
+import { CurrencyBrlPipe } from '../../../../shared/pipes/currency-brl.pipe';
 
 @Component({
   selector: 'app-purge',
   standalone: true,
-  imports: [DecimalPipe],
+  imports: [DecimalPipe, PurgeWarningBannerComponent, CurrencyBrlPipe],
   animations: [
     trigger('backdropAnim', [
       transition(':enter', [style({opacity:0}), animate('200ms ease', style({opacity:1}))]),
@@ -69,6 +71,42 @@ import { EligiblePeriodResponse, PurgeResultResponse, MONTH_NAMES } from '../../
           <button (click)="closeConfirmModal()">Cancelar</button>
         </div>
       }
+
+      <!-- Seção de registros de expurgo -->
+      <section class="purge-records-section">
+        <app-purge-warning-banner />
+
+        @if (purgeRecords().length === 0) {
+          <div class="empty-state">Nenhum registro de expurgo encontrado.</div>
+        } @else {
+          <table class="records-table">
+            <thead>
+              <tr>
+                <th>Período</th>
+                <th>Data do expurgo</th>
+                <th>Total receitas</th>
+                <th>Total despesas</th>
+                <th>Qtd lançamentos</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (record of purgeRecords(); track record.id) {
+                <tr>
+                  <td>{{ monthName(record.month) }}/{{ record.year }}</td>
+                  <td>{{ record.purgedAt }}</td>
+                  <td>{{ record.totalIncome | currencyBrl }}</td>
+                  <td>{{ record.totalExpense | currencyBrl }}</td>
+                  <td>{{ record.itemCount }}</td>
+                  <td>
+                    <button (click)="openDeleteRecordModal(record)">Excluir</button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+      </section>
     </div>
   `,
 })
@@ -81,6 +119,7 @@ export class PurgeComponent implements OnInit {
   readonly csvReady         = signal(false);
   readonly purgeResult      = signal<PurgeResultResponse | null>(null);
   readonly apiError         = signal<string | null>(null);
+  readonly purgeRecords     = signal<PurgeRecordResponse[]>([]);
 
   // Converte número de mês (1-12) para nome em PT-BR
   monthName(month: number): string {
@@ -91,6 +130,11 @@ export class PurgeComponent implements OnInit {
     this.api.getEligiblePeriods().subscribe({
       next:  periods => this.eligiblePeriods.set(periods),
       error: err     => this.apiError.set(err?.error?.message ?? 'Erro ao carregar períodos.'),
+    });
+
+    this.api.getPurgeRecords().subscribe({
+      next:  records => this.purgeRecords.set(records),
+      error: err     => this.apiError.set(err?.error?.message ?? 'Erro ao carregar registros.'),
     });
   }
 
@@ -136,4 +180,7 @@ export class PurgeComponent implements OnInit {
       },
     });
   }
+
+  // Placeholder necessário para o template — será implementado na Task 2
+  openDeleteRecordModal(_record: PurgeRecordResponse): void {}
 }

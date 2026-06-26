@@ -15,7 +15,7 @@ import {
   AdminUserResponse, AdminUserFilterParams, AssignRoleRequest, ResetPasswordRequest,
   CreateUserByAdminRequest, UpdateUserByAdminRequest,
   ExpensesReport,
-  EligiblePeriodResponse, PurgeResultResponse,
+  EligiblePeriodResponse, PurgeResultResponse, PurgeRecordResponse,
 } from '../models/models';
 
 @Injectable({ providedIn: 'root' })
@@ -272,5 +272,13 @@ export class ApiService {
 
   executePurge(periodId: string): Observable<PurgeResultResponse> {
     return this.http.post<PurgeResultResponse>(`${this.base}/purge/${periodId}`, {});
+  }
+
+  getPurgeRecords(): Observable<PurgeRecordResponse[]> {
+    return this.http.get<PurgeRecordResponse[]>(`${this.base}/purge/records`);
+  }
+
+  deletePurgeRecord(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.base}/purge/records/${id}`);
   }
 }
