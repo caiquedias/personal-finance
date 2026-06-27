@@ -676,4 +676,33 @@ describe('PurgeComponent', () => {
       expect(apiSpy.exportPurgeCsv).toHaveBeenCalledWith('p-1');
     }));
   });
+
+  // ── Reviewer #356 — lógica do botão Confirmar e checkbox ──────────────────
+
+  describe('Reviewer #356 — lógica do botão Confirmar e checkbox', () => {
+    it('botão Confirmar permanece desabilitado após downloadCsv se checkbox não foi marcado', fakeAsync(() => {
+      apiSpy.exportPurgeCsv.and.returnValue(of(new Blob(['csv'])));
+
+      component.openConfirmModal(PERIOD_1);
+      component.downloadCsv(PERIOD_1);
+      tick();
+      fixture.detectChanges();
+
+      const dangerBtn: HTMLButtonElement = fixture.nativeElement.querySelector('button.btn-danger');
+      expect(dangerBtn).not.toBeNull();
+      // csvReady=true mas purgeConfirmed=false → botão deve estar disabled
+      expect(dangerBtn.disabled).toBeTrue();
+    }));
+
+    it('downloadCsv bem-sucedido seta purgeConfirmed como true', fakeAsync(() => {
+      apiSpy.exportPurgeCsv.and.returnValue(of(new Blob(['csv'])));
+
+      expect(component.purgeConfirmed()).toBeFalse();
+
+      component.downloadCsv(PERIOD_1);
+      tick();
+
+      expect(component.purgeConfirmed()).toBeTrue();
+    }));
+  });
 });
