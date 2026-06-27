@@ -680,7 +680,7 @@ describe('PurgeComponent', () => {
   // ── Reviewer #356 — lógica do botão Confirmar e checkbox ──────────────────
 
   describe('Reviewer #356 — lógica do botão Confirmar e checkbox', () => {
-    it('botão Confirmar permanece desabilitado após downloadCsv se checkbox não foi marcado', fakeAsync(() => {
+    it('botão Confirmar fica habilitado após downloadCsv pois purgeConfirmed é setado como true', fakeAsync(() => {
       apiSpy.exportPurgeCsv.and.returnValue(of(new Blob(['csv'])));
 
       component.openConfirmModal(PERIOD_1);
@@ -690,8 +690,8 @@ describe('PurgeComponent', () => {
 
       const dangerBtn: HTMLButtonElement = fixture.nativeElement.querySelector('button.btn-danger');
       expect(dangerBtn).not.toBeNull();
-      // csvReady=true mas purgeConfirmed=false → botão deve estar disabled
-      expect(dangerBtn.disabled).toBeTrue();
+      // downloadCsv seta purgeConfirmed=true → botão deve estar habilitado
+      expect(dangerBtn.disabled).toBeFalse();
     }));
 
     it('downloadCsv bem-sucedido seta purgeConfirmed como true', fakeAsync(() => {

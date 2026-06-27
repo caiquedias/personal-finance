@@ -181,7 +181,7 @@ import { CurrencyBrlPipe } from '../../../../shared/pipes/currency-brl.pipe';
 
             <!-- checkbox -->
             <label class="confirm-checkbox-label" [class.checked]="purgeConfirmed()">
-              <input type="checkbox" [checked]="purgeConfirmed()" (change)="purgeConfirmed.set($any($event.target).checked)" class="confirm-checkbox" />
+              <input type="checkbox" [checked]="purgeConfirmed()" (change)="purgeConfirmed.set(!purgeConfirmed())" class="confirm-checkbox" />
               <span class="modal-confirm-text">Confirmo que o arquivo CSV foi salvo com sucesso. Desejo excluir permanentemente os dados de {{ monthName(selectedPeriod()!.month) }}/{{ selectedPeriod()!.year }} do banco de dados.</span>
             </label>
           </div>
@@ -194,7 +194,7 @@ import { CurrencyBrlPipe } from '../../../../shared/pipes/currency-brl.pipe';
             </button>
             <div class="modal-footer-actions">
               <button class="btn-cancel" (click)="closeConfirmModal()">Cancelar</button>
-              <button class="btn-danger" [disabled]="!csvReady() && !purgeConfirmed()" (click)="confirmPurge()">Confirmar Expurgo</button>
+              <button class="btn-danger" [disabled]="!purgeConfirmed()" (click)="confirmPurge()">Confirmar Expurgo</button>
             </div>
           </div>
         </div>
@@ -333,6 +333,7 @@ export class PurgeComponent implements OnInit {
         a.click();
         URL.revokeObjectURL(url);
         this.csvReady.set(true);
+        this.purgeConfirmed.set(true);
       },
       error: () => this.csvReady.set(false),
     });
