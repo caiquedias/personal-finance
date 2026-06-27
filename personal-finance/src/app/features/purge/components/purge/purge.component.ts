@@ -1,5 +1,5 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
-import { DecimalPipe, DatePipe } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import { trigger, transition, style, animate } from '@angular/animations';
 import { ApiService } from '../../../../core/services/api.service';
 import { EligiblePeriodResponse, PurgeResultResponse, PurgeRecordResponse, MONTH_NAMES } from '../../../../core/models/models';
@@ -9,7 +9,7 @@ import { CurrencyBrlPipe } from '../../../../shared/pipes/currency-brl.pipe';
 @Component({
   selector: 'app-purge',
   standalone: true,
-  imports: [DecimalPipe, DatePipe, PurgeWarningBannerComponent, CurrencyBrlPipe],
+  imports: [DatePipe, PurgeWarningBannerComponent, CurrencyBrlPipe],
   styleUrls: ['./purge.component.css'],
   animations: [
     trigger('backdropAnim', [

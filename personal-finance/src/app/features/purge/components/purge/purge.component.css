@@ -82,7 +82,7 @@
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-card);
   overflow: hidden;
   transition: transform 180ms var(--ease), box-shadow 180ms var(--ease);
   animation: fadeUp 0.4s var(--ease) both;
@@ -231,7 +231,7 @@
   backdrop-filter: blur(24px);
   border-radius: var(--radius);
   border: 1px solid var(--border);
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-card);
   animation: fadeUp 0.5s var(--ease) 0.08s both;
 }
 .table { width: 100%; border-collapse: collapse; font-size: .875rem; }
@@ -270,6 +270,7 @@
   font-size: .6875rem;
   font-weight: 600;
   color: #6B9C82;
+  white-space: nowrap;
 }
 
 .btn-delete-record {
