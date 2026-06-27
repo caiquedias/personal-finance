@@ -658,4 +658,22 @@ describe('PurgeComponent', () => {
       expect(modal.classList.contains('ng-trigger-modalAnim')).toBeTrue();
     }));
   });
+
+  // ── cards de períodos elegíveis — botão CSV ───────────────────────────────
+
+  describe('cards de períodos elegíveis — botão CSV', () => {
+    it('clique no botão CSV de um card chama exportPurgeCsv com o periodId correto', fakeAsync(() => {
+      apiSpy.exportPurgeCsv.and.returnValue(of(new Blob(['csv'])));
+      component.eligiblePeriods.set([PERIOD_1, PERIOD_2]);
+      fixture.detectChanges();
+
+      const csvBtn: HTMLButtonElement = fixture.nativeElement.querySelector('.btn-csv-card');
+      expect(csvBtn).not.toBeNull('.btn-csv-card não encontrado — elemento ainda não implementado no template');
+
+      csvBtn.click();
+      tick();
+
+      expect(apiSpy.exportPurgeCsv).toHaveBeenCalledWith('p-1');
+    }));
+  });
 });
