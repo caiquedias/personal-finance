@@ -181,10 +181,14 @@ export class PurgeComponent implements OnInit {
 
     this.api.executePurge(period.periodId).subscribe({
       next: result => {
-        // Remove o período expurgado da lista
+        // Remove o período expurgado da lista e recarrega os registros de expurgo
         this.eligiblePeriods.update(list => list.filter(p => p.periodId !== period.periodId));
         this.purgeResult.set(result);
         this.confirmModalOpen.set(false);
+        this.api.getPurgeRecords().subscribe({
+          next:  records => this.purgeRecords.set(records),
+          error: err     => this.apiError.set(err?.error?.message ?? 'Erro ao recarregar registros.'),
+        });
       },
       error: err => {
         this.apiError.set(err?.error?.message ?? 'Erro ao executar expurgo.');

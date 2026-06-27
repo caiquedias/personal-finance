@@ -6,19 +6,7 @@ import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { of, throwError } from 'rxjs';
 import { PurgeComponent } from './purge.component';
 import { ApiService } from '../../../../core/services/api.service';
-import { EligiblePeriodResponse, PurgeResultResponse } from '../../../../core/models/models';
-
-// ── local fixture type (PurgeRecordResponse ainda não existe em models.ts) ───
-
-interface PurgeRecordResponse {
-  id:           string;
-  year:         number;
-  month:        number;
-  purgedAt:     string;
-  totalIncome:  number;
-  totalExpense: number;
-  itemCount:    number;
-}
+import { EligiblePeriodResponse, PurgeResultResponse, PurgeRecordResponse } from '../../../../core/models/models';
 
 // ── fixtures ─────────────────────────────────────────────────────────────────
 
@@ -316,6 +304,18 @@ describe('PurgeComponent', () => {
 
       expect(component.apiError()).toBeTruthy();
       expect(component.confirmModalOpen()).toBeFalse();
+    }));
+
+    it('recarrega purgeRecords via getPurgeRecords após expurgo bem-sucedido', fakeAsync(() => {
+      const novosRecords = [RECORD_1, RECORD_2];
+      apiSpy.executePurge.and.returnValue(of(PURGE_RESULT));
+      apiSpy.getPurgeRecords.and.returnValue(of(novosRecords));
+
+      component.confirmPurge();
+      tick();
+
+      expect(apiSpy.getPurgeRecords).toHaveBeenCalled();
+      expect(component.purgeRecords()).toEqual(novosRecords);
     }));
   });
 
