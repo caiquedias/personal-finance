@@ -282,6 +282,16 @@ export interface PurgeResultResponse {
   estimatedSpaceKb: number;
 }
 
+export interface PurgeRecordResponse {
+  id:           string;
+  year:         number;
+  month:        number;
+  purgedAt:     string;  // ISO date string
+  totalIncome:  number;
+  totalExpense: number;
+  itemCount:    number;
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 export interface ApiError {

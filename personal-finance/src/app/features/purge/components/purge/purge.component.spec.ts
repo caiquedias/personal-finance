@@ -6,7 +6,7 @@ import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { of, throwError } from 'rxjs';
 import { PurgeComponent } from './purge.component';
 import { ApiService } from '../../../../core/services/api.service';
-import { EligiblePeriodResponse, PurgeResultResponse } from '../../../../core/models/models';
+import { EligiblePeriodResponse, PurgeResultResponse, PurgeRecordResponse } from '../../../../core/models/models';
 
 // ── fixtures ─────────────────────────────────────────────────────────────────
 
@@ -33,20 +33,50 @@ const PURGE_RESULT: PurgeResultResponse = {
   estimatedSpaceKb: 128,
 };
 
+const RECORD_1: PurgeRecordResponse = {
+  id:           'r-1',
+  year:         2024,
+  month:        1,
+  purgedAt:     '2024-02-10T12:00:00Z',
+  totalIncome:  5000,
+  totalExpense: 4200,
+  itemCount:    30,
+};
+
+const RECORD_2: PurgeRecordResponse = {
+  id:           'r-2',
+  year:         2023,
+  month:        12,
+  purgedAt:     '2024-01-05T08:30:00Z',
+  totalIncome:  6000,
+  totalExpense: 5100,
+  itemCount:    45,
+};
+
+// ── extended spy type (inclui métodos MOD-03 ainda não existentes no ApiService real) ──
+
+type ApiServiceSpy = jasmine.SpyObj<ApiService> & {
+  getPurgeRecords:  jasmine.Spy;
+  deletePurgeRecord: jasmine.Spy;
+};
+
 // ── suite ─────────────────────────────────────────────────────────────────────
 
 describe('PurgeComponent', () => {
   let fixture: ComponentFixture<PurgeComponent>;
   let component: PurgeComponent;
-  let apiSpy: jasmine.SpyObj<ApiService>;
+  let apiSpy: ApiServiceSpy;
 
   beforeEach(async () => {
     apiSpy = jasmine.createSpyObj('ApiService', [
       'getEligiblePeriods',
       'exportPurgeCsv',
       'executePurge',
-    ]);
+      'getPurgeRecords',
+      'deletePurgeRecord',
+    ]) as ApiServiceSpy;
     apiSpy.getEligiblePeriods.and.returnValue(of([PERIOD_1, PERIOD_2]));
+    apiSpy.getPurgeRecords.and.returnValue(of([RECORD_1, RECORD_2]));
 
     await TestBed.configureTestingModule({
       imports: [PurgeComponent, RouterModule.forRoot([]), NoopAnimationsModule],
@@ -275,6 +305,18 @@ describe('PurgeComponent', () => {
       expect(component.apiError()).toBeTruthy();
       expect(component.confirmModalOpen()).toBeFalse();
     }));
+
+    it('recarrega purgeRecords via getPurgeRecords após expurgo bem-sucedido', fakeAsync(() => {
+      const novosRecords = [RECORD_1, RECORD_2];
+      apiSpy.executePurge.and.returnValue(of(PURGE_RESULT));
+      apiSpy.getPurgeRecords.and.returnValue(of(novosRecords));
+
+      component.confirmPurge();
+      tick();
+
+      expect(apiSpy.getPurgeRecords).toHaveBeenCalled();
+      expect(component.purgeRecords()).toEqual(novosRecords);
+    }));
   });
 
   // ── GAP 1 — Angular Animations obrigatórias ───────────────────────────────
@@ -393,6 +435,227 @@ describe('PurgeComponent', () => {
       // Abre modal para outro período
       component.openConfirmModal(PERIOD_2);
       expect(component.csvReady()).toBeFalse();
+    }));
+  });
+
+  // ── MOD-03: Listagem de PurgeRecords ──────────────────────────────────────
+
+  describe('ngOnInit — carrega registros de expurgos (purgeRecords)', () => {
+    it('chama getPurgeRecords na inicialização', fakeAsync(() => {
+      expect(apiSpy.getPurgeRecords).toHaveBeenCalled();
+    }));
+
+    it('armazena os records retornados pelo backend', fakeAsync(() => {
+      tick();
+      expect((component as any).purgeRecords().length).toBe(2);
+    }));
+
+    it('exibe year, month, purgedAt, totalIncome, totalExpense e itemCount na tabela', fakeAsync(() => {
+      tick();
+      fixture.detectChanges();
+      const text = fixture.nativeElement.textContent as string;
+      // RECORD_1: year=2024, month=1 (Janeiro), purgedAt contém "2024-02-10"
+      expect(text).toContain('2024');
+      expect(text).toContain('5.000');  // totalIncome formatado com DecimalPipe
+      expect(text).toContain('4.200');  // totalExpense
+      expect(text).toContain('30');     // itemCount
+    }));
+
+    it('define apiError quando getPurgeRecords falha', fakeAsync(() => {
+      apiSpy.getPurgeRecords.and.returnValue(
+        throwError(() => ({ error: { message: 'Erro ao carregar registros.' } }))
+      );
+      component.ngOnInit();
+      tick();
+      expect(component.apiError()).toBeTruthy();
+    }));
+
+    it('exibe mensagem "Nenhum registro de expurgo encontrado." quando lista está vazia', fakeAsync(() => {
+      apiSpy.getPurgeRecords.and.returnValue(of([]));
+      component.ngOnInit();
+      tick();
+      fixture.detectChanges();
+      const text = fixture.nativeElement.textContent as string;
+      expect(text).toContain('Nenhum registro de expurgo encontrado.');
+    }));
+  });
+
+  // ── MOD-03: PurgeWarningBannerComponent nos imports ───────────────────────
+
+  describe('PurgeWarningBannerComponent — import obrigatório', () => {
+    it('PurgeWarningBannerComponent está nos imports do PurgeComponent', fakeAsync(() => {
+      // Verifica via DOM: NO_ERRORS_SCHEMA ignoraria tags desconhecidas sem erro,
+      // mas o selector deve ser reconhecido pelo Angular quando importado corretamente.
+      // A segunda asserção (renderização DOM) é o critério definitivo.
+      tick();
+      fixture.detectChanges();
+      const banner = fixture.nativeElement.querySelector('app-purge-warning-banner');
+      expect(banner).not.toBeNull('app-purge-warning-banner deve estar no DOM — PurgeWarningBannerComponent não está importado');
+    }));
+
+    it('renderiza app-purge-warning-banner na seção de records', fakeAsync(() => {
+      tick();
+      fixture.detectChanges();
+      const banner = fixture.nativeElement.querySelector('app-purge-warning-banner');
+      expect(banner).not.toBeNull();
+    }));
+  });
+
+  // ── MOD-03: Modal de delete de metadados ─────────────────────────────────
+
+  describe('openDeleteRecordModal()', () => {
+    it('abre o modal de delete ao clicar em "Excluir" para um record específico', fakeAsync(() => {
+      const cmp = component as any;
+      tick();
+      fixture.detectChanges();
+      cmp.openDeleteRecordModal(RECORD_1);
+      expect(cmp.deleteRecordModalOpen()).toBeTrue();
+      expect(cmp.selectedRecord()?.id).toBe('r-1');
+    }));
+
+    it('exibe o modal de delete no DOM quando deleteRecordModalOpen é true', fakeAsync(() => {
+      const cmp = component as any;
+      tick();
+      cmp.openDeleteRecordModal(RECORD_1);
+      fixture.detectChanges();
+      const modal = fixture.nativeElement.querySelector('.modal-delete-record');
+      expect(modal).not.toBeNull();
+    }));
+  });
+
+  describe('closeDeleteRecordModal()', () => {
+    it('fecha o modal sem chamar deletePurgeRecord', fakeAsync(() => {
+      const cmp = component as any;
+      tick();
+      cmp.openDeleteRecordModal(RECORD_1);
+      cmp.closeDeleteRecordModal();
+      expect(cmp.deleteRecordModalOpen()).toBeFalse();
+      expect(apiSpy.deletePurgeRecord).not.toHaveBeenCalled();
+    }));
+  });
+
+  describe('confirmDeleteRecord()', () => {
+    beforeEach(fakeAsync(() => {
+      tick();
+      (component as any).openDeleteRecordModal(RECORD_1);
+    }));
+
+    it('chama deletePurgeRecord com o id correto ao confirmar', fakeAsync(() => {
+      const cmp = component as any;
+      apiSpy.deletePurgeRecord.and.returnValue(of(void 0));
+      cmp.confirmDeleteRecord();
+      tick();
+      expect(apiSpy.deletePurgeRecord).toHaveBeenCalledWith('r-1');
+    }));
+
+    it('remove o record da lista após delete bem-sucedido', fakeAsync(() => {
+      const cmp = component as any;
+      apiSpy.deletePurgeRecord.and.returnValue(of(void 0));
+      cmp.confirmDeleteRecord();
+      tick();
+      const remaining = cmp.purgeRecords();
+      expect(remaining.find((r: any) => r.id === 'r-1')).toBeUndefined();
+      expect(remaining.length).toBe(1);
+    }));
+
+    it('fecha o modal após delete bem-sucedido', fakeAsync(() => {
+      const cmp = component as any;
+      apiSpy.deletePurgeRecord.and.returnValue(of(void 0));
+      cmp.confirmDeleteRecord();
+      tick();
+      expect(cmp.deleteRecordModalOpen()).toBeFalse();
+    }));
+
+    it('define apiError quando deletePurgeRecord falha', fakeAsync(() => {
+      const cmp = component as any;
+      apiSpy.deletePurgeRecord.and.returnValue(
+        throwError(() => ({ error: { message: 'Falha ao deletar.' } }))
+      );
+      cmp.confirmDeleteRecord();
+      tick();
+      expect(component.apiError()).toBeTruthy();
+    }));
+
+    it('fecha o modal quando deletePurgeRecord falha', fakeAsync(() => {
+      const cmp = component as any;
+      apiSpy.deletePurgeRecord.and.returnValue(
+        throwError(() => ({ error: { message: 'Falha ao deletar.' } }))
+      );
+      cmp.confirmDeleteRecord();
+      tick();
+      expect(cmp.deleteRecordModalOpen()).toBeFalse();
+    }));
+
+    it('item permanece na lista quando deletePurgeRecord falha', fakeAsync(() => {
+      const cmp = component as any;
+      apiSpy.deletePurgeRecord.and.returnValue(
+        throwError(() => ({ error: { message: 'Falha ao deletar.' } }))
+      );
+      cmp.confirmDeleteRecord();
+      tick();
+      expect(cmp.purgeRecords().find((r: any) => r.id === 'r-1')).toBeDefined();
+    }));
+  });
+
+  // ── MOD-03: Texto do modal de delete ─────────────────────────────────────
+
+  describe('modal de delete — conteúdo e botão danger', () => {
+    beforeEach(fakeAsync(() => {
+      tick();
+      (component as any).openDeleteRecordModal(RECORD_1);
+      fixture.detectChanges();
+    }));
+
+    it('texto do modal explica que os dados do banco já foram deletados', () => {
+      const text = fixture.nativeElement.textContent as string;
+      // Verificar que contém alguma variação da frase sobre dados já deletados
+      const hasDadosDeletados =
+        text.toLowerCase().includes('dados') &&
+        (text.toLowerCase().includes('deletados') || text.toLowerCase().includes('excluídos') || text.toLowerCase().includes('removidos'));
+      expect(hasDadosDeletados).toBeTrue();
+    });
+
+    it('modal de delete possui botão btn-danger para confirmar', () => {
+      const modal = fixture.nativeElement.querySelector('.modal-delete-record');
+      expect(modal).not.toBeNull();
+      const dangerBtn = modal.querySelector('button.btn-danger');
+      expect(dangerBtn).not.toBeNull();
+    });
+
+    it('clique no btn-danger do modal de delete chama confirmDeleteRecord', fakeAsync(() => {
+      apiSpy.deletePurgeRecord.and.returnValue(of(void 0));
+      const modal = fixture.nativeElement.querySelector('.modal-delete-record');
+      const dangerBtn: HTMLButtonElement = modal.querySelector('button.btn-danger');
+      expect(dangerBtn).not.toBeNull();
+      dangerBtn.click();
+      tick();
+      expect(apiSpy.deletePurgeRecord).toHaveBeenCalledWith('r-1');
+    }));
+  });
+
+  // ── MOD-03: Angular Animations no modal de delete ────────────────────────
+
+  describe('GAP 4 — animations no modal de delete (backdropAnim + modalAnim)', () => {
+    it('elemento .modal-overlay do delete tem ng-trigger-backdropAnim', fakeAsync(() => {
+      tick();
+      (component as any).openDeleteRecordModal(RECORD_1);
+      fixture.detectChanges();
+      // O overlay do modal de delete deve usar @backdropAnim
+      const overlays = fixture.nativeElement.querySelectorAll('.modal-overlay');
+      // Pelo menos um overlay com ng-trigger-backdropAnim
+      const hasAnim = Array.from(overlays).some(
+        (el: any) => el.classList.contains('ng-trigger-backdropAnim')
+      );
+      expect(hasAnim).toBeTrue();
+    }));
+
+    it('elemento .modal-delete-record tem ng-trigger-modalAnim', fakeAsync(() => {
+      tick();
+      (component as any).openDeleteRecordModal(RECORD_1);
+      fixture.detectChanges();
+      const modal = fixture.nativeElement.querySelector('.modal-delete-record');
+      expect(modal).not.toBeNull();
+      expect(modal.classList.contains('ng-trigger-modalAnim')).toBeTrue();
     }));
   });
 });
