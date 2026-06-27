@@ -298,7 +298,6 @@ export class PurgeComponent implements OnInit {
   readonly eligiblePeriods       = signal<EligiblePeriodResponse[]>([]);
   readonly selectedPeriod        = signal<EligiblePeriodResponse | null>(null);
   readonly confirmModalOpen      = signal(false);
-  readonly csvReady              = signal(false);
   readonly purgeConfirmed        = signal(false);
   readonly purgeResult           = signal<PurgeResultResponse | null>(null);
   readonly apiError              = signal<string | null>(null);
@@ -332,15 +331,13 @@ export class PurgeComponent implements OnInit {
         a.setAttribute('download', `expurgo-${period.periodId}.csv`);
         a.click();
         URL.revokeObjectURL(url);
-        this.csvReady.set(true);
         this.purgeConfirmed.set(true);
       },
-      error: () => this.csvReady.set(false),
+      error: () => {},
     });
   }
 
   openConfirmModal(period: EligiblePeriodResponse): void {
-    this.csvReady.set(false);
     this.purgeConfirmed.set(false);
     this.selectedPeriod.set(period);
     this.confirmModalOpen.set(true);
