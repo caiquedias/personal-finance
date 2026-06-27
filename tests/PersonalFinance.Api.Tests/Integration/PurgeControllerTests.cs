@@ -191,9 +191,7 @@ public class PurgeControllerTests : ApiIntegrationTestBase
         body.GetArrayLength().Should().BeGreaterThan(0);
 
         var first = body[0];
-        // Bug: controller retorna "id" em vez de "periodId" — deve falhar aqui
         first.TryGetProperty("periodId", out _).Should().BeTrue("o payload deve conter 'periodId'");
-        // E não deve conter o campo "id" solto
         first.TryGetProperty("id", out _).Should().BeFalse("o campo 'id' não deve ser exposto diretamente");
     }
 
@@ -212,7 +210,6 @@ public class PurgeControllerTests : ApiIntegrationTestBase
         body.GetArrayLength().Should().BeGreaterThan(0);
 
         var first = body[0];
-        // Bug: campos ausentes no payload — deve falhar aqui
         first.TryGetProperty("totalIncome", out _).Should().BeTrue("o payload deve conter 'totalIncome'");
         first.TryGetProperty("totalExpense", out _).Should().BeTrue("o payload deve conter 'totalExpense'");
         first.TryGetProperty("itemCount", out _).Should().BeTrue("o payload deve conter 'itemCount'");
@@ -230,7 +227,6 @@ public class PurgeControllerTests : ApiIntegrationTestBase
         var r = await client.GetAsync($"/api/v1/purge/{periodId}/export");
 
         // Assert
-        // Bug: endpoint está como [HttpPost], então GET retorna 405 MethodNotAllowed
         ((int)r.StatusCode).Should().NotBe(405, "o endpoint export deve aceitar GET, não apenas POST");
         r.StatusCode.Should().Be(HttpStatusCode.OK);
         r.Content.Headers.ContentType!.MediaType.Should().Be("text/csv");

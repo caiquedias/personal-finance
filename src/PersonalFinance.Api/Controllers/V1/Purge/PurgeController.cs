@@ -9,21 +9,19 @@ namespace PersonalFinance.Api.Controllers.V1.Purge;
 /// </summary>
 [Route("api/v1/purge")]
 public sealed class PurgeController(
+    GetEligiblePeriodsUseCase getEligiblePeriodsUseCase,
     ExportPeriodUseCase exportPeriodUseCase,
     PurgePeriodUseCase purgePeriodUseCase,
     GetPurgeRecordsUseCase getPurgeRecordsUseCase,
     DeletePurgeRecordUseCase deletePurgeRecordUseCase,
-    IPeriodRepository periodRepository,
-    IExpenseRepository expenseRepository,
-    IIncomeRepository incomeRepository) : ApiControllerBase
+    IPeriodRepository periodRepository) : ApiControllerBase
 {
+    private readonly GetEligiblePeriodsUseCase _getEligiblePeriodsUseCase = getEligiblePeriodsUseCase;
     private readonly ExportPeriodUseCase     _exportPeriodUseCase     = exportPeriodUseCase;
     private readonly PurgePeriodUseCase      _purgePeriodUseCase      = purgePeriodUseCase;
     private readonly GetPurgeRecordsUseCase  _getPurgeRecordsUseCase  = getPurgeRecordsUseCase;
     private readonly DeletePurgeRecordUseCase _deletePurgeRecordUseCase = deletePurgeRecordUseCase;
     private readonly IPeriodRepository       _periodRepository        = periodRepository;
-    private readonly IExpenseRepository      _expenseRepository       = expenseRepository;
-    private readonly IIncomeRepository       _incomeRepository        = incomeRepository;
 
     /// <summary>
     /// Lista os períodos elegíveis ao expurgo (IsActive = false) do usuário autenticado.
@@ -33,26 +31,7 @@ public sealed class PurgeController(
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetEligiblePeriods(CancellationToken ct)
     {
-        var periods = await _periodRepository.GetByUserAsync(CurrentUserId, ct);
-        var eligiblePeriods = periods.Where(p => !p.IsActive).ToList();
-
-        var result = new List<object>(eligiblePeriods.Count);
-        foreach (var p in eligiblePeriods)
-        {
-            var expenses = (await _expenseRepository.GetByPeriodAsync(p.Id, CurrentUserId, ct)).ToList();
-            var incomes  = (await _incomeRepository.GetByPeriodAsync(p.Id, CurrentUserId, ct)).ToList();
-
-            result.Add(new
-            {
-                periodId     = p.Id,
-                year         = p.Year,
-                month        = p.Month,
-                totalIncome  = incomes.Sum(i => i.Amount),
-                totalExpense = expenses.Sum(e => e.Amount),
-                itemCount    = expenses.Count + incomes.Count
-            });
-        }
-
+        var result = await _getEligiblePeriodsUseCase.ExecuteAsync(CurrentUserId, ct);
         return Ok(result);
     }
 

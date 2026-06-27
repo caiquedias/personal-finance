@@ -84,6 +84,7 @@ public static class ApplicationExtensions
         services.AddScoped<GetExpensesReportUseCase>();
 
         // ── Purge ─────────────────────────────────────────────────────────────
+        services.AddScoped<GetEligiblePeriodsUseCase>();
         services.AddScoped<ExportPeriodUseCase>();
         services.AddScoped<PurgePeriodUseCase>();
         services.AddScoped<GetPurgeRecordsUseCase>();
