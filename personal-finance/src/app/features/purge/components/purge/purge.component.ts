@@ -2,12 +2,14 @@ import { Component, inject, signal, OnInit } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { trigger, transition, style, animate } from '@angular/animations';
 import { ApiService } from '../../../../core/services/api.service';
-import { EligiblePeriodResponse, PurgeResultResponse, MONTH_NAMES } from '../../../../core/models/models';
+import { EligiblePeriodResponse, PurgeResultResponse, PurgeRecordResponse, MONTH_NAMES } from '../../../../core/models/models';
+import { PurgeWarningBannerComponent } from '../../purge-warning-banner.component';
+import { CurrencyBrlPipe } from '../../../../shared/pipes/currency-brl.pipe';
 
 @Component({
   selector: 'app-purge',
   standalone: true,
-  imports: [DecimalPipe],
+  imports: [DecimalPipe, PurgeWarningBannerComponent, CurrencyBrlPipe],
   animations: [
     trigger('backdropAnim', [
       transition(':enter', [style({opacity:0}), animate('200ms ease', style({opacity:1}))]),
@@ -69,18 +71,67 @@ import { EligiblePeriodResponse, PurgeResultResponse, MONTH_NAMES } from '../../
           <button (click)="closeConfirmModal()">Cancelar</button>
         </div>
       }
+
+      <!-- Seção de registros de expurgo -->
+      <section class="purge-records-section">
+        <app-purge-warning-banner />
+
+        @if (purgeRecords().length === 0) {
+          <div class="empty-state">Nenhum registro de expurgo encontrado.</div>
+        } @else {
+          <table class="records-table">
+            <thead>
+              <tr>
+                <th>Período</th>
+                <th>Data do expurgo</th>
+                <th>Total receitas</th>
+                <th>Total despesas</th>
+                <th>Qtd lançamentos</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (record of purgeRecords(); track record.id) {
+                <tr>
+                  <td>{{ monthName(record.month) }}/{{ record.year }}</td>
+                  <td>{{ record.purgedAt }}</td>
+                  <td>{{ record.totalIncome | currencyBrl }}</td>
+                  <td>{{ record.totalExpense | currencyBrl }}</td>
+                  <td>{{ record.itemCount }}</td>
+                  <td>
+                    <button (click)="openDeleteRecordModal(record)">Excluir</button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+      </section>
+
+      @if (deleteRecordModalOpen()) {
+        <div class="modal-overlay" @backdropAnim (click)="closeDeleteRecordModal()"></div>
+        <div class="modal modal-delete-record" @modalAnim>
+          <h2>Excluir Metadados do Expurgo</h2>
+          <p>Os dados deste período já foram excluídos do banco de dados. Esta ação remove apenas o registro de metadados do expurgo.</p>
+          <button class="btn-danger" (click)="confirmDeleteRecord()">Confirmar exclusão</button>
+          <button (click)="closeDeleteRecordModal()">Cancelar</button>
+        </div>
+      }
     </div>
   `,
 })
 export class PurgeComponent implements OnInit {
   private readonly api = inject(ApiService);
 
-  readonly eligiblePeriods  = signal<EligiblePeriodResponse[]>([]);
-  readonly selectedPeriod   = signal<EligiblePeriodResponse | null>(null);
-  readonly confirmModalOpen = signal(false);
-  readonly csvReady         = signal(false);
-  readonly purgeResult      = signal<PurgeResultResponse | null>(null);
-  readonly apiError         = signal<string | null>(null);
+  readonly eligiblePeriods       = signal<EligiblePeriodResponse[]>([]);
+  readonly selectedPeriod        = signal<EligiblePeriodResponse | null>(null);
+  readonly confirmModalOpen      = signal(false);
+  readonly csvReady              = signal(false);
+  readonly purgeResult           = signal<PurgeResultResponse | null>(null);
+  readonly apiError              = signal<string | null>(null);
+  readonly purgeRecords          = signal<PurgeRecordResponse[]>([]);
+  readonly deleteRecordModalOpen = signal(false);
+  readonly selectedRecord        = signal<PurgeRecordResponse | null>(null);
 
   // Converte número de mês (1-12) para nome em PT-BR
   monthName(month: number): string {
@@ -91,6 +142,11 @@ export class PurgeComponent implements OnInit {
     this.api.getEligiblePeriods().subscribe({
       next:  periods => this.eligiblePeriods.set(periods),
       error: err     => this.apiError.set(err?.error?.message ?? 'Erro ao carregar períodos.'),
+    });
+
+    this.api.getPurgeRecords().subscribe({
+      next:  records => this.purgeRecords.set(records),
+      error: err     => this.apiError.set(err?.error?.message ?? 'Erro ao carregar registros.'),
     });
   }
 
@@ -125,14 +181,44 @@ export class PurgeComponent implements OnInit {
 
     this.api.executePurge(period.periodId).subscribe({
       next: result => {
-        // Remove o período expurgado da lista
+        // Remove o período expurgado da lista e recarrega os registros de expurgo
         this.eligiblePeriods.update(list => list.filter(p => p.periodId !== period.periodId));
         this.purgeResult.set(result);
         this.confirmModalOpen.set(false);
+        this.api.getPurgeRecords().subscribe({
+          next:  records => this.purgeRecords.set(records),
+          error: err     => this.apiError.set(err?.error?.message ?? 'Erro ao recarregar registros.'),
+        });
       },
       error: err => {
         this.apiError.set(err?.error?.message ?? 'Erro ao executar expurgo.');
         this.confirmModalOpen.set(false);
+      },
+    });
+  }
+
+  openDeleteRecordModal(record: PurgeRecordResponse): void {
+    this.selectedRecord.set(record);
+    this.deleteRecordModalOpen.set(true);
+  }
+
+  closeDeleteRecordModal(): void {
+    this.deleteRecordModalOpen.set(false);
+  }
+
+  confirmDeleteRecord(): void {
+    const record = this.selectedRecord();
+    if (!record) return;
+
+    this.api.deletePurgeRecord(record.id).subscribe({
+      next: () => {
+        // Remove o record da lista após delete bem-sucedido
+        this.purgeRecords.update(list => list.filter(r => r.id !== record.id));
+        this.deleteRecordModalOpen.set(false);
+      },
+      error: err => {
+        this.apiError.set(err?.error?.message ?? 'Erro ao excluir registro.');
+        this.deleteRecordModalOpen.set(false);
       },
     });
   }
