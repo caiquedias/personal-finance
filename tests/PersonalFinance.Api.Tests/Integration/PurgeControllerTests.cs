@@ -39,12 +39,12 @@ public class PurgeControllerTests : ApiIntegrationTestBase
 
     // ── Export ────────────────────────────────────────────────────────────────
 
-    [Fact(DisplayName = "POST /purge/export/{periodId} deve retornar 200 com Content-Type text/csv")]
+    [Fact(DisplayName = "GET /purge/{periodId}/export deve retornar 200 com Content-Type text/csv")]
     public async Task Export_ValidPeriod_ShouldReturn200WithCsvContentType()
     {
         var (client, periodId) = await SetupInactivePeriodAsync(month: 3);
 
-        var r = await client.PostAsync($"/api/v1/purge/export/{periodId}", null);
+        var r = await client.GetAsync($"/api/v1/purge/{periodId}/export");
 
         r.StatusCode.Should().Be(HttpStatusCode.OK);
         r.Content.Headers.ContentType!.MediaType.Should().Be("text/csv");
@@ -52,13 +52,13 @@ public class PurgeControllerTests : ApiIntegrationTestBase
         body.Should().NotBeEmpty();
     }
 
-    [Fact(DisplayName = "POST /purge/export/{periodId} de período inexistente deve retornar 404")]
+    [Fact(DisplayName = "GET /purge/{periodId}/export de período inexistente deve retornar 404")]
     public async Task Export_NonExistentPeriod_ShouldReturn404()
     {
         var (client, _) = await GetAuthenticatedClientAsync();
         var fakeId = Guid.NewGuid();
 
-        var r = await client.PostAsync($"/api/v1/purge/export/{fakeId}", null);
+        var r = await client.GetAsync($"/api/v1/purge/{fakeId}/export");
 
         r.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }

@@ -13,34 +13,54 @@ public sealed class PurgeController(
     PurgePeriodUseCase purgePeriodUseCase,
     GetPurgeRecordsUseCase getPurgeRecordsUseCase,
     DeletePurgeRecordUseCase deletePurgeRecordUseCase,
-    IPeriodRepository periodRepository) : ApiControllerBase
+    IPeriodRepository periodRepository,
+    IExpenseRepository expenseRepository,
+    IIncomeRepository incomeRepository) : ApiControllerBase
 {
     private readonly ExportPeriodUseCase     _exportPeriodUseCase     = exportPeriodUseCase;
     private readonly PurgePeriodUseCase      _purgePeriodUseCase      = purgePeriodUseCase;
     private readonly GetPurgeRecordsUseCase  _getPurgeRecordsUseCase  = getPurgeRecordsUseCase;
     private readonly DeletePurgeRecordUseCase _deletePurgeRecordUseCase = deletePurgeRecordUseCase;
     private readonly IPeriodRepository       _periodRepository        = periodRepository;
+    private readonly IExpenseRepository      _expenseRepository       = expenseRepository;
+    private readonly IIncomeRepository       _incomeRepository        = incomeRepository;
 
     /// <summary>
-    /// Lista os períodos inelegíveis ao expurgo (IsActive = false) do usuário autenticado.
+    /// Lista os períodos elegíveis ao expurgo (IsActive = false) do usuário autenticado.
+    /// Retorna totais de receitas, despesas e contagem de itens por período.
     /// </summary>
     [HttpGet("eligible-periods")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetEligiblePeriods(CancellationToken ct)
     {
         var periods = await _periodRepository.GetByUserAsync(CurrentUserId, ct);
-        var eligible = periods
-            .Where(p => !p.IsActive)
-            .Select(p => new { p.Id, p.Year, p.Month })
-            .ToList();
-        return Ok(eligible);
+        var eligiblePeriods = periods.Where(p => !p.IsActive).ToList();
+
+        var result = new List<object>(eligiblePeriods.Count);
+        foreach (var p in eligiblePeriods)
+        {
+            var expenses = (await _expenseRepository.GetByPeriodAsync(p.Id, CurrentUserId, ct)).ToList();
+            var incomes  = (await _incomeRepository.GetByPeriodAsync(p.Id, CurrentUserId, ct)).ToList();
+
+            result.Add(new
+            {
+                periodId     = p.Id,
+                year         = p.Year,
+                month        = p.Month,
+                totalIncome  = incomes.Sum(i => i.Amount),
+                totalExpense = expenses.Sum(e => e.Amount),
+                itemCount    = expenses.Count + incomes.Count
+            });
+        }
+
+        return Ok(result);
     }
 
     /// <summary>
     /// Exporta os dados de um período inativo como CSV.
     /// Retorna o arquivo com Content-Type text/csv e Content-Disposition para download.
     /// </summary>
-    [HttpPost("export/{periodId:guid}")]
+    [HttpGet("{periodId:guid}/export")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ExportPeriod(Guid periodId, CancellationToken ct)
