@@ -35,12 +35,12 @@
               <input class="input input-sm" type="number" placeholder="Valor" formControlName="amount" step="0.01" />
               <input class="input input-sm" type="date" formControlName="dueDate" />
               <select class="input input-sm" formControlName="sourceType">
-                <option [value]="SourceType.Personal">Própria</option>
-                <option [value]="SourceType.Parental">Parental</option>
+                <option [ngValue]="SourceType.Personal">Própria</option>
+                <option [ngValue]="SourceType.Parental">Parental</option>
               </select>
               <select class="input input-sm" formControlName="fortnightType">
-                <option [value]="FortnightType.First">1ª Quinzena</option>
-                <option [value]="FortnightType.Second">2ª Quinzena</option>
+                <option [ngValue]="FortnightType.First">1ª Quinzena</option>
+                <option [ngValue]="FortnightType.Second">2ª Quinzena</option>
               </select>
               <input class="input input-sm" type="text" placeholder="Observação" formControlName="notes" />
               <div class="edit-actions">
@@ -83,12 +83,12 @@
       <input class="input input-sm" type="number" placeholder="Valor *" formControlName="amount" step="0.01" />
       <input class="input input-sm" type="date" formControlName="dueDate" />
       <select class="input input-sm" formControlName="sourceType">
-        <option [value]="SourceType.Personal">Própria</option>
-        <option [value]="SourceType.Parental">Parental</option>
+        <option [ngValue]="SourceType.Personal">Própria</option>
+        <option [ngValue]="SourceType.Parental">Parental</option>
       </select>
       <select class="input input-sm" formControlName="fortnightType">
-        <option [value]="FortnightType.First">1ª Quinzena</option>
-        <option [value]="FortnightType.Second">2ª Quinzena</option>
+        <option [ngValue]="FortnightType.First">1ª Quinzena</option>
+        <option [ngValue]="FortnightType.Second">2ª Quinzena</option>
       </select>
       <input class="input input-sm" type="text" placeholder="Observação" formControlName="notes" />
     </div>

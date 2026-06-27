@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using PersonalFinance.Api.Converters;
 using PersonalFinance.Api.Extensions;
 using PersonalFinance.Api.Middleware;
 using PersonalFinance.Infrastructure.Extensions;
@@ -15,7 +16,8 @@ builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddApplicationUseCases();
 
 // ── Controllers ───────────────────────────────────────────────────────────────
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(o => o.JsonSerializerOptions.Converters.Add(new FlexibleEnumConverterFactory()));
 
 // ── JWT Authentication ────────────────────────────────────────────────────────
 var jwtSection = builder.Configuration.GetSection("JwtSettings");
