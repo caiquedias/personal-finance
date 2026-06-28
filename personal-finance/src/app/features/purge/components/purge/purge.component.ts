@@ -328,7 +328,7 @@ export class PurgeComponent implements OnInit {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.setAttribute('download', `expurgo-${period.periodId}.csv`);
+        a.setAttribute('download', `expurgo-${period.periodId}-${period.year}_${period.month}.csv`);
         a.click();
         URL.revokeObjectURL(url);
         this.purgeConfirmed.set(true);
