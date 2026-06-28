@@ -9,12 +9,14 @@ namespace PersonalFinance.Api.Controllers.V1.Purge;
 /// </summary>
 [Route("api/v1/purge")]
 public sealed class PurgeController(
+    GetEligiblePeriodsUseCase getEligiblePeriodsUseCase,
     ExportPeriodUseCase exportPeriodUseCase,
     PurgePeriodUseCase purgePeriodUseCase,
     GetPurgeRecordsUseCase getPurgeRecordsUseCase,
     DeletePurgeRecordUseCase deletePurgeRecordUseCase,
     IPeriodRepository periodRepository) : ApiControllerBase
 {
+    private readonly GetEligiblePeriodsUseCase _getEligiblePeriodsUseCase = getEligiblePeriodsUseCase;
     private readonly ExportPeriodUseCase     _exportPeriodUseCase     = exportPeriodUseCase;
     private readonly PurgePeriodUseCase      _purgePeriodUseCase      = purgePeriodUseCase;
     private readonly GetPurgeRecordsUseCase  _getPurgeRecordsUseCase  = getPurgeRecordsUseCase;
@@ -22,25 +24,22 @@ public sealed class PurgeController(
     private readonly IPeriodRepository       _periodRepository        = periodRepository;
 
     /// <summary>
-    /// Lista os períodos inelegíveis ao expurgo (IsActive = false) do usuário autenticado.
+    /// Lista os períodos elegíveis ao expurgo (IsActive = false) do usuário autenticado.
+    /// Retorna totais de receitas, despesas e contagem de itens por período.
     /// </summary>
     [HttpGet("eligible-periods")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetEligiblePeriods(CancellationToken ct)
     {
-        var periods = await _periodRepository.GetByUserAsync(CurrentUserId, ct);
-        var eligible = periods
-            .Where(p => !p.IsActive)
-            .Select(p => new { p.Id, p.Year, p.Month })
-            .ToList();
-        return Ok(eligible);
+        var result = await _getEligiblePeriodsUseCase.ExecuteAsync(CurrentUserId, ct);
+        return Ok(result);
     }
 
     /// <summary>
     /// Exporta os dados de um período inativo como CSV.
     /// Retorna o arquivo com Content-Type text/csv e Content-Disposition para download.
     /// </summary>
-    [HttpPost("export/{periodId:guid}")]
+    [HttpGet("{periodId:guid}/export")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ExportPeriod(Guid periodId, CancellationToken ct)

@@ -39,12 +39,12 @@ public class PurgeControllerTests : ApiIntegrationTestBase
 
     // ── Export ────────────────────────────────────────────────────────────────
 
-    [Fact(DisplayName = "POST /purge/export/{periodId} deve retornar 200 com Content-Type text/csv")]
+    [Fact(DisplayName = "GET /purge/{periodId}/export deve retornar 200 com Content-Type text/csv")]
     public async Task Export_ValidPeriod_ShouldReturn200WithCsvContentType()
     {
         var (client, periodId) = await SetupInactivePeriodAsync(month: 3);
 
-        var r = await client.PostAsync($"/api/v1/purge/export/{periodId}", null);
+        var r = await client.GetAsync($"/api/v1/purge/{periodId}/export");
 
         r.StatusCode.Should().Be(HttpStatusCode.OK);
         r.Content.Headers.ContentType!.MediaType.Should().Be("text/csv");
@@ -52,13 +52,13 @@ public class PurgeControllerTests : ApiIntegrationTestBase
         body.Should().NotBeEmpty();
     }
 
-    [Fact(DisplayName = "POST /purge/export/{periodId} de período inexistente deve retornar 404")]
+    [Fact(DisplayName = "GET /purge/{periodId}/export de período inexistente deve retornar 404")]
     public async Task Export_NonExistentPeriod_ShouldReturn404()
     {
         var (client, _) = await GetAuthenticatedClientAsync();
         var fakeId = Guid.NewGuid();
 
-        var r = await client.PostAsync($"/api/v1/purge/export/{fakeId}", null);
+        var r = await client.GetAsync($"/api/v1/purge/{fakeId}/export");
 
         r.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
@@ -171,5 +171,64 @@ public class PurgeControllerTests : ApiIntegrationTestBase
         r.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = await r.Content.ReadFromJsonAsync<JsonElement>();
         body.ValueKind.Should().Be(JsonValueKind.Array);
+    }
+
+    // ── RED: Bug 1 — periodId ausente no payload ──────────────────────────────
+
+    [Fact(DisplayName = "RED: GET /purge/eligible-periods deve retornar campo 'periodId', não 'id'")]
+    public async Task GetEligiblePeriods_ReturnsPeriodId_NotId()
+    {
+        // Arrange
+        var (client, _) = await SetupInactivePeriodAsync(month: 9);
+
+        // Act
+        var r = await client.GetAsync("/api/v1/purge/eligible-periods");
+
+        // Assert
+        r.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await r.Content.ReadFromJsonAsync<JsonElement>();
+        body.ValueKind.Should().Be(JsonValueKind.Array);
+        body.GetArrayLength().Should().BeGreaterThan(0);
+
+        var first = body[0];
+        first.TryGetProperty("periodId", out _).Should().BeTrue("o payload deve conter 'periodId'");
+        first.TryGetProperty("id", out _).Should().BeFalse("o campo 'id' não deve ser exposto diretamente");
+    }
+
+    [Fact(DisplayName = "RED: GET /purge/eligible-periods deve retornar totalIncome, totalExpense e itemCount")]
+    public async Task GetEligiblePeriods_ReturnsTotals()
+    {
+        // Arrange
+        var (client, _) = await SetupInactivePeriodAsync(month: 10);
+
+        // Act
+        var r = await client.GetAsync("/api/v1/purge/eligible-periods");
+
+        // Assert
+        r.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await r.Content.ReadFromJsonAsync<JsonElement>();
+        body.GetArrayLength().Should().BeGreaterThan(0);
+
+        var first = body[0];
+        first.TryGetProperty("totalIncome", out _).Should().BeTrue("o payload deve conter 'totalIncome'");
+        first.TryGetProperty("totalExpense", out _).Should().BeTrue("o payload deve conter 'totalExpense'");
+        first.TryGetProperty("itemCount", out _).Should().BeTrue("o payload deve conter 'itemCount'");
+    }
+
+    // ── RED: Bug 2 — ExportPeriod declarado como POST mas deve ser GET ─────────
+
+    [Fact(DisplayName = "RED: GET /purge/{periodId}/export deve responder a GET (não retornar 405)")]
+    public async Task ExportPeriod_AcceptsGetRequest()
+    {
+        // Arrange
+        var (client, periodId) = await SetupInactivePeriodAsync(month: 11);
+
+        // Act — Angular usa GET /purge/{periodId}/export mas o endpoint é POST
+        var r = await client.GetAsync($"/api/v1/purge/{periodId}/export");
+
+        // Assert
+        ((int)r.StatusCode).Should().NotBe(405, "o endpoint export deve aceitar GET, não apenas POST");
+        r.StatusCode.Should().Be(HttpStatusCode.OK);
+        r.Content.Headers.ContentType!.MediaType.Should().Be("text/csv");
     }
 }
