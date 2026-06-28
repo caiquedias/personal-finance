@@ -351,7 +351,8 @@ export class PurgeComponent implements OnInit {
     const period = this.selectedPeriod();
     if (!period) return;
 
-    this.api.executePurge(period.periodId).subscribe({
+    const csvFileName = `expurgo-${period.periodId}-${period.year}_${period.month}.csv`;
+    this.api.executePurge(period.periodId, csvFileName).subscribe({
       next: result => {
         // Remove o período expurgado da lista e recarrega os registros de expurgo
         this.eligiblePeriods.update(list => list.filter(p => p.periodId !== period.periodId));

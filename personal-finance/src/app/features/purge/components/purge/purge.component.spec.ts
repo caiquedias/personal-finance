@@ -247,7 +247,7 @@ describe('PurgeComponent', () => {
       apiSpy.executePurge.and.returnValue(of(PURGE_RESULT));
       component.confirmPurge();
       tick();
-      expect(apiSpy.executePurge).toHaveBeenCalledWith('p-1');
+      expect(apiSpy.executePurge).toHaveBeenCalledWith('p-1', 'expurgo-p-1-2024_3.csv');
     }));
 
     it('POST não é chamado diretamente sem confirmação no modal', () => {
@@ -391,7 +391,7 @@ describe('PurgeComponent', () => {
       dangerBtn.click();
       tick();
 
-      expect(apiSpy.executePurge).toHaveBeenCalledWith('p-1');
+      expect(apiSpy.executePurge).toHaveBeenCalledWith('p-1', 'expurgo-p-1-2024_3.csv');
     }));
   });
 

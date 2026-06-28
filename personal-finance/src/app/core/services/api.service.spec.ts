@@ -232,7 +232,7 @@ describe('ApiService', () => {
   });
 
   it('executePurge faz POST /purge/:id', () => {
-    service.executePurge('p-1').subscribe();
+    service.executePurge('p-1', 'expurgo-p-1-2024_3.csv').subscribe();
     const req = httpMock.expectOne(`${BASE}/purge/p-1`);
     expect(req.request.method).toBe('POST');
     req.flush({ periodId: 'p-1', estimatedSpaceKb: 128 });
