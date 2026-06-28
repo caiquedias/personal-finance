@@ -44,11 +44,16 @@
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "6kB",
-                  "maximumError": "10kB"
+                  "maximumWarning": "10kB",
+                  "maximumError": "14kB"
                 }
               ],
               "outputHashing": "all",
+              "optimization": {
+                "fonts": {
+                  "inline": false
+                }
+              },
               "fileReplacements": [
                 {
                   "replace": "src/environments/environment.ts",

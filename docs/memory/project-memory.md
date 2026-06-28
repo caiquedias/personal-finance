@@ -13,6 +13,7 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 | #331 | [FE] Expurgo: MOD-02 — Análise Offline de CSV | 2026-06-26 | [331.md](331.md) |
 | #332 | [FE] Expurgo: MOD-03 — Registro de Expurgos | 2026-06-26 | [332.md](332.md) |
 | #355 | fix: enum string quebra deserialização no POST /expenses/batch/create | 2026-06-26 | [355.md](355.md) |
+| #356 | [FE] Expurgo: Layout e Design — tabela padrão + modal Sonic | 2026-06-27 | [356.md](356.md) |
 
 ---
 
@@ -20,7 +21,7 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 
 | Módulo | Issues relacionadas | Última atualização |
 |---|---|---|
-| Expurgo (Purge) | #329, #330, #331, #332 | 2026-06-26 |
+| Expurgo (Purge) | #329, #330, #331, #332, #356 | 2026-06-27 |
 | Batch Expenses / Serialização | #355 | 2026-06-26 |
 
 ---
@@ -34,8 +35,8 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 - **Interfaces:** IPurgeRepository, ICsvExportService (Application layer)
 
 ### Application
-- **Use cases:** ExportPeriodUseCase, PurgePeriodUseCase, GetPurgeRecordsUseCase, DeletePurgeRecordUseCase
-- **DTOs:** —
+- **Use cases:** ExportPeriodUseCase, PurgePeriodUseCase, GetPurgeRecordsUseCase, DeletePurgeRecordUseCase, GetEligiblePeriodsUseCase
+- **DTOs:** EligiblePeriodDto
 - **Validações (FluentValidation):** —
 
 ### Infrastructure
@@ -46,9 +47,9 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 
 ### Api
 - **Endpoints ativos:**
-  - GET /api/v1/purge/eligible-periods
-  - POST /api/v1/purge/export/{periodId}
-  - POST /api/v1/purge/{periodId}
+  - GET /api/v1/purge/eligible-periods — retorna periodId, year, month, totalIncome, totalExpense, itemCount
+  - GET /api/v1/purge/{periodId}/export — (era POST /purge/export/{periodId})
+  - POST /api/v1/purge/{periodId} — requer { csvFileName } no body
   - GET /api/v1/purge/records
   - DELETE /api/v1/purge/records/{id}
 - **Auth:** JWT Bearer; AuthController [AllowAnonymous]; Admin [Authorize(Roles="Admin")]
@@ -56,8 +57,9 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 
 ### Frontend (Angular 21)
 - **Rotas (app.routes.ts):** `/purge` (lazy, authGuard); `purge/analysis` (PurgeAnalysisComponent, providers: [CsvReaderService]); `purge/analysis/detail` (PurgeDetailComponent)
-- **Componentes standalone:** PurgeComponent (`features/purge/components/purge/`); PurgeAnalysisComponent, PurgeDetailComponent, PurgeWarningBannerComponent (`features/purge/`)
-- **Serviços:** ApiService (wrapper HTTP) com métodos purge (`getEligiblePeriods`, `exportPurgeCsv`, `executePurge`, `getPurgeRecords`, `deletePurgeRecord`); ThemeService (dark/light); CsvReaderService (parse CSV offline, sem `providedIn: 'root'`)
+- **Componentes standalone:** PurgeComponent redesenhado — cards grid, modal Sonic pixel-art, tabela histórico, modal delete (`features/purge/components/purge/`); PurgeAnalysisComponent, PurgeDetailComponent, PurgeWarningBannerComponent (`features/purge/`)
+- **Assets:** `public/sonic-tile.svg` (tile pixel-art do frame Sonic)
+- **Serviços:** ApiService (wrapper HTTP) com métodos purge (`getEligiblePeriods`, `exportPurgeCsv`, `executePurge(periodId, csvFileName)`, `getPurgeRecords`, `deletePurgeRecord`); ThemeService (dark/light); CsvReaderService (parse CSV offline, sem `providedIn: 'root'`)
 - **Modelos:** `PurgeRecordResponse` adicionado em models.ts
 - **Sidebar:** item "Expurgo" com ícone `archive` e rota `/purge`
 - **Auth:** authInterceptor injeta token automaticamente
