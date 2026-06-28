@@ -247,7 +247,7 @@ describe('PurgeComponent', () => {
       apiSpy.executePurge.and.returnValue(of(PURGE_RESULT));
       component.confirmPurge();
       tick();
-      expect(apiSpy.executePurge).toHaveBeenCalledWith('p-1');
+      expect(apiSpy.executePurge).toHaveBeenCalledWith('p-1', 'expurgo-p-1-2024_3.csv');
     }));
 
     it('POST não é chamado diretamente sem confirmação no modal', () => {
@@ -391,7 +391,7 @@ describe('PurgeComponent', () => {
       dangerBtn.click();
       tick();
 
-      expect(apiSpy.executePurge).toHaveBeenCalledWith('p-1');
+      expect(apiSpy.executePurge).toHaveBeenCalledWith('p-1', 'expurgo-p-1-2024_3.csv');
     }));
   });
 
@@ -642,6 +642,47 @@ describe('PurgeComponent', () => {
       tick();
 
       expect(apiSpy.exportPurgeCsv).toHaveBeenCalledWith('p-1');
+    }));
+  });
+
+  // ── #356 RED — confirmPurge envia csvFileName no body ────────────────────
+
+  describe('#356 RED — confirmPurge envia csvFileName', () => {
+    it('confirmPurge envia csvFileName no formato correto', fakeAsync(() => {
+      // Arrange: período com periodId='p-1', year=2025, month=3
+      const period: EligiblePeriodResponse = {
+        periodId:     'p-1',
+        year:         2025,
+        month:        3,
+        totalIncome:  3000,
+        totalExpense: 2500,
+        itemCount:    18,
+      };
+
+      const blob = new Blob(['csv'], { type: 'text/csv' });
+      apiSpy.exportPurgeCsv.and.returnValue(of(blob));
+      apiSpy.executePurge.and.returnValue(of(PURGE_RESULT));
+
+      spyOn(URL, 'createObjectURL').and.returnValue('blob:fake');
+      spyOn(URL, 'revokeObjectURL');
+      const fakeAnchor = document.createElement('a');
+      spyOn(fakeAnchor, 'click');
+      spyOn(document, 'createElement').and.callFake((tag: string) => {
+        if (tag === 'a') return fakeAnchor;
+        return document.createElement(tag);
+      });
+
+      component.openConfirmModal(period);
+      component.downloadCsv(period);
+      tick();
+
+      // Act
+      component.confirmPurge();
+      tick();
+
+      // Assert: executePurge chamado com ('p-1', 'expurgo-p-1-2025_3.csv')
+      // Cast necessário pois a assinatura atual ainda não aceita 2 argumentos (RED)
+      expect(apiSpy.executePurge as jasmine.Spy).toHaveBeenCalledWith('p-1', 'expurgo-p-1-2025_3.csv');
     }));
   });
 

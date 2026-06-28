@@ -270,8 +270,8 @@ export class ApiService {
     return this.http.get(`${this.base}/purge/${periodId}/export`, { responseType: 'blob' });
   }
 
-  executePurge(periodId: string): Observable<PurgeResultResponse> {
-    return this.http.post<PurgeResultResponse>(`${this.base}/purge/${periodId}`, {});
+  executePurge(periodId: string, csvFileName: string): Observable<PurgeResultResponse> {
+    return this.http.post<PurgeResultResponse>(`${this.base}/purge/${periodId}`, { csvFileName });
   }
 
   getPurgeRecords(): Observable<PurgeRecordResponse[]> {
