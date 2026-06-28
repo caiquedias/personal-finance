@@ -136,31 +136,18 @@ describe('PurgeComponent', () => {
       expect(apiSpy.exportPurgeCsv).toHaveBeenCalledWith('p-1');
     }));
 
-    it('habilita confirmação somente após blob onload (csvReady)', fakeAsync(() => {
-      // Antes do download, confirmação não disponível
-      expect(component.csvReady()).toBeFalse();
-
-      const blob = new Blob(['csv'], { type: 'text/csv' });
-      apiSpy.exportPurgeCsv.and.returnValue(of(blob));
-
-      component.downloadCsv(PERIOD_1);
-      tick();
-
-      expect(component.csvReady()).toBeTrue();
-    }));
-
-    it('confirmação permanece desabilitada antes do blob onload', () => {
-      // Sem chamar downloadCsv, csvReady deve ser false
-      expect(component.csvReady()).toBeFalse();
+    it('confirmação permanece desabilitada antes do download', () => {
+      // Sem chamar downloadCsv, purgeConfirmed deve ser false
+      expect(component.purgeConfirmed()).toBeFalse();
     });
 
-    it('define downloadError quando exportPurgeCsv falha', fakeAsync(() => {
+    it('define downloadError quando exportPurgeCsv falha e purgeConfirmed permanece false', fakeAsync(() => {
       apiSpy.exportPurgeCsv.and.returnValue(
         throwError(() => ({ error: { message: 'Falha no download.' } }))
       );
       component.downloadCsv(PERIOD_1);
       tick();
-      expect(component.csvReady()).toBeFalse();
+      expect(component.purgeConfirmed()).toBeFalse();
     }));
 
     it('should create an anchor element and trigger download', fakeAsync(() => {
@@ -214,10 +201,10 @@ describe('PurgeComponent', () => {
       expect(component.selectedPeriod()?.periodId).toBe('p-1');
     });
 
-    it('reseta csvReady ao abrir novo modal', () => {
-      component.csvReady.set(true);
+    it('reseta purgeConfirmed ao abrir novo modal', () => {
+      component.purgeConfirmed.set(true);
       component.openConfirmModal(PERIOD_1);
-      expect(component.csvReady()).toBeFalse();
+      expect(component.purgeConfirmed()).toBeFalse();
     });
   });
 
@@ -260,7 +247,7 @@ describe('PurgeComponent', () => {
       apiSpy.executePurge.and.returnValue(of(PURGE_RESULT));
       component.confirmPurge();
       tick();
-      expect(apiSpy.executePurge).toHaveBeenCalledWith('p-1');
+      expect(apiSpy.executePurge).toHaveBeenCalledWith('p-1', 'expurgo-p-1-2024_3.csv');
     }));
 
     it('POST não é chamado diretamente sem confirmação no modal', () => {
@@ -404,37 +391,27 @@ describe('PurgeComponent', () => {
       dangerBtn.click();
       tick();
 
-      expect(apiSpy.executePurge).toHaveBeenCalledWith('p-1');
+      expect(apiSpy.executePurge).toHaveBeenCalledWith('p-1', 'expurgo-p-1-2024_3.csv');
     }));
   });
 
   // ── edge cases: botão confirm desabilitado ─────────────────────────────────
 
   describe('botão de confirmação — estado de habilitação', () => {
-    it('csvReady inicia como false (botão desabilitado)', () => {
-      expect(component.csvReady()).toBeFalse();
+    it('purgeConfirmed inicia como false (botão desabilitado)', () => {
+      expect(component.purgeConfirmed()).toBeFalse();
     });
 
-    it('csvReady torna-se true somente após blob carregado', fakeAsync(() => {
-      apiSpy.exportPurgeCsv.and.returnValue(of(new Blob(['csv'])));
-      expect(component.csvReady()).toBeFalse();
-
-      component.downloadCsv(PERIOD_1);
-      tick();
-
-      expect(component.csvReady()).toBeTrue();
-    }));
-
-    it('csvReady reseta para false ao abrir novo período no modal', fakeAsync(() => {
+    it('purgeConfirmed reseta para false ao abrir novo período no modal', fakeAsync(() => {
       apiSpy.exportPurgeCsv.and.returnValue(of(new Blob(['csv'])));
       component.openConfirmModal(PERIOD_1);
       component.downloadCsv(PERIOD_1);
       tick();
-      expect(component.csvReady()).toBeTrue();
+      expect(component.purgeConfirmed()).toBeTrue();
 
       // Abre modal para outro período
       component.openConfirmModal(PERIOD_2);
-      expect(component.csvReady()).toBeFalse();
+      expect(component.purgeConfirmed()).toBeFalse();
     }));
   });
 
@@ -447,7 +424,7 @@ describe('PurgeComponent', () => {
 
     it('armazena os records retornados pelo backend', fakeAsync(() => {
       tick();
-      expect((component as any).purgeRecords().length).toBe(2);
+      expect(component.purgeRecords().length).toBe(2);
     }));
 
     it('exibe year, month, purgedAt, totalIncome, totalExpense e itemCount na tabela', fakeAsync(() => {
@@ -505,18 +482,16 @@ describe('PurgeComponent', () => {
 
   describe('openDeleteRecordModal()', () => {
     it('abre o modal de delete ao clicar em "Excluir" para um record específico', fakeAsync(() => {
-      const cmp = component as any;
       tick();
       fixture.detectChanges();
-      cmp.openDeleteRecordModal(RECORD_1);
-      expect(cmp.deleteRecordModalOpen()).toBeTrue();
-      expect(cmp.selectedRecord()?.id).toBe('r-1');
+      component.openDeleteRecordModal(RECORD_1);
+      expect(component.deleteRecordModalOpen()).toBeTrue();
+      expect(component.selectedRecord()?.id).toBe('r-1');
     }));
 
     it('exibe o modal de delete no DOM quando deleteRecordModalOpen é true', fakeAsync(() => {
-      const cmp = component as any;
       tick();
-      cmp.openDeleteRecordModal(RECORD_1);
+      component.openDeleteRecordModal(RECORD_1);
       fixture.detectChanges();
       const modal = fixture.nativeElement.querySelector('.modal-delete-record');
       expect(modal).not.toBeNull();
@@ -525,11 +500,10 @@ describe('PurgeComponent', () => {
 
   describe('closeDeleteRecordModal()', () => {
     it('fecha o modal sem chamar deletePurgeRecord', fakeAsync(() => {
-      const cmp = component as any;
       tick();
-      cmp.openDeleteRecordModal(RECORD_1);
-      cmp.closeDeleteRecordModal();
-      expect(cmp.deleteRecordModalOpen()).toBeFalse();
+      component.openDeleteRecordModal(RECORD_1);
+      component.closeDeleteRecordModal();
+      expect(component.deleteRecordModalOpen()).toBeFalse();
       expect(apiSpy.deletePurgeRecord).not.toHaveBeenCalled();
     }));
   });
@@ -537,63 +511,57 @@ describe('PurgeComponent', () => {
   describe('confirmDeleteRecord()', () => {
     beforeEach(fakeAsync(() => {
       tick();
-      (component as any).openDeleteRecordModal(RECORD_1);
+      component.openDeleteRecordModal(RECORD_1);
     }));
 
     it('chama deletePurgeRecord com o id correto ao confirmar', fakeAsync(() => {
-      const cmp = component as any;
       apiSpy.deletePurgeRecord.and.returnValue(of(void 0));
-      cmp.confirmDeleteRecord();
+      component.confirmDeleteRecord();
       tick();
       expect(apiSpy.deletePurgeRecord).toHaveBeenCalledWith('r-1');
     }));
 
     it('remove o record da lista após delete bem-sucedido', fakeAsync(() => {
-      const cmp = component as any;
       apiSpy.deletePurgeRecord.and.returnValue(of(void 0));
-      cmp.confirmDeleteRecord();
+      component.confirmDeleteRecord();
       tick();
-      const remaining = cmp.purgeRecords();
-      expect(remaining.find((r: any) => r.id === 'r-1')).toBeUndefined();
+      const remaining = component.purgeRecords();
+      expect(remaining.find((r: PurgeRecordResponse) => r.id === 'r-1')).toBeUndefined();
       expect(remaining.length).toBe(1);
     }));
 
     it('fecha o modal após delete bem-sucedido', fakeAsync(() => {
-      const cmp = component as any;
       apiSpy.deletePurgeRecord.and.returnValue(of(void 0));
-      cmp.confirmDeleteRecord();
+      component.confirmDeleteRecord();
       tick();
-      expect(cmp.deleteRecordModalOpen()).toBeFalse();
+      expect(component.deleteRecordModalOpen()).toBeFalse();
     }));
 
     it('define apiError quando deletePurgeRecord falha', fakeAsync(() => {
-      const cmp = component as any;
       apiSpy.deletePurgeRecord.and.returnValue(
         throwError(() => ({ error: { message: 'Falha ao deletar.' } }))
       );
-      cmp.confirmDeleteRecord();
+      component.confirmDeleteRecord();
       tick();
       expect(component.apiError()).toBeTruthy();
     }));
 
     it('fecha o modal quando deletePurgeRecord falha', fakeAsync(() => {
-      const cmp = component as any;
       apiSpy.deletePurgeRecord.and.returnValue(
         throwError(() => ({ error: { message: 'Falha ao deletar.' } }))
       );
-      cmp.confirmDeleteRecord();
+      component.confirmDeleteRecord();
       tick();
-      expect(cmp.deleteRecordModalOpen()).toBeFalse();
+      expect(component.deleteRecordModalOpen()).toBeFalse();
     }));
 
     it('item permanece na lista quando deletePurgeRecord falha', fakeAsync(() => {
-      const cmp = component as any;
       apiSpy.deletePurgeRecord.and.returnValue(
         throwError(() => ({ error: { message: 'Falha ao deletar.' } }))
       );
-      cmp.confirmDeleteRecord();
+      component.confirmDeleteRecord();
       tick();
-      expect(cmp.purgeRecords().find((r: any) => r.id === 'r-1')).toBeDefined();
+      expect(component.purgeRecords().find((r: PurgeRecordResponse) => r.id === 'r-1')).toBeDefined();
     }));
   });
 
@@ -602,7 +570,7 @@ describe('PurgeComponent', () => {
   describe('modal de delete — conteúdo e botão danger', () => {
     beforeEach(fakeAsync(() => {
       tick();
-      (component as any).openDeleteRecordModal(RECORD_1);
+      component.openDeleteRecordModal(RECORD_1);
       fixture.detectChanges();
     }));
 
@@ -638,7 +606,7 @@ describe('PurgeComponent', () => {
   describe('GAP 4 — animations no modal de delete (backdropAnim + modalAnim)', () => {
     it('elemento .modal-overlay do delete tem ng-trigger-backdropAnim', fakeAsync(() => {
       tick();
-      (component as any).openDeleteRecordModal(RECORD_1);
+      component.openDeleteRecordModal(RECORD_1);
       fixture.detectChanges();
       // O overlay do modal de delete deve usar @backdropAnim
       const overlays = fixture.nativeElement.querySelectorAll('.modal-overlay');
@@ -651,11 +619,136 @@ describe('PurgeComponent', () => {
 
     it('elemento .modal-delete-record tem ng-trigger-modalAnim', fakeAsync(() => {
       tick();
-      (component as any).openDeleteRecordModal(RECORD_1);
+      component.openDeleteRecordModal(RECORD_1);
       fixture.detectChanges();
       const modal = fixture.nativeElement.querySelector('.modal-delete-record');
       expect(modal).not.toBeNull();
       expect(modal.classList.contains('ng-trigger-modalAnim')).toBeTrue();
+    }));
+  });
+
+  // ── cards de períodos elegíveis — botão CSV ───────────────────────────────
+
+  describe('cards de períodos elegíveis — botão CSV', () => {
+    it('clique no botão CSV de um card chama exportPurgeCsv com o periodId correto', fakeAsync(() => {
+      apiSpy.exportPurgeCsv.and.returnValue(of(new Blob(['csv'])));
+      component.eligiblePeriods.set([PERIOD_1, PERIOD_2]);
+      fixture.detectChanges();
+
+      const csvBtn: HTMLButtonElement = fixture.nativeElement.querySelector('.btn-csv-card');
+      expect(csvBtn).not.toBeNull('.btn-csv-card não encontrado — elemento ainda não implementado no template');
+
+      csvBtn.click();
+      tick();
+
+      expect(apiSpy.exportPurgeCsv).toHaveBeenCalledWith('p-1');
+    }));
+  });
+
+  // ── #356 RED — confirmPurge envia csvFileName no body ────────────────────
+
+  describe('#356 RED — confirmPurge envia csvFileName', () => {
+    it('confirmPurge envia csvFileName no formato correto', fakeAsync(() => {
+      // Arrange: período com periodId='p-1', year=2025, month=3
+      const period: EligiblePeriodResponse = {
+        periodId:     'p-1',
+        year:         2025,
+        month:        3,
+        totalIncome:  3000,
+        totalExpense: 2500,
+        itemCount:    18,
+      };
+
+      const blob = new Blob(['csv'], { type: 'text/csv' });
+      apiSpy.exportPurgeCsv.and.returnValue(of(blob));
+      apiSpy.executePurge.and.returnValue(of(PURGE_RESULT));
+
+      spyOn(URL, 'createObjectURL').and.returnValue('blob:fake');
+      spyOn(URL, 'revokeObjectURL');
+      const fakeAnchor = document.createElement('a');
+      spyOn(fakeAnchor, 'click');
+      spyOn(document, 'createElement').and.callFake((tag: string) => {
+        if (tag === 'a') return fakeAnchor;
+        return document.createElement(tag);
+      });
+
+      component.openConfirmModal(period);
+      component.downloadCsv(period);
+      tick();
+
+      // Act
+      component.confirmPurge();
+      tick();
+
+      // Assert: executePurge chamado com ('p-1', 'expurgo-p-1-2025_3.csv')
+      // Cast necessário pois a assinatura atual ainda não aceita 2 argumentos (RED)
+      expect(apiSpy.executePurge as jasmine.Spy).toHaveBeenCalledWith('p-1', 'expurgo-p-1-2025_3.csv');
+    }));
+  });
+
+  // ── #356 — nome do arquivo CSV com year_month ────────────────────────────
+
+  describe('downloadCsv() — nome do arquivo', () => {
+    it('downloadCsv define nome do arquivo com periodId, year e month', fakeAsync(() => {
+      // Arrange
+      const blob = new Blob(['csv,data'], { type: 'text/csv' });
+      apiSpy.exportPurgeCsv.and.returnValue(of(blob));
+
+      const fakeUrl = 'blob:fake-url-year-month';
+      spyOn(URL, 'createObjectURL').and.returnValue(fakeUrl);
+      spyOn(URL, 'revokeObjectURL');
+
+      const fakeAnchor = document.createElement('a');
+      spyOn(fakeAnchor, 'click');
+      spyOn(document, 'createElement').and.callFake((tag: string) => {
+        if (tag === 'a') return fakeAnchor;
+        return document.createElement(tag);
+      });
+
+      // Act — period com periodId='p-1', year=2025, month=3
+      const period: EligiblePeriodResponse = {
+        periodId:     'p-1',
+        year:         2025,
+        month:        3,
+        totalIncome:  3000,
+        totalExpense: 2500,
+        itemCount:    18,
+      };
+      component.downloadCsv(period);
+      tick();
+
+      // Assert — nome deve ser "expurgo-p-1-2025_3.csv"
+      const downloadAttr = fakeAnchor.getAttribute('download') ?? '';
+      expect(downloadAttr).toBe('expurgo-p-1-2025_3.csv');
+    }));
+  });
+
+  // ── Reviewer #356 — lógica do botão Confirmar e checkbox ──────────────────
+
+  describe('Reviewer #356 — lógica do botão Confirmar e checkbox', () => {
+    it('botão Confirmar fica habilitado após downloadCsv pois purgeConfirmed é setado como true', fakeAsync(() => {
+      apiSpy.exportPurgeCsv.and.returnValue(of(new Blob(['csv'])));
+
+      component.openConfirmModal(PERIOD_1);
+      component.downloadCsv(PERIOD_1);
+      tick();
+      fixture.detectChanges();
+
+      const dangerBtn: HTMLButtonElement = fixture.nativeElement.querySelector('button.btn-danger');
+      expect(dangerBtn).not.toBeNull();
+      // downloadCsv seta purgeConfirmed=true → botão deve estar habilitado
+      expect(dangerBtn.disabled).toBeFalse();
+    }));
+
+    it('downloadCsv bem-sucedido seta purgeConfirmed como true', fakeAsync(() => {
+      apiSpy.exportPurgeCsv.and.returnValue(of(new Blob(['csv'])));
+
+      expect(component.purgeConfirmed()).toBeFalse();
+
+      component.downloadCsv(PERIOD_1);
+      tick();
+
+      expect(component.purgeConfirmed()).toBeTrue();
     }));
   });
 });

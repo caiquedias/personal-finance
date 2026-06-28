@@ -31,3 +31,22 @@ Ao final de cada planning, verificar:
 - O planning foi postado antes da confirmação?
 
 Se sim a qualquer item: registrar como feedback e corrigir no próximo planning.
+
+---
+
+## Regras do Macro Agent durante implementação
+
+**Regra absoluta: o Macro Agent nunca edita arquivos de código. Toda alteração passa pelo Implementador.**
+
+| Situação | O que o Macro faz | O que NUNCA faz |
+|---|---|---|
+| Reviewer → REQUER CORREÇÃO | Spawna Red com os findings como spec → Green → QA → Reviewer | Editar arquivos diretamente |
+| Caique reporta erro de build/runtime | Spawna QA em "modo erro" → QA classifica → spawna Red/Green | Editar arquivos diretamente |
+| Qualquer outro ajuste de código | Spawna Green com instrução precisa | Editar arquivos diretamente |
+
+### Protocolo para erro de build/runtime reportado pelo Caique
+
+1. Macro spawna QA em **modo erro** com: mensagem de erro exata + arquivos modificados desde o último push
+2. QA identifica root cause, classifica sizing (S/M/L/XL)
+3. **S/M** → QA spawna Red (regressão/teste falhando que captura o erro) → Green (corrige) → QA revalida → Reviewer
+4. **L/XL** → QA reporta ao Caique com root cause e sizing — não avança autonomamente

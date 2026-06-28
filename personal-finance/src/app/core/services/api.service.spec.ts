@@ -232,9 +232,20 @@ describe('ApiService', () => {
   });
 
   it('executePurge faz POST /purge/:id', () => {
-    service.executePurge('p-1').subscribe();
+    service.executePurge('p-1', 'expurgo-p-1-2024_3.csv').subscribe();
     const req = httpMock.expectOne(`${BASE}/purge/p-1`);
     expect(req.request.method).toBe('POST');
+    req.flush({ periodId: 'p-1', estimatedSpaceKb: 128 });
+  });
+
+  // ── #356 RED — executePurge deve enviar csvFileName no body ──────────────
+
+  it('executePurge envia body com csvFileName', () => {
+    // Cast necessário pois a assinatura atual ainda não aceita 2 argumentos (RED)
+    (service.executePurge as (id: string, csv: string) => any)('p-1', 'expurgo-p-1-2025_3.csv').subscribe();
+    const req = httpMock.expectOne(`${BASE}/purge/p-1`);
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({ csvFileName: 'expurgo-p-1-2025_3.csv' });
     req.flush({ periodId: 'p-1', estimatedSpaceKb: 128 });
   });
 });
