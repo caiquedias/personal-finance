@@ -645,6 +645,43 @@ describe('PurgeComponent', () => {
     }));
   });
 
+  // ── #356 — nome do arquivo CSV com year_month ────────────────────────────
+
+  describe('downloadCsv() — nome do arquivo', () => {
+    it('downloadCsv define nome do arquivo com periodId, year e month', fakeAsync(() => {
+      // Arrange
+      const blob = new Blob(['csv,data'], { type: 'text/csv' });
+      apiSpy.exportPurgeCsv.and.returnValue(of(blob));
+
+      const fakeUrl = 'blob:fake-url-year-month';
+      spyOn(URL, 'createObjectURL').and.returnValue(fakeUrl);
+      spyOn(URL, 'revokeObjectURL');
+
+      const fakeAnchor = document.createElement('a');
+      spyOn(fakeAnchor, 'click');
+      spyOn(document, 'createElement').and.callFake((tag: string) => {
+        if (tag === 'a') return fakeAnchor;
+        return document.createElement(tag);
+      });
+
+      // Act — period com periodId='p-1', year=2025, month=3
+      const period: EligiblePeriodResponse = {
+        periodId:     'p-1',
+        year:         2025,
+        month:        3,
+        totalIncome:  3000,
+        totalExpense: 2500,
+        itemCount:    18,
+      };
+      component.downloadCsv(period);
+      tick();
+
+      // Assert — nome deve ser "expurgo-p-1-2025_3.csv"
+      const downloadAttr = fakeAnchor.getAttribute('download') ?? '';
+      expect(downloadAttr).toBe('expurgo-p-1-2025_3.csv');
+    }));
+  });
+
   // ── Reviewer #356 — lógica do botão Confirmar e checkbox ──────────────────
 
   describe('Reviewer #356 — lógica do botão Confirmar e checkbox', () => {
