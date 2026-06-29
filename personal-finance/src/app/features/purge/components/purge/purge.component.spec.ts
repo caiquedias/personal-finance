@@ -751,4 +751,93 @@ describe('PurgeComponent', () => {
       expect(component.purgeConfirmed()).toBeTrue();
     }));
   });
+
+  // ── #367 RED — Layout: app-header, remoção do banner e CSS do modal ────────
+
+  describe('#367 — header compartilhado (app-header)', () => {
+    it('renderiza o elemento app-header no template', fakeAsync(() => {
+      tick();
+      fixture.detectChanges();
+      // PurgeComponent deve usar <app-header> em vez de div.page-header manual
+      const appHeader = fixture.nativeElement.querySelector('app-header');
+      expect(appHeader).withContext('app-header deve estar no DOM — PurgeComponent ainda usa div.page-header manual').not.toBeNull();
+    }));
+
+    it('NÃO renderiza div.page-header manual', fakeAsync(() => {
+      tick();
+      fixture.detectChanges();
+      // div.page-header deve ser removida quando app-header for introduzido
+      const pageHeader = fixture.nativeElement.querySelector('.page-header');
+      expect(pageHeader).withContext('div.page-header manual não deve mais existir no template após introdução do app-header').toBeNull();
+    }));
+
+    it('app-header recebe o atributo title com o valor "Expurgo de Períodos"', fakeAsync(() => {
+      tick();
+      fixture.detectChanges();
+      const appHeader = fixture.nativeElement.querySelector('app-header');
+      expect(appHeader).not.toBeNull();
+      // Angular projeta inputs via atributo no DOM ao usar NO_ERRORS_SCHEMA
+      const titleAttr = appHeader.getAttribute('title') ?? appHeader.getAttribute('ng-reflect-title') ?? '';
+      expect(titleAttr).toContain('Expurgo');
+    }));
+  });
+
+  describe('#367 — remoção do PurgeWarningBannerComponent', () => {
+    it('NÃO renderiza app-purge-warning-banner na seção de records', fakeAsync(() => {
+      tick();
+      fixture.detectChanges();
+      // O typewriter banner deve ser removido do template
+      const banner = fixture.nativeElement.querySelector('app-purge-warning-banner');
+      expect(banner).withContext('app-purge-warning-banner deve ser removido do template do PurgeComponent — issue #367').toBeNull();
+    }));
+
+    it('PurgeWarningBannerComponent NÃO está nos imports do PurgeComponent', () => {
+      // Verifica que PurgeWarningBannerComponent não é mais declarado como import
+      const imports: any[] = (PurgeComponent as any).ɵcmp?.dependencies ?? [];
+      const hasBanner = imports.some((dep: any) => {
+        const sel: string = dep?.ɵcmp?.selectors?.[0]?.[1] ?? dep?.ɵdir?.selectors?.[0]?.[1] ?? '';
+        return sel === 'app-purge-warning-banner';
+      });
+      expect(hasBanner).withContext('PurgeWarningBannerComponent não deve mais estar nos imports do PurgeComponent após issue #367').toBeFalse();
+    });
+  });
+
+  describe('#367 — CSS do modal: overflow e posicionamento do sonic-frame', () => {
+    it('.modal deve ter overflow: visible (não hidden)', fakeAsync(() => {
+      component.openConfirmModal(PERIOD_1);
+      tick();
+      fixture.detectChanges();
+
+      const modal: HTMLElement = fixture.nativeElement.querySelector('.modal');
+      expect(modal).not.toBeNull();
+
+      // O CSS do componente é scoped — computedStyle reflete o estilo aplicado
+      const computed = getComputedStyle(modal);
+      expect(computed.overflow).withContext('.modal deve ter overflow: visible para que o sonic-frame pixel-art possa extravasar o box').toBe('visible');
+    }));
+
+    it('.sonic-frame deve ter posicionamento com valores negativos (externo ao box do modal)', fakeAsync(() => {
+      component.openConfirmModal(PERIOD_1);
+      tick();
+      fixture.detectChanges();
+
+      const sonicFrame: HTMLElement = fixture.nativeElement.querySelector('.sonic-frame');
+      expect(sonicFrame).not.toBeNull();
+
+      const computed = getComputedStyle(sonicFrame);
+
+      // Pelo menos um dos lados deve ter valor negativo (margin-based external positioning)
+      const leftVal   = parseFloat(computed.left)   || 0;
+      const rightVal  = parseFloat(computed.right)  || 0;
+      const topVal    = parseFloat(computed.top)    || 0;
+      const bottomVal = parseFloat(computed.bottom) || 0;
+
+      const hasNegativePositioning =
+        leftVal < 0 || rightVal < 0 || topVal < 0 || bottomVal < 0;
+
+      expect(hasNegativePositioning).withContext(
+        '.sonic-frame deve ter pelo menos um valor de posicionamento negativo (left/right/top/bottom) para ficar externo ao box do modal'
+      ).toBeTrue();
+    }));
+  });
 });
