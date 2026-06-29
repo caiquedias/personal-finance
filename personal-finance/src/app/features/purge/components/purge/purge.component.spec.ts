@@ -1,6 +1,6 @@
 import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { ComponentFixture } from '@angular/core/testing';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { of, throwError } from 'rxjs';
@@ -731,6 +731,49 @@ describe('PurgeComponent', () => {
       tick();
 
       expect(component.purgeConfirmed()).toBeTrue();
+    }));
+  });
+
+  // ── #368 — botão de navegação para Análise de CSV ────────────────────────
+
+  describe('#368 — botão de navegação para Análise de CSV', () => {
+    it('renderiza um botão dentro de app-header para navegar para análise de CSV', fakeAsync(() => {
+      tick();
+      fixture.detectChanges();
+      // O PurgeComponent deve projetar um botão via ng-content dentro de <app-header>
+      // Com NO_ERRORS_SCHEMA, o conteúdo projetado fica como filho de app-header no DOM
+      const appHeader = fixture.nativeElement.querySelector('app-header');
+      expect(appHeader).withContext('app-header deve estar presente no DOM').not.toBeNull();
+      const btnAnalise: HTMLElement | null | undefined =
+        appHeader.querySelector('.btn-analise') ??
+        appHeader.querySelector('[data-testid="btn-analise"]') ??
+        Array.from(appHeader.querySelectorAll('button') as NodeListOf<HTMLElement>)
+          .find((btn: HTMLElement) => btn.textContent?.toLowerCase().includes('análise')) ??
+        null;
+      expect(btnAnalise).withContext('deve existir um botão de Análise dentro de app-header via ng-content — PurgeComponent ainda não projeta o botão').not.toBeNull();
+    }));
+
+    it('clicar no botão de análise chama router.navigate com [\'purge\', \'analysis\']', fakeAsync(() => {
+      tick();
+      fixture.detectChanges();
+      const router = TestBed.inject(Router);
+      spyOn(router, 'navigate');
+
+      const appHeader = fixture.nativeElement.querySelector('app-header');
+      expect(appHeader).withContext('app-header deve estar presente').not.toBeNull();
+      const btnAnalise: HTMLButtonElement | null =
+        appHeader.querySelector('.btn-analise') ??
+        appHeader.querySelector('[data-testid="btn-analise"]') ??
+        Array.from(appHeader.querySelectorAll('button') as NodeListOf<HTMLElement>)
+          .find((btn: HTMLElement) => btn.textContent?.toLowerCase().includes('análise')) ??
+        null;
+      expect(btnAnalise).withContext('botão de Análise deve existir para ser clicado — PurgeComponent ainda não projeta o botão').not.toBeNull();
+
+      if (btnAnalise) {
+        btnAnalise.click();
+        tick();
+        expect(router.navigate).toHaveBeenCalledWith(['purge', 'analysis']);
+      }
     }));
   });
 
