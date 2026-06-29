@@ -1,4 +1,4 @@
-namespace PersonalFinance.Application.UseCases.Financial.Purge;
+namespace PersonalFinance.Application.DTOs.Financial;
 
 /// <summary>
 /// DTO de retorno para registros de expurgo.
