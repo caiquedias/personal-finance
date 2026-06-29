@@ -1,5 +1,6 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { DatePipe } from '@angular/common';
+import { Router } from '@angular/router';
 import { trigger, transition, style, animate } from '@angular/animations';
 import { ApiService } from '../../../../core/services/api.service';
 import { EligiblePeriodResponse, PurgeResultResponse, PurgeRecordResponse, MONTH_NAMES } from '../../../../core/models/models';
@@ -34,7 +35,9 @@ import { CurrencyBrlPipe } from '../../../../shared/pipes/currency-brl.pipe';
         <div class="error">{{ apiError() }}</div>
       }
 
-      <app-header title="Expurgo de Períodos" subtitle="Exclua permanentemente dados de períodos fechados e exportados"></app-header>
+      <app-header title="Expurgo de Períodos" subtitle="Exclua permanentemente dados de períodos fechados e exportados">
+        <button class="btn btn-sm btn-analise" (click)="navigateToAnalysis()">Análise</button>
+      </app-header>
 
       <!-- Warning banner estático -->
       <div class="warning-callout">
@@ -288,7 +291,8 @@ import { CurrencyBrlPipe } from '../../../../shared/pipes/currency-brl.pipe';
   `,
 })
 export class PurgeComponent implements OnInit {
-  private readonly api = inject(ApiService);
+  private readonly api    = inject(ApiService);
+  private readonly router = inject(Router);
 
   readonly eligiblePeriods       = signal<EligiblePeriodResponse[]>([]);
   readonly selectedPeriod        = signal<EligiblePeriodResponse | null>(null);
@@ -299,6 +303,10 @@ export class PurgeComponent implements OnInit {
   readonly purgeRecords          = signal<PurgeRecordResponse[]>([]);
   readonly deleteRecordModalOpen = signal(false);
   readonly selectedRecord        = signal<PurgeRecordResponse | null>(null);
+
+  navigateToAnalysis(): void {
+    this.router.navigate(['purge', 'analysis']);
+  }
 
   // Converte número de mês (1-12) para nome em PT-BR
   monthName(month: number): string {
