@@ -745,12 +745,12 @@ describe('PurgeComponent', () => {
       const appHeader = fixture.nativeElement.querySelector('app-header');
       expect(appHeader).withContext('app-header deve estar presente no DOM').not.toBeNull();
       const btnAnalise: HTMLElement | null | undefined =
-        appHeader.querySelector('.btn-analise') ??
+        appHeader.querySelector('.btn-primary') ??
         appHeader.querySelector('[data-testid="btn-analise"]') ??
         Array.from(appHeader.querySelectorAll('button') as NodeListOf<HTMLElement>)
-          .find((btn: HTMLElement) => btn.textContent?.toLowerCase().includes('análise')) ??
+          .find((btn: HTMLElement) => btn.textContent?.toLowerCase().includes('upload csv')) ??
         null;
-      expect(btnAnalise).withContext('deve existir um botão de Análise dentro de app-header via ng-content — PurgeComponent ainda não projeta o botão').not.toBeNull();
+      expect(btnAnalise).withContext('deve existir um botão Upload CSV dentro de app-header via ng-content — PurgeComponent ainda não projeta o botão').not.toBeNull();
     }));
 
     it('clicar no botão de análise chama router.navigate com [\'purge\', \'analysis\']', fakeAsync(() => {
@@ -762,12 +762,12 @@ describe('PurgeComponent', () => {
       const appHeader = fixture.nativeElement.querySelector('app-header');
       expect(appHeader).withContext('app-header deve estar presente').not.toBeNull();
       const btnAnalise: HTMLButtonElement | null =
-        appHeader.querySelector('.btn-analise') ??
+        appHeader.querySelector('.btn-primary') ??
         appHeader.querySelector('[data-testid="btn-analise"]') ??
         Array.from(appHeader.querySelectorAll('button') as NodeListOf<HTMLElement>)
-          .find((btn: HTMLElement) => btn.textContent?.toLowerCase().includes('análise')) ??
+          .find((btn: HTMLElement) => btn.textContent?.toLowerCase().includes('upload csv')) ??
         null;
-      expect(btnAnalise).withContext('botão de Análise deve existir para ser clicado — PurgeComponent ainda não projeta o botão').not.toBeNull();
+      expect(btnAnalise).withContext('botão Upload CSV deve existir para ser clicado — PurgeComponent ainda não projeta o botão').not.toBeNull();
 
       if (btnAnalise) {
         btnAnalise.click();
