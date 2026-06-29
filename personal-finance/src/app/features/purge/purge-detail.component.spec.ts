@@ -483,7 +483,7 @@ describe('PurgeDetailComponent', () => {
       const deps: any[] = Array.isArray(rawDeps) ? rawDeps
         : (typeof rawDeps === 'function' ? rawDeps() : []);
       const hasFilterModal = deps.some((dep: any) => {
-        const sel: string = dep?.ɵcmp?.selectors?.[0]?.[1] ?? dep?.ɵdir?.selectors?.[0]?.[1] ?? '';
+        const sel: string = dep?.ɵcmp?.selectors?.[0]?.[0] ?? dep?.ɵdir?.selectors?.[0]?.[0] ?? '';
         return sel === 'app-filter-modal';
       });
       expect(hasFilterModal).withContext('FilterModalComponent deve estar nos imports do PurgeDetailComponent').toBeTrue();
@@ -494,7 +494,7 @@ describe('PurgeDetailComponent', () => {
       const deps: any[] = Array.isArray(rawDeps) ? rawDeps
         : (typeof rawDeps === 'function' ? rawDeps() : []);
       const hasFilterButton = deps.some((dep: any) => {
-        const sel: string = dep?.ɵcmp?.selectors?.[0]?.[1] ?? dep?.ɵdir?.selectors?.[0]?.[1] ?? '';
+        const sel: string = dep?.ɵcmp?.selectors?.[0]?.[0] ?? dep?.ɵdir?.selectors?.[0]?.[0] ?? '';
         return sel === 'app-filter-button';
       });
       expect(hasFilterButton).withContext('FilterButtonComponent deve estar nos imports do PurgeDetailComponent').toBeTrue();
