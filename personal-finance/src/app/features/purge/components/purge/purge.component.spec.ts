@@ -868,4 +868,84 @@ describe('PurgeComponent', () => {
       ).toBeTrue();
     }));
   });
+
+  // ── #376 — botão "Upload CSV" (renomear "Análise" e corrigir classes) ────────
+
+  describe('#376 — botão Upload CSV no header', () => {
+    it('exibe o texto "Upload CSV" no botão dentro de app-header', fakeAsync(() => {
+      tick();
+      fixture.detectChanges();
+
+      const appHeader = fixture.nativeElement.querySelector('app-header');
+      expect(appHeader).withContext('app-header deve estar presente no DOM').not.toBeNull();
+
+      // Busca botão pelo texto esperado "Upload CSV"
+      const buttons = Array.from(appHeader.querySelectorAll('button') as NodeListOf<HTMLElement>);
+      const btnUploadCsv = buttons.find((btn: HTMLElement) =>
+        btn.textContent?.trim().toLowerCase() === 'upload csv'
+      ) ?? null;
+
+      expect(btnUploadCsv)
+        .withContext('deve existir um botão com texto "Upload CSV" dentro de app-header — texto ainda é "Análise"')
+        .not.toBeNull();
+    }));
+
+    it('botão dentro de app-header tem a classe btn-primary', fakeAsync(() => {
+      tick();
+      fixture.detectChanges();
+
+      const appHeader = fixture.nativeElement.querySelector('app-header');
+      expect(appHeader).withContext('app-header deve estar presente no DOM').not.toBeNull();
+
+      // Busca por btn-primary dentro do header
+      const btnPrimary: HTMLElement | null = appHeader.querySelector('.btn-primary');
+      expect(btnPrimary)
+        .withContext('deve existir um botão com classe "btn-primary" dentro de app-header — classe ainda é "btn-analise"')
+        .not.toBeNull();
+    }));
+
+    it('botão dentro de app-header NÃO tem a classe btn-analise', fakeAsync(() => {
+      tick();
+      fixture.detectChanges();
+
+      const appHeader = fixture.nativeElement.querySelector('app-header');
+      expect(appHeader).withContext('app-header deve estar presente no DOM').not.toBeNull();
+
+      // A classe btn-analise não deve existir no DOM após a correção
+      const btnAnalise: HTMLElement | null = appHeader.querySelector('.btn-analise');
+      expect(btnAnalise)
+        .withContext('não deve existir botão com classe "btn-analise" — a classe deve ser substituída por "btn-primary"')
+        .toBeNull();
+    }));
+
+    it('clicar no botão Upload CSV navega para [\'purge\', \'analysis\'] (regressão)', fakeAsync(() => {
+      tick();
+      fixture.detectChanges();
+
+      const router = TestBed.inject(Router);
+      spyOn(router, 'navigate');
+
+      const appHeader = fixture.nativeElement.querySelector('app-header');
+      expect(appHeader).withContext('app-header deve estar presente').not.toBeNull();
+
+      // Busca o botão pelo texto "Upload CSV" ou pela classe btn-primary
+      const buttons = Array.from(appHeader.querySelectorAll('button') as NodeListOf<HTMLElement>);
+      const btnUploadCsv: HTMLElement | null =
+        buttons.find((btn: HTMLElement) =>
+          btn.textContent?.trim().toLowerCase() === 'upload csv'
+        ) ??
+        appHeader.querySelector('.btn-primary') ??
+        null;
+
+      expect(btnUploadCsv)
+        .withContext('botão Upload CSV deve existir para ser clicado')
+        .not.toBeNull();
+
+      if (btnUploadCsv) {
+        btnUploadCsv.click();
+        tick();
+        expect(router.navigate).toHaveBeenCalledWith(['purge', 'analysis']);
+      }
+    }));
+  });
 });
