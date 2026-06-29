@@ -17,6 +17,7 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 | #369 | Expurgo - Análise Detalhe (bugfix CSV parser) | 2026-06-29 | [369.md](369.md) |
 | #367 | Expurgo - Layout Modal | 2026-06-29 | [367.md](367.md) |
 | #368 | Expurgo - Análise: botão de navegação para tela de CSV | 2026-06-29 | [368.md](368.md) |
+| #377 | Expurgo - Bug Grid "Histórico de Expurgos" | 2026-06-29 | [377.md](377.md) |
 
 ---
 
@@ -24,7 +25,7 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 
 | Módulo | Issues relacionadas | Última atualização |
 |---|---|---|
-| Expurgo (Purge) | #329, #330, #331, #332, #356, #369, #367, #368 | 2026-06-29 |
+| Expurgo (Purge) | #329, #330, #331, #332, #356, #369, #367, #368, #377 | 2026-06-29 |
 | Batch Expenses / Serialização | #355 | 2026-06-26 |
 
 ---
@@ -39,7 +40,8 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 
 ### Application
 - **Use cases:** ExportPeriodUseCase, PurgePeriodUseCase, GetPurgeRecordsUseCase, DeletePurgeRecordUseCase, GetEligiblePeriodsUseCase
-- **DTOs:** EligiblePeriodDto
+- **DTOs:** EligiblePeriodDto, PurgeRecordDto
+- **Use cases alterados:** GetPurgeRecordsUseCase — retorna `IEnumerable<PurgeRecordDto>` (antes `IEnumerable<PurgeRecord>`), mapeamento interno com `ItemCount = ExpenseCount + IncomeCount`
 - **Validações (FluentValidation):** —
 
 ### Infrastructure
@@ -53,7 +55,7 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
   - GET /api/v1/purge/eligible-periods — retorna periodId, year, month, totalIncome, totalExpense, itemCount
   - GET /api/v1/purge/{periodId}/export — (era POST /purge/export/{periodId})
   - POST /api/v1/purge/{periodId} — requer { csvFileName } no body
-  - GET /api/v1/purge/records
+  - GET /api/v1/purge/records — retorna `year`, `month`, `itemCount` (DTO, não entidade direta)
   - DELETE /api/v1/purge/records/{id}
 - **Auth:** JWT Bearer; AuthController [AllowAnonymous]; Admin [Authorize(Roles="Admin")]
 - **Converters:** `FlexibleEnumConverterFactory` registrada globalmente via `AddJsonOptions` — deserializa enums de int, string numérica ou nome; serializa como int

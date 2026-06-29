@@ -231,4 +231,64 @@ public class PurgeControllerTests : ApiIntegrationTestBase
         r.StatusCode.Should().Be(HttpStatusCode.OK);
         r.Content.Headers.ContentType!.MediaType.Should().Be("text/csv");
     }
+
+    // ── RED: Bug 3 — GET /purge/records retorna campos errados ───────────────
+
+    [Fact(DisplayName = "RED: GET /purge/records deve retornar campos 'year' e 'month', não 'periodYear'/'periodMonth'")]
+    public async Task GetRecords_ReturnsYearAndMonth_NotPeriodYearPeriodMonth()
+    {
+        // Arrange — cria um período, expurga e verifica os campos do DTO
+        var (client, periodId) = await SetupInactivePeriodAsync(month: 12);
+        await client.PostAsJsonAsync($"/api/v1/purge/{periodId}",
+            new { csvFileName = "pf_2025_12_expurgo.csv" });
+
+        // Act
+        var r = await client.GetAsync("/api/v1/purge/records");
+
+        // Assert
+        r.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await r.Content.ReadFromJsonAsync<JsonElement>();
+        body.GetArrayLength().Should().BeGreaterThan(0);
+
+        var first = body[0];
+
+        // Campos que devem existir no DTO
+        first.TryGetProperty("year", out _).Should().BeTrue(
+            "o payload deve expor 'year' (mapeado de PeriodYear)");
+        first.TryGetProperty("month", out _).Should().BeTrue(
+            "o payload deve expor 'month' (mapeado de PeriodMonth)");
+
+        // Campos da entidade que NÃO devem ser expostos diretamente
+        first.TryGetProperty("periodYear", out _).Should().BeFalse(
+            "a entidade PurgeRecord não deve ser serializada diretamente — usar DTO");
+        first.TryGetProperty("periodMonth", out _).Should().BeFalse(
+            "a entidade PurgeRecord não deve ser serializada diretamente — usar DTO");
+    }
+
+    [Fact(DisplayName = "RED: GET /purge/records deve retornar 'itemCount' igual a expenseCount + incomeCount")]
+    public async Task GetRecords_ReturnsItemCount_AsExpenseCountPlusIncomeCount()
+    {
+        // Arrange — expurga um período e confirma que itemCount agrega despesas + receitas
+        var (client, periodId) = await SetupInactivePeriodAsync(month: 2);
+        await client.PostAsJsonAsync($"/api/v1/purge/{periodId}",
+            new { csvFileName = "pf_2025_02_expurgo.csv" });
+
+        // Act
+        var r = await client.GetAsync("/api/v1/purge/records");
+
+        // Assert
+        r.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await r.Content.ReadFromJsonAsync<JsonElement>();
+        body.GetArrayLength().Should().BeGreaterThan(0);
+
+        var first = body[0];
+
+        // Deve expor itemCount (não expenseCount/incomeCount separados)
+        first.TryGetProperty("itemCount", out _).Should().BeTrue(
+            "o DTO deve expor 'itemCount' = ExpenseCount + IncomeCount");
+        first.TryGetProperty("expenseCount", out _).Should().BeFalse(
+            "a entidade não deve ser serializada diretamente — 'expenseCount' não deve aparecer");
+        first.TryGetProperty("incomeCount", out _).Should().BeFalse(
+            "a entidade não deve ser serializada diretamente — 'incomeCount' não deve aparecer");
+    }
 }
