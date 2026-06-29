@@ -8,7 +8,6 @@ const IDX_PERIOD_YEAR    = 1;
 const IDX_PERIOD_MONTH   = 2;
 const IDX_DESCRIPTION    = 3;
 const IDX_AMOUNT         = 4;
-const IDX_CATEGORY       = 5;
 const IDX_FORTNIGHT_TYPE = 6;
 const IDX_PAYMENT_STATUS = 7;
 const IDX_SOURCE_TYPE    = 8;
@@ -117,7 +116,7 @@ export class CsvReaderService {
           id:            `income-${lineIndex}`,
           periodId:      '',
           userId:        '',
-          fortnightType: 0 as FortnightType,
+          fortnightType: FortnightType.First,
           description:   cols[IDX_DESCRIPTION],
           amount:        Number(cols[IDX_AMOUNT]),
           receivedAt:    `${month}/${year}`,

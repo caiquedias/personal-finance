@@ -292,4 +292,24 @@ describe('CsvReaderService', () => {
     service.parseCsv(csv);
     expect(service.expenses()[0].sourceType).toBe(SourceType.Parental);
   });
+
+  // ── Fallback para enum string inválida ────────────────────────────────────
+
+  it('FortnightType string inválida deve resultar em FortnightType.First (fallback)', () => {
+    const csv = [HEADER, buildExpenseLine({ FortnightType: 'Invalid' })].join('\n');
+    service.parseCsv(csv);
+    expect(service.expenses()[0].fortnightType).toBe(FortnightType.First);
+  });
+
+  it('PaymentStatus string inválida deve resultar em PaymentStatus.Pending (fallback)', () => {
+    const csv = [HEADER, buildExpenseLine({ PaymentStatus: 'Invalid' })].join('\n');
+    service.parseCsv(csv);
+    expect(service.expenses()[0].paymentStatus).toBe(PaymentStatus.Pending);
+  });
+
+  it('SourceType string inválida deve resultar em SourceType.Personal (fallback)', () => {
+    const csv = [HEADER, buildExpenseLine({ SourceType: 'Invalid' })].join('\n');
+    service.parseCsv(csv);
+    expect(service.expenses()[0].sourceType).toBe(SourceType.Personal);
+  });
 });
