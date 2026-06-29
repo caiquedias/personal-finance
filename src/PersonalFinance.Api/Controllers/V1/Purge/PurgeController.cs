@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using PersonalFinance.Application.DTOs.Financial;
 using PersonalFinance.Application.UseCases.Financial.Purge;
 using PersonalFinance.Domain.Interfaces.Repositories;
 
@@ -79,8 +80,8 @@ public sealed class PurgeController(
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetRecords(CancellationToken ct)
     {
-        var records = await _getPurgeRecordsUseCase.ExecuteAsync(CurrentUserId, ct);
-        return Ok(records);
+        var result = await _getPurgeRecordsUseCase.ExecuteAsync(CurrentUserId, ct);
+        return Ok(result);
     }
 
     /// <summary>Remove um registro de expurgo do usuário autenticado.</summary>
