@@ -15,6 +15,7 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 | #355 | fix: enum string quebra deserialização no POST /expenses/batch/create | 2026-06-26 | [355.md](355.md) |
 | #356 | [FE] Expurgo: Layout e Design — tabela padrão + modal Sonic | 2026-06-27 | [356.md](356.md) |
 | #369 | Expurgo - Análise Detalhe (bugfix CSV parser) | 2026-06-29 | [369.md](369.md) |
+| #367 | Expurgo - Layout Modal | 2026-06-29 | [367.md](367.md) |
 
 ---
 
@@ -22,7 +23,7 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 
 | Módulo | Issues relacionadas | Última atualização |
 |---|---|---|
-| Expurgo (Purge) | #329, #330, #331, #332, #356, #369 | 2026-06-29 |
+| Expurgo (Purge) | #329, #330, #331, #332, #356, #369, #367 | 2026-06-29 |
 | Batch Expenses / Serialização | #355 | 2026-06-26 |
 
 ---
@@ -58,7 +59,7 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 
 ### Frontend (Angular 21)
 - **Rotas (app.routes.ts):** `/purge` (lazy, authGuard); `purge/analysis` (PurgeAnalysisComponent, providers: [CsvReaderService]); `purge/analysis/detail` (PurgeDetailComponent)
-- **Componentes standalone:** PurgeComponent redesenhado — cards grid, modal Sonic pixel-art, tabela histórico, modal delete (`features/purge/components/purge/`); PurgeAnalysisComponent, PurgeDetailComponent, PurgeWarningBannerComponent (`features/purge/`)
+- **Componentes standalone:** PurgeComponent redesenhado — cards grid, modal Sonic pixel-art, tabela histórico, modal delete (`features/purge/components/purge/`); PurgeAnalysisComponent, PurgeDetailComponent, PurgeWarningBannerComponent (`features/purge/`) — `PurgeWarningBannerComponent` removido da tela principal em #367; permanece apenas em `purge-detail.component.ts`
 - **Assets:** `public/sonic-tile.svg` (tile pixel-art do frame Sonic)
 - **Serviços:** ApiService (wrapper HTTP) com métodos purge (`getEligiblePeriods`, `exportPurgeCsv`, `executePurge(periodId, csvFileName)`, `getPurgeRecords`, `deletePurgeRecord`); ThemeService (dark/light); CsvReaderService (parse CSV offline, sem `providedIn: 'root'`) — corrigido em #369 para 12 colunas, RFC 4180, enums como string
 - **Componentes:** `PurgeDetailComponent` (#369) — tabela Income com 4 colunas (Descrição, Valor, Período, Notas); coluna Quinzena removida

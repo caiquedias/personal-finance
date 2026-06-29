@@ -3,13 +3,13 @@ import { DatePipe } from '@angular/common';
 import { trigger, transition, style, animate } from '@angular/animations';
 import { ApiService } from '../../../../core/services/api.service';
 import { EligiblePeriodResponse, PurgeResultResponse, PurgeRecordResponse, MONTH_NAMES } from '../../../../core/models/models';
-import { PurgeWarningBannerComponent } from '../../purge-warning-banner.component';
+import { HeaderComponent } from '../../../../shared/components/header/header.component';
 import { CurrencyBrlPipe } from '../../../../shared/pipes/currency-brl.pipe';
 
 @Component({
   selector: 'app-purge',
   standalone: true,
-  imports: [DatePipe, PurgeWarningBannerComponent, CurrencyBrlPipe],
+  imports: [DatePipe, HeaderComponent, CurrencyBrlPipe],
   styleUrls: ['./purge.component.css'],
   animations: [
     trigger('backdropAnim', [
@@ -34,11 +34,7 @@ import { CurrencyBrlPipe } from '../../../../shared/pipes/currency-brl.pipe';
         <div class="error">{{ apiError() }}</div>
       }
 
-      <!-- Page header -->
-      <div class="page-header">
-        <h1 class="page-title">Expurgo de Períodos</h1>
-        <p class="page-subtitle">Exclua permanentemente dados de períodos fechados e exportados</p>
-      </div>
+      <app-header title="Expurgo de Períodos" subtitle="Exclua permanentemente dados de períodos fechados e exportados"></app-header>
 
       <!-- Warning banner estático -->
       <div class="warning-callout">
@@ -202,7 +198,6 @@ import { CurrencyBrlPipe } from '../../../../shared/pipes/currency-brl.pipe';
 
       <!-- Seção de registros de expurgo -->
       <section class="records-section">
-        <app-purge-warning-banner />
         <div class="section-header">
           <h2 class="section-title">Histórico de expurgos</h2>
         </div>
