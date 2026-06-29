@@ -311,14 +311,19 @@
   border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: 0 20px 60px rgba(0,0,0,.64);
-  overflow: hidden;
+  overflow: visible;
   display: flex;
   flex-direction: column;
 }
 
 .sonic-frame {
   position: absolute;
-  inset: 0;
+  top: -24px;
+  left: -24px;
+  right: -24px;
+  bottom: -24px;
+  width: auto;
+  height: auto;
   pointer-events: none;
   z-index: 0;
 }
