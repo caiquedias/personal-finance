@@ -18,6 +18,7 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 | #367 | Expurgo - Layout Modal | 2026-06-29 | [367.md](367.md) |
 | #368 | Expurgo - Análise: botão de navegação para tela de CSV | 2026-06-29 | [368.md](368.md) |
 | #377 | Expurgo - Bug Grid "Histórico de Expurgos" | 2026-06-29 | [377.md](377.md) |
+| #376 | Expurgo - Botão "Análise" | 2026-06-29 | [376.md](376.md) |
 
 ---
 
@@ -25,7 +26,7 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 
 | Módulo | Issues relacionadas | Última atualização |
 |---|---|---|
-| Expurgo (Purge) | #329, #330, #331, #332, #356, #369, #367, #368, #377 | 2026-06-29 |
+| Expurgo (Purge) | #329, #330, #331, #332, #356, #369, #367, #368, #377, #376 | 2026-06-29 |
 | Batch Expenses / Serialização | #355 | 2026-06-26 |
 
 ---
@@ -62,7 +63,7 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 
 ### Frontend (Angular 21)
 - **Rotas (app.routes.ts):** `/purge` (lazy, authGuard); `purge/analysis` (PurgeAnalysisComponent, providers: [CsvReaderService]); `purge/analysis/detail` (PurgeDetailComponent)
-- **Componentes standalone:** PurgeComponent redesenhado — cards grid, modal Sonic pixel-art, tabela histórico, modal delete, botão "Análise" no header via ng-content (#368) (`features/purge/components/purge/`); PurgeAnalysisComponent, PurgeDetailComponent, PurgeWarningBannerComponent (`features/purge/`) — `PurgeWarningBannerComponent` removido da tela principal em #367; permanece apenas em `purge-detail.component.ts`
+- **Componentes standalone:** PurgeComponent redesenhado — cards grid, modal Sonic pixel-art, tabela histórico, modal delete, botão "Upload CSV" no header via ng-content (classe `btn-primary`, #368/#376) (`features/purge/components/purge/`); PurgeAnalysisComponent, PurgeDetailComponent, PurgeWarningBannerComponent (`features/purge/`) — `PurgeWarningBannerComponent` removido da tela principal em #367; permanece apenas em `purge-detail.component.ts`
 - **Assets:** `public/sonic-tile.svg` (tile pixel-art do frame Sonic)
 - **Serviços:** ApiService (wrapper HTTP) com métodos purge (`getEligiblePeriods`, `exportPurgeCsv`, `executePurge(periodId, csvFileName)`, `getPurgeRecords`, `deletePurgeRecord`); ThemeService (dark/light); CsvReaderService (parse CSV offline, sem `providedIn: 'root'`) — corrigido em #369 para 12 colunas, RFC 4180, enums como string
 - **Componentes:** `PurgeDetailComponent` (#369) — tabela Income com 4 colunas (Descrição, Valor, Período, Notas); coluna Quinzena removida
