@@ -2,66 +2,54 @@ import { TestBed } from '@angular/core/testing';
 import { CsvReaderService } from './csv-reader.service';
 import { ExpenseResponse, IncomeResponse, FortnightType, PaymentStatus, SourceType } from '../models/models';
 
-// Cabeçalho padrão exportado pelo sistema
-const HEADER = 'Type,Id,PeriodId,UserId,CategoryId,SourceType,FortnightType,PaymentStatus,Description,Amount,DueDate,PaymentDate,Notes,IsActive,IsRecurring,UpdatedAt,ReceivedAt';
+// Cabeçalho exportado pelo CsvExportService (12 colunas)
+const HEADER = 'Type,PeriodYear,PeriodMonth,Description,Amount,Category,FortnightType,PaymentStatus,SourceType,DueDate,PaymentDate,Notes';
 
-// Linha de Expense completa (sem campos opcionais vazios)
+// Linha de Expense completa com 12 colunas; enums como strings
 function buildExpenseLine(overrides: Partial<Record<string, string>> = {}): string {
   const defaults: Record<string, string> = {
     Type:          'Expense',
-    Id:            'exp-uuid-001',
-    PeriodId:      'period-uuid-001',
-    UserId:        'user-uuid-001',
-    CategoryId:    'cat-uuid-001',
-    SourceType:    '2',
-    FortnightType: '1',
-    PaymentStatus: '1',
+    PeriodYear:    '2024',
+    PeriodMonth:   '1',
     Description:   'Aluguel',
     Amount:        '1500.00',
+    Category:      '',
+    FortnightType: 'First',
+    PaymentStatus: 'Pending',
+    SourceType:    'Personal',
     DueDate:       '2024-01-10',
     PaymentDate:   '2024-01-09',
     Notes:         'Pago com desconto',
-    IsActive:      'true',
-    IsRecurring:   'true',
-    UpdatedAt:     '2024-01-09T10:00:00Z',
-    ReceivedAt:    '',
   };
   const row = { ...defaults, ...overrides };
   return [
-    row['Type'], row['Id'], row['PeriodId'], row['UserId'], row['CategoryId'],
-    row['SourceType'], row['FortnightType'], row['PaymentStatus'], row['Description'],
-    row['Amount'], row['DueDate'], row['PaymentDate'], row['Notes'],
-    row['IsActive'], row['IsRecurring'], row['UpdatedAt'], row['ReceivedAt'],
+    row['Type'], row['PeriodYear'], row['PeriodMonth'], row['Description'],
+    row['Amount'], row['Category'], row['FortnightType'], row['PaymentStatus'],
+    row['SourceType'], row['DueDate'], row['PaymentDate'], row['Notes'],
   ].join(',');
 }
 
-// Linha de Income completa
+// Linha de Income com 12 colunas; colunas específicas de Expense ficam vazias
 function buildIncomeLine(overrides: Partial<Record<string, string>> = {}): string {
   const defaults: Record<string, string> = {
     Type:          'Income',
-    Id:            'inc-uuid-001',
-    PeriodId:      'period-uuid-001',
-    UserId:        'user-uuid-001',
-    CategoryId:    '',
-    SourceType:    '',
-    FortnightType: '2',
-    PaymentStatus: '',
+    PeriodYear:    '2024',
+    PeriodMonth:   '1',
     Description:   'Salário',
     Amount:        '3000.00',
+    Category:      '',
+    FortnightType: '',
+    PaymentStatus: '',
+    SourceType:    '',
     DueDate:       '',
     PaymentDate:   '',
     Notes:         '',
-    IsActive:      'true',
-    IsRecurring:   '',
-    UpdatedAt:     '',
-    ReceivedAt:    '2024-01-05',
   };
   const row = { ...defaults, ...overrides };
   return [
-    row['Type'], row['Id'], row['PeriodId'], row['UserId'], row['CategoryId'],
-    row['SourceType'], row['FortnightType'], row['PaymentStatus'], row['Description'],
-    row['Amount'], row['DueDate'], row['PaymentDate'], row['Notes'],
-    row['IsActive'], row['IsRecurring'], row['UpdatedAt'], row['ReceivedAt'],
+    row['Type'], row['PeriodYear'], row['PeriodMonth'], row['Description'],
+    row['Amount'], row['Category'], row['FortnightType'], row['PaymentStatus'],
+    row['SourceType'], row['DueDate'], row['PaymentDate'], row['Notes'],
   ].join(',');
 }
 
@@ -99,10 +87,6 @@ describe('CsvReaderService', () => {
     expect(expenses.length).toBe(1);
 
     const expense: ExpenseResponse = expenses[0];
-    expect(expense.id).toBe('exp-uuid-001');
-    expect(expense.periodId).toBe('period-uuid-001');
-    expect(expense.userId).toBe('user-uuid-001');
-    expect(expense.categoryId).toBe('cat-uuid-001');
     expect(expense.sourceType).toBe(SourceType.Personal);
     expect(expense.fortnightType).toBe(FortnightType.First);
     expect(expense.paymentStatus).toBe(PaymentStatus.Pending);
@@ -111,9 +95,6 @@ describe('CsvReaderService', () => {
     expect(expense.dueDate).toBe('2024-01-10');
     expect(expense.paymentDate).toBe('2024-01-09');
     expect(expense.notes).toBe('Pago com desconto');
-    expect(expense.isActive).toBeTrue();
-    expect(expense.isRecurring).toBeTrue();
-    expect(expense.updatedAt).toBe('2024-01-09T10:00:00Z');
   });
 
   it('linha Expense não deve poluir signal incomes', () => {
@@ -132,15 +113,10 @@ describe('CsvReaderService', () => {
     expect(incomes.length).toBe(1);
 
     const income: IncomeResponse = incomes[0];
-    expect(income.id).toBe('inc-uuid-001');
-    expect(income.periodId).toBe('period-uuid-001');
-    expect(income.userId).toBe('user-uuid-001');
-    expect(income.fortnightType).toBe(FortnightType.Second);
     expect(income.description).toBe('Salário');
     expect(income.amount).toBe(3000.00);
-    expect(income.receivedAt).toBe('2024-01-05');
+    expect(income.receivedAt).toBe('01/2024');
     expect(income.notes).toBeNull();
-    expect(income.isActive).toBeTrue();
   });
 
   it('linha Income não deve poluir signal expenses', () => {
@@ -176,7 +152,6 @@ describe('CsvReaderService', () => {
     const csv = bom + [HEADER, buildExpenseLine()].join('\n');
     service.parseCsv(csv);
     expect(service.expenses().length).toBe(1);
-    expect(service.expenses()[0].id).toBe('exp-uuid-001');
   });
 
   it('deve ignorar BOM UTF-8 antes de linha Income', () => {
@@ -184,7 +159,6 @@ describe('CsvReaderService', () => {
     const csv = bom + [HEADER, buildIncomeLine()].join('\n');
     service.parseCsv(csv);
     expect(service.incomes().length).toBe(1);
-    expect(service.incomes()[0].id).toBe('inc-uuid-001');
   });
 
   // ── Schema mismatch → ignorar linha ───────────────────────────────────────
@@ -228,16 +202,16 @@ describe('CsvReaderService', () => {
   });
 
   it('summary.totalExpense deve somar todas as despesas', () => {
-    const exp1 = buildExpenseLine({ Id: 'e1', Amount: '500.00' });
-    const exp2 = buildExpenseLine({ Id: 'e2', Amount: '250.50' });
+    const exp1 = buildExpenseLine({ Amount: '500.00' });
+    const exp2 = buildExpenseLine({ Amount: '250.50' });
     const csv  = [HEADER, exp1, exp2].join('\n');
     service.parseCsv(csv);
     expect(service.summary()!.totalExpense).toBeCloseTo(750.50, 2);
   });
 
   it('summary.totalIncome deve somar todos os rendimentos', () => {
-    const inc1 = buildIncomeLine({ Id: 'i1', Amount: '2000.00' });
-    const inc2 = buildIncomeLine({ Id: 'i2', Amount: '500.00' });
+    const inc1 = buildIncomeLine({ Amount: '2000.00' });
+    const inc2 = buildIncomeLine({ Amount: '500.00' });
     const csv  = [HEADER, inc1, inc2].join('\n');
     service.parseCsv(csv);
     expect(service.summary()!.totalIncome).toBeCloseTo(2500.00, 2);
@@ -252,14 +226,90 @@ describe('CsvReaderService', () => {
   });
 
   it('parseCsv chamado novamente deve resetar signals anteriores', () => {
-    const csv1 = [HEADER, buildExpenseLine({ Id: 'e1' })].join('\n');
+    const csv1 = [HEADER, buildExpenseLine()].join('\n');
     service.parseCsv(csv1);
     expect(service.expenses().length).toBe(1);
 
-    const csv2 = [HEADER, buildIncomeLine({ Id: 'i1' })].join('\n');
+    const csv2 = [HEADER, buildIncomeLine()].join('\n');
     service.parseCsv(csv2);
     // Após segundo parse, expenses deve estar vazio (reset)
     expect(service.expenses().length).toBe(0);
     expect(service.incomes().length).toBe(1);
+  });
+
+  // ── Escape CSV: campo com vírgula entre aspas ──────────────────────────────
+
+  it('campo com vírgula entre aspas deve ser parseado como campo único', () => {
+    // Description contém vírgula, então fica entre aspas no CSV
+    const line = `Expense,2024,1,"Aluguel, residencial",1500.00,,First,Pending,Personal,2024-01-10,2024-01-09,`;
+    const csv = [HEADER, line].join('\n');
+    service.parseCsv(csv);
+
+    expect(service.expenses().length).toBe(1);
+    expect(service.expenses()[0].description).toBe('Aluguel, residencial');
+  });
+
+  it('aspas escapadas duplicadas devem ser resolvidas para aspas simples', () => {
+    // Description = Diz "olá" → CSV: "Diz ""olá"""
+    const line = `Expense,2024,1,"Diz ""olá""",500.00,,First,Pending,Personal,2024-01-10,,`;
+    const csv = [HEADER, line].join('\n');
+    service.parseCsv(csv);
+
+    expect(service.expenses().length).toBe(1);
+    expect(service.expenses()[0].description).toBe('Diz "olá"');
+  });
+
+  // ── receivedAt de Income sintetizado a partir de PeriodYear + PeriodMonth ──
+
+  it('receivedAt de Income deve ser sintetizado como "MM/YYYY"', () => {
+    const csv = [HEADER, buildIncomeLine({ PeriodYear: '2024', PeriodMonth: '1' })].join('\n');
+    service.parseCsv(csv);
+    expect(service.incomes()[0].receivedAt).toBe('01/2024');
+  });
+
+  it('receivedAt de Income com mês >= 10 deve usar zero-padding correto', () => {
+    const csv = [HEADER, buildIncomeLine({ PeriodYear: '2024', PeriodMonth: '10' })].join('\n');
+    service.parseCsv(csv);
+    expect(service.incomes()[0].receivedAt).toBe('10/2024');
+  });
+
+  // ── Enums como strings: FortnightType, PaymentStatus, SourceType ──────────
+
+  it('FortnightType "Second" deve ser parseado como FortnightType.Second (2)', () => {
+    const csv = [HEADER, buildExpenseLine({ FortnightType: 'Second' })].join('\n');
+    service.parseCsv(csv);
+    expect(service.expenses()[0].fortnightType).toBe(FortnightType.Second);
+  });
+
+  it('PaymentStatus "Paid" deve ser parseado como PaymentStatus.Paid (2)', () => {
+    const csv = [HEADER, buildExpenseLine({ PaymentStatus: 'Paid' })].join('\n');
+    service.parseCsv(csv);
+    expect(service.expenses()[0].paymentStatus).toBe(PaymentStatus.Paid);
+  });
+
+  it('SourceType "Parental" deve ser parseado como SourceType.Parental (1)', () => {
+    const csv = [HEADER, buildExpenseLine({ SourceType: 'Parental' })].join('\n');
+    service.parseCsv(csv);
+    expect(service.expenses()[0].sourceType).toBe(SourceType.Parental);
+  });
+
+  // ── Fallback para enum string inválida ────────────────────────────────────
+
+  it('FortnightType string inválida deve resultar em FortnightType.First (fallback)', () => {
+    const csv = [HEADER, buildExpenseLine({ FortnightType: 'Invalid' })].join('\n');
+    service.parseCsv(csv);
+    expect(service.expenses()[0].fortnightType).toBe(FortnightType.First);
+  });
+
+  it('PaymentStatus string inválida deve resultar em PaymentStatus.Pending (fallback)', () => {
+    const csv = [HEADER, buildExpenseLine({ PaymentStatus: 'Invalid' })].join('\n');
+    service.parseCsv(csv);
+    expect(service.expenses()[0].paymentStatus).toBe(PaymentStatus.Pending);
+  });
+
+  it('SourceType string inválida deve resultar em SourceType.Personal (fallback)', () => {
+    const csv = [HEADER, buildExpenseLine({ SourceType: 'Invalid' })].join('\n');
+    service.parseCsv(csv);
+    expect(service.expenses()[0].sourceType).toBe(SourceType.Personal);
   });
 });

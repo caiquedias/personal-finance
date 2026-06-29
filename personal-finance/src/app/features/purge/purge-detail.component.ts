@@ -81,8 +81,7 @@ import {
               <tr>
                 <th>Descrição</th>
                 <th>Valor</th>
-                <th>Recebido em</th>
-                <th>Quinzena</th>
+                <th>Período</th>
                 <th>Notas</th>
               </tr>
             </thead>
@@ -92,7 +91,6 @@ import {
                   <td>{{ inc.description }}</td>
                   <td>{{ inc.amount | number:'1.2-2' }}</td>
                   <td>{{ inc.receivedAt }}</td>
-                  <td>{{ fortnightTypeLabel(inc.fortnightType) }}</td>
                   <td>{{ inc.notes ?? '—' }}</td>
                 </tr>
               }
