@@ -36,7 +36,7 @@ import { CurrencyBrlPipe } from '../../../../shared/pipes/currency-brl.pipe';
       }
 
       <app-header title="Expurgo de Períodos" subtitle="Exclua permanentemente dados de períodos fechados e exportados">
-        <button class="btn btn-sm btn-analise" (click)="navigateToAnalysis()">Análise</button>
+        <button class="btn btn-primary btn-sm" (click)="navigateToAnalysis()">Upload CSV</button>
       </app-header>
 
       <!-- Warning banner estático -->
