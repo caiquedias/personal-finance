@@ -457,26 +457,8 @@ describe('PurgeComponent', () => {
     }));
   });
 
-  // ── MOD-03: PurgeWarningBannerComponent nos imports ───────────────────────
-
-  describe('PurgeWarningBannerComponent — import obrigatório', () => {
-    it('PurgeWarningBannerComponent está nos imports do PurgeComponent', fakeAsync(() => {
-      // Verifica via DOM: NO_ERRORS_SCHEMA ignoraria tags desconhecidas sem erro,
-      // mas o selector deve ser reconhecido pelo Angular quando importado corretamente.
-      // A segunda asserção (renderização DOM) é o critério definitivo.
-      tick();
-      fixture.detectChanges();
-      const banner = fixture.nativeElement.querySelector('app-purge-warning-banner');
-      expect(banner).not.toBeNull('app-purge-warning-banner deve estar no DOM — PurgeWarningBannerComponent não está importado');
-    }));
-
-    it('renderiza app-purge-warning-banner na seção de records', fakeAsync(() => {
-      tick();
-      fixture.detectChanges();
-      const banner = fixture.nativeElement.querySelector('app-purge-warning-banner');
-      expect(banner).not.toBeNull();
-    }));
-  });
+  // ── MOD-03: PurgeWarningBannerComponent nos imports ─── (removido em #367) ──
+  // PurgeWarningBannerComponent foi removido dos imports e template em #367.
 
   // ── MOD-03: Modal de delete de metadados ─────────────────────────────────
 
@@ -793,8 +775,11 @@ describe('PurgeComponent', () => {
 
     it('PurgeWarningBannerComponent NÃO está nos imports do PurgeComponent', () => {
       // Verifica que PurgeWarningBannerComponent não é mais declarado como import
-      const imports: any[] = (PurgeComponent as any).ɵcmp?.dependencies ?? [];
-      const hasBanner = imports.some((dep: any) => {
+      const rawDeps: any = (PurgeComponent as any).ɵcmp?.dependencies;
+      // dependencies pode ser função (lazy) ou array direto em Angular 21
+      const deps: any[] = Array.isArray(rawDeps) ? rawDeps
+        : (typeof rawDeps === 'function' ? rawDeps() : []);
+      const hasBanner = deps.some((dep: any) => {
         const sel: string = dep?.ɵcmp?.selectors?.[0]?.[1] ?? dep?.ɵdir?.selectors?.[0]?.[1] ?? '';
         return sel === 'app-purge-warning-banner';
       });
