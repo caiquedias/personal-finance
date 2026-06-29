@@ -80,7 +80,17 @@ public sealed class PurgeController(
     public async Task<IActionResult> GetRecords(CancellationToken ct)
     {
         var records = await _getPurgeRecordsUseCase.ExecuteAsync(CurrentUserId, ct);
-        return Ok(records);
+        var dtos = records.Select(r => new PurgeRecordDto
+        {
+            Id           = r.Id,
+            Year         = r.PeriodYear,
+            Month        = r.PeriodMonth,
+            ItemCount    = r.ExpenseCount + r.IncomeCount,
+            TotalIncome  = r.TotalIncome,
+            TotalExpense = r.TotalExpense,
+            PurgedAt     = r.PurgedAt,
+        });
+        return Ok(dtos);
     }
 
     /// <summary>Remove um registro de expurgo do usuário autenticado.</summary>
