@@ -1,26 +1,60 @@
 import { Injectable, signal } from '@angular/core';
-import { ExpenseResponse, IncomeResponse, PeriodSummary } from '../models/models';
+import { ExpenseResponse, IncomeResponse, PeriodSummary, FortnightType, PaymentStatus, SourceType } from '../models/models';
 
-// Índices do CSV exportado pelo sistema
+// Índices do CSV exportado pelo sistema (12 colunas)
+// Type,PeriodYear,PeriodMonth,Description,Amount,Category,FortnightType,PaymentStatus,SourceType,DueDate,PaymentDate,Notes
 const IDX_TYPE           = 0;
-const IDX_ID             = 1;
-const IDX_PERIOD_ID      = 2;
-const IDX_USER_ID        = 3;
-const IDX_CATEGORY_ID    = 4;
-const IDX_SOURCE_TYPE    = 5;
+const IDX_PERIOD_YEAR    = 1;
+const IDX_PERIOD_MONTH   = 2;
+const IDX_DESCRIPTION    = 3;
+const IDX_AMOUNT         = 4;
+const IDX_CATEGORY       = 5;
 const IDX_FORTNIGHT_TYPE = 6;
 const IDX_PAYMENT_STATUS = 7;
-const IDX_DESCRIPTION    = 8;
-const IDX_AMOUNT         = 9;
-const IDX_DUE_DATE       = 10;
-const IDX_PAYMENT_DATE   = 11;
-const IDX_NOTES          = 12;
-const IDX_IS_ACTIVE      = 13;
-const IDX_IS_RECURRING   = 14;
-const IDX_UPDATED_AT     = 15;
-const IDX_RECEIVED_AT    = 16;
+const IDX_SOURCE_TYPE    = 8;
+const IDX_DUE_DATE       = 9;
+const IDX_PAYMENT_DATE   = 10;
+const IDX_NOTES          = 11;
 
-const REQUIRED_COLUMNS = 17;
+const REQUIRED_COLUMNS = 12;
+
+// Mapeamentos de string → enum numérico
+const FORTNIGHT_TYPE_MAP: Record<string, FortnightType> = {
+  First:  FortnightType.First,
+  Second: FortnightType.Second,
+};
+
+const PAYMENT_STATUS_MAP: Record<string, PaymentStatus> = {
+  Pending:   PaymentStatus.Pending,
+  Paid:      PaymentStatus.Paid,
+  Cancelled: PaymentStatus.Cancelled,
+  Partial:   PaymentStatus.Partial,
+};
+
+const SOURCE_TYPE_MAP: Record<string, SourceType> = {
+  Personal: SourceType.Personal,
+  Parental: SourceType.Parental,
+};
+
+// Parser CSV que respeita campos entre aspas (RFC 4180)
+function parseCsvLine(line: string): string[] {
+  const result: string[] = [];
+  let current = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      if (inQuotes && line[i + 1] === '"') { current += '"'; i++; }
+      else { inQuotes = !inQuotes; }
+    } else if (ch === ',' && !inQuotes) {
+      result.push(current); current = '';
+    } else {
+      current += ch;
+    }
+  }
+  result.push(current);
+  return result;
+}
 
 // BOM UTF-8
 const UTF8_BOM = '﻿';
@@ -52,40 +86,43 @@ export class CsvReaderService {
       const line = lines[i].trim();
       if (!line) continue;
 
-      const cols = line.split(',');
+      const cols = parseCsvLine(line);
       if (cols.length < REQUIRED_COLUMNS) continue;
 
       const type = cols[IDX_TYPE];
+      const lineIndex = i - 1; // lineIndex começa em 0 (desconta o header)
 
       if (type === 'Expense') {
         parsedExpenses.push({
-          id:            cols[IDX_ID],
-          periodId:      cols[IDX_PERIOD_ID],
-          userId:        cols[IDX_USER_ID],
-          categoryId:    cols[IDX_CATEGORY_ID],
-          sourceType:    Number(cols[IDX_SOURCE_TYPE]),
-          fortnightType: Number(cols[IDX_FORTNIGHT_TYPE]),
-          paymentStatus: Number(cols[IDX_PAYMENT_STATUS]),
+          id:            `expense-${lineIndex}`,
+          periodId:      '',
+          userId:        '',
+          categoryId:    '',
+          sourceType:    SOURCE_TYPE_MAP[cols[IDX_SOURCE_TYPE]] ?? SourceType.Personal,
+          fortnightType: FORTNIGHT_TYPE_MAP[cols[IDX_FORTNIGHT_TYPE]] ?? FortnightType.First,
+          paymentStatus: PAYMENT_STATUS_MAP[cols[IDX_PAYMENT_STATUS]] ?? PaymentStatus.Pending,
           description:   cols[IDX_DESCRIPTION],
           amount:        Number(cols[IDX_AMOUNT]),
           dueDate:       cols[IDX_DUE_DATE],
           paymentDate:   cols[IDX_PAYMENT_DATE] || null,
           notes:         cols[IDX_NOTES] || null,
-          isActive:      cols[IDX_IS_ACTIVE] === 'true',
-          isRecurring:   cols[IDX_IS_RECURRING] === 'true',
-          updatedAt:     cols[IDX_UPDATED_AT],
+          isActive:      true,
+          isRecurring:   false,
+          updatedAt:     '',
         });
       } else if (type === 'Income') {
+        const year  = cols[IDX_PERIOD_YEAR];
+        const month = cols[IDX_PERIOD_MONTH].padStart(2, '0');
         parsedIncomes.push({
-          id:            cols[IDX_ID],
-          periodId:      cols[IDX_PERIOD_ID],
-          userId:        cols[IDX_USER_ID],
-          fortnightType: Number(cols[IDX_FORTNIGHT_TYPE]),
+          id:            `income-${lineIndex}`,
+          periodId:      '',
+          userId:        '',
+          fortnightType: 0 as FortnightType,
           description:   cols[IDX_DESCRIPTION],
           amount:        Number(cols[IDX_AMOUNT]),
-          receivedAt:    cols[IDX_RECEIVED_AT],
+          receivedAt:    `${month}/${year}`,
           notes:         cols[IDX_NOTES] || null,
-          isActive:      cols[IDX_IS_ACTIVE] === 'true',
+          isActive:      true,
         });
       }
       // Type desconhecido ou linha inválida → ignorar silenciosamente
