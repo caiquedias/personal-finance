@@ -18,6 +18,7 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 | #367 | Expurgo - Layout Modal | 2026-06-29 | [367.md](367.md) |
 | #368 | Expurgo - Análise: botão de navegação para tela de CSV | 2026-06-29 | [368.md](368.md) |
 | #377 | Expurgo - Bug Grid "Histórico de Expurgos" | 2026-06-29 | [377.md](377.md) |
+| #378 | Expurgo - Análise Detalhe | 2026-06-29 | [378.md](378.md) |
 | #376 | Expurgo - Botão "Análise" | 2026-06-29 | [376.md](376.md) |
 
 ---
@@ -66,7 +67,7 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 - **Componentes standalone:** PurgeComponent redesenhado — cards grid, modal Sonic pixel-art, tabela histórico, modal delete, botão "Upload CSV" no header via ng-content (classe `btn-primary`, #368/#376) (`features/purge/components/purge/`); PurgeAnalysisComponent, PurgeDetailComponent, PurgeWarningBannerComponent (`features/purge/`) — `PurgeWarningBannerComponent` removido da tela principal em #367; permanece apenas em `purge-detail.component.ts`
 - **Assets:** `public/sonic-tile.svg` (tile pixel-art do frame Sonic)
 - **Serviços:** ApiService (wrapper HTTP) com métodos purge (`getEligiblePeriods`, `exportPurgeCsv`, `executePurge(periodId, csvFileName)`, `getPurgeRecords`, `deletePurgeRecord`); ThemeService (dark/light); CsvReaderService (parse CSV offline, sem `providedIn: 'root'`) — corrigido em #369 para 12 colunas, RFC 4180, enums como string
-- **Componentes:** `PurgeDetailComponent` (#369) — tabela Income com 4 colunas (Descrição, Valor, Período, Notas); coluna Quinzena removida
+- **Componentes:** `PurgeDetailComponent` (#378) — refatorado com header, 3 abas (expenses/incomes/indicators), filtros compartilhados (filterDesc + filterFortnight), grid padronizado (.table/.table-wrap, badges, CurrencyBrlPipe, ícones de sort), KPIs (kpiTotalIncome, kpiTotalExpense, kpiTotalPaid, kpiTotalOwed, kpiBalance, kpiPaymentProgress)
 - **Modelos:** `PurgeRecordResponse` adicionado em models.ts
 - **Sidebar:** item "Expurgo" com ícone `archive` e rota `/purge`
 - **Auth:** authInterceptor injeta token automaticamente
