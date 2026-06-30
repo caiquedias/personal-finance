@@ -7,6 +7,7 @@ import { HeaderComponent } from '../../shared/components/header/header.component
 import { FilterModalComponent } from '../../shared/components/filter-modal/filter-modal.component';
 import { FilterButtonComponent } from '../../shared/components/filter-modal/filter-button.component';
 import { FilterFieldConfig } from '../../shared/components/filter-modal/filter-field-config';
+import { CurrencyBrlPipe } from '../../shared/pipes/currency-brl.pipe';
 import {
   ExpenseResponse, IncomeResponse,
   PAYMENT_STATUS_LABELS, SOURCE_TYPE_LABELS, FORTNIGHT_TYPE_LABELS,
@@ -24,6 +25,7 @@ type ActiveTab = 'expenses' | 'incomes' | 'indicators';
     HeaderComponent,
     FilterModalComponent,
     FilterButtonComponent,
+    CurrencyBrlPipe,
     DecimalPipe,
   ],
   template: `
@@ -82,29 +84,29 @@ type ActiveTab = 'expenses' | 'incomes' | 'indicators';
     @if (activeTab() === 'expenses') {
       @if (filteredExpenses().length > 0) {
         <section class="purge-section">
-          <div class="purge-table-wrapper">
-            <table class="purge-table">
+          <div class="table-wrap">
+            <table class="table">
               <thead>
                 <tr>
-                  <th class="col-sortable" (click)="sortExpenses('description')">Descrição</th>
-                  <th class="col-sortable" (click)="sortExpenses('amount')">Valor</th>
-                  <th class="col-sortable" (click)="sortExpenses('dueDate')">Vencimento</th>
-                  <th class="col-sortable" (click)="sortExpenses('paymentDate')">Pagamento</th>
-                  <th class="col-sortable" (click)="sortExpenses('paymentStatus')">Status</th>
-                  <th class="col-sortable" (click)="sortExpenses('sourceType')">Fonte</th>
-                  <th class="col-sortable" (click)="sortExpenses('fortnightType')">Quinzena</th>
+                  <th class="sortable" (click)="sortExpenses('description')">Descrição {{ expSortIcon('description') }}</th>
+                  <th class="sortable" (click)="sortExpenses('amount')">Valor {{ expSortIcon('amount') }}</th>
+                  <th class="sortable" (click)="sortExpenses('dueDate')">Vencimento {{ expSortIcon('dueDate') }}</th>
+                  <th class="sortable" (click)="sortExpenses('paymentDate')">Pagamento {{ expSortIcon('paymentDate') }}</th>
+                  <th class="sortable" (click)="sortExpenses('paymentStatus')">Status {{ expSortIcon('paymentStatus') }}</th>
+                  <th class="sortable" (click)="sortExpenses('sourceType')">Fonte {{ expSortIcon('sourceType') }}</th>
+                  <th class="sortable" (click)="sortExpenses('fortnightType')">Quinzena {{ expSortIcon('fortnightType') }}</th>
                 </tr>
               </thead>
               <tbody>
                 @for (exp of sortedExpenses(); track exp.id) {
                   <tr>
-                    <td>{{ exp.description }}</td>
-                    <td>{{ exp.amount | number:'1.2-2' }}</td>
-                    <td>{{ exp.dueDate }}</td>
-                    <td>{{ exp.paymentDate ?? '—' }}</td>
-                    <td>{{ paymentStatusLabel(exp.paymentStatus) }}</td>
-                    <td>{{ sourceTypeLabel(exp.sourceType) }}</td>
-                    <td>{{ fortnightTypeLabel(exp.fortnightType) }}</td>
+                    <td class="cell-primary">{{ exp.description }}</td>
+                    <td class="font-semibold">{{ exp.amount | currencyBrl }}</td>
+                    <td class="text-muted text-sm">{{ exp.dueDate }}</td>
+                    <td class="text-muted text-sm">{{ exp.paymentDate ?? '—' }}</td>
+                    <td><span class="badge" [class]="statusBadgeClass(exp.paymentStatus)">{{ paymentStatusLabel(exp.paymentStatus) }}</span></td>
+                    <td class="text-muted text-sm">{{ sourceTypeLabel(exp.sourceType) }}</td>
+                    <td class="text-muted text-sm">{{ fortnightTypeLabel(exp.fortnightType) }}</td>
                   </tr>
                 }
               </tbody>
@@ -122,23 +124,23 @@ type ActiveTab = 'expenses' | 'incomes' | 'indicators';
     @if (activeTab() === 'incomes') {
       @if (filteredIncomes().length > 0) {
         <section class="purge-section">
-          <div class="purge-table-wrapper">
-            <table class="purge-table">
+          <div class="table-wrap">
+            <table class="table">
               <thead>
                 <tr>
-                  <th class="col-sortable" (click)="sortIncomes('description')">Descrição</th>
-                  <th class="col-sortable" (click)="sortIncomes('amount')">Valor</th>
-                  <th class="col-sortable" (click)="sortIncomes('receivedAt')">Período</th>
+                  <th class="sortable" (click)="sortIncomes('description')">Descrição {{ incSortIcon('description') }}</th>
+                  <th class="sortable" (click)="sortIncomes('amount')">Valor {{ incSortIcon('amount') }}</th>
+                  <th class="sortable" (click)="sortIncomes('receivedAt')">Período {{ incSortIcon('receivedAt') }}</th>
                   <th>Notas</th>
                 </tr>
               </thead>
               <tbody>
                 @for (inc of sortedIncomes(); track inc.id) {
                   <tr>
-                    <td>{{ inc.description }}</td>
-                    <td>{{ inc.amount | number:'1.2-2' }}</td>
-                    <td>{{ inc.receivedAt }}</td>
-                    <td>{{ inc.notes ?? '—' }}</td>
+                    <td class="cell-primary">{{ inc.description }}</td>
+                    <td class="font-semibold">{{ inc.amount | currencyBrl }}</td>
+                    <td class="text-muted text-sm">{{ inc.receivedAt }}</td>
+                    <td class="text-muted text-sm">{{ inc.notes ?? '—' }}</td>
                   </tr>
                 }
               </tbody>
@@ -275,41 +277,56 @@ type ActiveTab = 'expenses' | 'incomes' | 'indicators';
       padding: 1rem 1.5rem;
     }
 
-    .purge-table-wrapper {
+    .table-wrap {
+      background: var(--v2-surface);
+      backdrop-filter: blur(24px);
+      border-radius: var(--v2-radius);
+      border: 1px solid var(--v2-border);
+      box-shadow: var(--v2-shadow);
       overflow-x: auto;
     }
 
-    .purge-table {
+    .table {
       width: 100%;
       border-collapse: collapse;
       font-size: 0.875rem;
+      font-family: var(--font-b);
     }
 
-    .purge-table th,
-    .purge-table td {
-      padding: 0.5rem 0.75rem;
-      border-bottom: 1px solid var(--color-border, #e5e7eb);
+    .table th {
       text-align: left;
-    }
-
-    .purge-table th {
+      padding: 12px 16px;
+      font-size: 10px;
       font-weight: 600;
-      background: var(--color-surface, #f9fafb);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-subtle);
+      border-bottom: 1px solid var(--v2-border);
+      white-space: nowrap;
     }
 
-    .col-sortable {
-      cursor: pointer;
-      user-select: none;
+    .table th.sortable { cursor: pointer; user-select: none; }
+    .table th.sortable:hover { color: var(--text); }
+
+    .table td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--v2-border);
+      color: var(--text-muted);
+      vertical-align: middle;
     }
 
-    .col-sortable:hover {
-      background: var(--color-border, #e5e7eb);
-    }
+    .table tr:last-child td { border-bottom: none; }
+    .table tbody tr:hover { background: rgba(255,255,255,0.03); }
+
+    .cell-primary  { color: var(--text); font-weight: 500; }
+    .text-sm       { font-size: 0.8125rem; }
+    .text-muted    { color: var(--text-muted); }
+    .font-semibold { font-family: var(--font-d); font-weight: 500; color: var(--text); }
 
     .purge-empty {
       padding: 2rem;
       text-align: center;
-      color: var(--color-text-muted, #6b7280);
+      color: var(--text-muted);
     }
   `],
 })
@@ -487,6 +504,11 @@ export class PurgeDetailComponent {
     }
   }
 
+  expSortIcon(col: keyof ExpenseResponse): string {
+    if (this.expSortColumn() !== col) return '↕';
+    return this.expSortAsc() ? '↑' : '↓';
+  }
+
   // Ordenação de receitas
   sortIncomes(col: keyof IncomeResponse): void {
     if (this.incSortColumn() === col) {
@@ -495,6 +517,21 @@ export class PurgeDetailComponent {
       this.incSortColumn.set(col);
       this.incSortAsc.set(true);
     }
+  }
+
+  incSortIcon(col: keyof IncomeResponse): string {
+    if (this.incSortColumn() !== col) return '↕';
+    return this.incSortAsc() ? '↑' : '↓';
+  }
+
+  statusBadgeClass(status: PaymentStatus): string {
+    const map: Record<PaymentStatus, string> = {
+      [PaymentStatus.Pending]:   'badge-warning',
+      [PaymentStatus.Paid]:      'badge-success',
+      [PaymentStatus.Cancelled]: 'badge-neutral',
+      [PaymentStatus.Partial]:   'badge-info',
+    };
+    return map[status] ?? 'badge-neutral';
   }
 
   // Helpers de label
