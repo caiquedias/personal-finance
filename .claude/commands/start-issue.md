@@ -6,17 +6,22 @@ _(formato esperado: `<issue-number>` ou `<issue-url>`)_
 
 ---
 
-## Passo 1 — Ler e apresentar o plano
+## Passo 1 — Ler, analisar e apresentar o plano
 
 1. Leia a issue via `gh issue view <number> --repo caiquedias/personal-finance --json number,title,body,labels`
 2. Derive o nome da branch: `feat/<id>-<slug>` (slug em kebab-case do título)
-3. Apresente ao Caique **exatamente este plano** (5 itens fixos, 1 linha cada):
+3. **Spawne o PO em Modo Análise de Impacto** (autônomo — não pedir permissão ao Caique). Passe:
+   - Issue number, título e body
+   - Stack envolvida (backend/frontend/ambos)
+   Aguarde `ANÁLISE CONCLUÍDA` antes de avançar.
+4. Apresente ao Caique **exatamente este plano** (6 itens fixos, 1 linha cada):
    1. Criar branches `feat/<id>-<slug>` e worktree `claude/<id>-<slug>` a partir de `origin/develop`
-   2. **Red** — escrever testes falhando para: `<tasks da issue>`
-   3. **Green (task a task)** — implementar: `<tasks da issue>`
-   4. **QA** → **UX Validator** (se frontend) → **Reviewer**
-   5. Push + PR `claude/` → `feat/` + mover issue para **In Review**
-4. **Aguarde confirmação do Caique antes de avançar**
+   2. **Análise de Impacto (PO):** `<resumo em 1 linha do resultado: risco + dependências principais>`
+   3. **Red** — escrever testes falhando para: `<tasks da issue>`
+   4. **Green (task a task)** — implementar: `<tasks da issue>`
+   5. **QA** → **UX Validator** (se frontend) → **Reviewer**
+   6. Push + PR `claude/` → `feat/` + mover issue para **In Review**
+5. **Aguarde confirmação do Caique antes de avançar**
 
 ---
 
