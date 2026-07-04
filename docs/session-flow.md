@@ -16,10 +16,11 @@ Antes de qualquer ação externa, exibir o que será feito e aguardar confirmaç
 ## Fluxo de sessão de planning
 
 1. Levantamento autônomo (ler arquivos, board, issues)
-2. Montar o planning completo
-3. Apresentar ao Caique — **parar aqui**
-4. Aguardar OK explícito
-5. Somente após OK: executar ações externas (post na issue, update do board)
+2. **Spawnar PO — Análise de Impacto** (autônomo, sem pedir permissão): dependências afetadas, pacotes e risco de regressão
+3. Montar o planning completo incorporando a análise de impacto
+4. Apresentar ao Caique — **parar aqui**
+5. Aguardar OK explícito
+6. Somente após OK: executar ações externas (post na issue, update do board)
 
 ---
 
