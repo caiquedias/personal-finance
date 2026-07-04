@@ -20,6 +20,7 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 | #377 | Expurgo - Bug Grid "Histórico de Expurgos" | 2026-06-29 | [377.md](377.md) |
 | #378 | Expurgo - Análise Detalhe | 2026-06-29 | [378.md](378.md) |
 | #376 | Expurgo - Botão "Análise" | 2026-06-29 | [376.md](376.md) |
+| #387 | Tela de Login - Remover seção de criação de usuário | 2026-07-04 | [387.md](387.md) |
 
 ---
 
@@ -29,6 +30,7 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 |---|---|---|
 | Expurgo (Purge) | #329, #330, #331, #332, #356, #369, #367, #368, #377, #376 | 2026-06-29 |
 | Batch Expenses / Serialização | #355 | 2026-06-26 |
+| Login / Auth UI | #387 | 2026-07-04 |
 
 ---
 
@@ -71,6 +73,7 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 - **Modelos:** `PurgeRecordResponse` adicionado em models.ts
 - **Sidebar:** item "Expurgo" com ícone `archive` e rota `/purge`
 - **Auth:** authInterceptor injeta token automaticamente
+- **Login:** `LoginComponent` sem seção de cadastro — link `/register` e `RouterLink` removidos (#387)
 
 ### Banco de dados
 - **Lookup tables seeded:** Role, PaymentStatus, SourceType, FortnightType
