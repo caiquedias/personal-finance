@@ -169,6 +169,23 @@ describe('LoginComponent', () => {
     });
   });
 
+  describe('seção de cadastro', () => {
+    it('não deve existir elemento com routerLink="/register"', () => {
+      const el = fixture.nativeElement.querySelector('[routerLink="/register"]');
+      expect(el).toBeNull();
+    });
+
+    it('não deve exibir o texto "Cadastre-se"', () => {
+      const text: string = fixture.nativeElement.textContent;
+      expect(text).not.toContain('Cadastre-se');
+    });
+
+    it('não deve existir elemento com a classe login-register', () => {
+      const el = fixture.nativeElement.querySelector('.login-register');
+      expect(el).toBeNull();
+    });
+  });
+
   describe('showPassword signal', () => {
     it('começa como false', () => {
       expect(component.showPassword()).toBeFalse();
