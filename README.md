@@ -32,6 +32,23 @@ PersonalFinance.sln
 `Api → Infrastructure → Application → Domain`  
 `Domain` não referencia nenhum projeto interno.
 
+## Configuração de ambiente
+
+`JwtSettings:SecretKey` não vem mais hardcoded em `appsettings.json` — precisa ser configurado por fora.
+
+**Dev local — .NET User Secrets:**
+
+```bash
+dotnet user-secrets init --project src/PersonalFinance.Api
+dotnet user-secrets set "JwtSettings:SecretKey" "<secret-forte-256-bits>" --project src/PersonalFinance.Api
+```
+
+Gerar um secret forte: `openssl rand -base64 32`.
+
+**Homolog/Produção (Render):** configurar a variável de ambiente `JwtSettings__SecretKey` (double underscore — convenção do .NET para seções aninhadas) no painel de environment variables do serviço.
+
+> **Segurança:** rotacionar o secret invalida todas as sessões JWT ativas — coordenar janela de deploy.
+
 ## Documentação
 
 Ver `PersonalFinance_Contexto.md` para contexto técnico completo.
