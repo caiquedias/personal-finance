@@ -22,6 +22,7 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 | #376 | Expurgo - Botão "Análise" | 2026-06-29 | [376.md](376.md) |
 | #387 | Tela de Login - Remover seção de criação de usuário | 2026-07-04 | [387.md](387.md) |
 | #389 | [Security] Remover JWT SecretKey hardcoded e rotacionar | 2026-07-04 | [389.md](389.md) |
+| #384 | Expurgo - Análise Detalhe — Filtros por aba (padrão tela de Despesas) | 2026-07-05 | [384.md](384.md) |
 
 ---
 
@@ -29,7 +30,7 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 
 | Módulo | Issues relacionadas | Última atualização |
 |---|---|---|
-| Expurgo (Purge) | #329, #330, #331, #332, #356, #369, #367, #368, #377, #376 | 2026-06-29 |
+| Expurgo (Purge) | #329, #330, #331, #332, #356, #369, #367, #368, #377, #376, #378, #384 | 2026-07-05 |
 | Batch Expenses / Serialização | #355 | 2026-06-26 |
 | Login / Auth UI | #387 | 2026-07-04 |
 | Segurança / JWT | #389 | 2026-07-04 |
@@ -71,7 +72,7 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 - **Componentes standalone:** PurgeComponent redesenhado — cards grid, modal Sonic pixel-art, tabela histórico, modal delete, botão "Upload CSV" no header via ng-content (classe `btn-primary`, #368/#376) (`features/purge/components/purge/`); PurgeAnalysisComponent, PurgeDetailComponent, PurgeWarningBannerComponent (`features/purge/`) — `PurgeWarningBannerComponent` removido da tela principal em #367; permanece apenas em `purge-detail.component.ts`
 - **Assets:** `public/sonic-tile.svg` (tile pixel-art do frame Sonic)
 - **Serviços:** ApiService (wrapper HTTP) com métodos purge (`getEligiblePeriods`, `exportPurgeCsv`, `executePurge(periodId, csvFileName)`, `getPurgeRecords`, `deletePurgeRecord`); ThemeService (dark/light); CsvReaderService (parse CSV offline, sem `providedIn: 'root'`) — corrigido em #369 para 12 colunas, RFC 4180, enums como string
-- **Componentes:** `PurgeDetailComponent` (#378) — refatorado com header, 3 abas (expenses/incomes/indicators), filtros compartilhados (filterDesc + filterFortnight), grid padronizado (.table/.table-wrap, badges, CurrencyBrlPipe, ícones de sort), KPIs (kpiTotalIncome, kpiTotalExpense, kpiTotalPaid, kpiTotalOwed, kpiBalance, kpiPaymentProgress)
+- **Componentes:** `PurgeDetailComponent` (#378, #384) — header, 3 abas (expenses/incomes/indicators), grid padronizado (.table/.table-wrap, badges, CurrencyBrlPipe, ícones de sort), KPIs (kpiTotalIncome, kpiTotalExpense, kpiTotalPaid, kpiTotalOwed, kpiBalance, kpiPaymentProgress). Filtros independentes por aba (#384): Despesas (expFilterDesc, expFortnight, expStatus, expSourceType, expFilterOpen, expFilterFields 4 campos, expActiveFilterCount) e Receitas (incFilterDesc, incFilterOpen, incFilterFields 1 campo, incActiveFilterCount); Indicadores sem filtro próprio
 - **Modelos:** `PurgeRecordResponse` adicionado em models.ts
 - **Sidebar:** item "Expurgo" com ícone `archive` e rota `/purge`
 - **Auth:** authInterceptor injeta token automaticamente
