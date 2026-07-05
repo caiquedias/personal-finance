@@ -11,7 +11,7 @@ import { CurrencyBrlPipe } from '../../shared/pipes/currency-brl.pipe';
 import {
   ExpenseResponse, IncomeResponse,
   PAYMENT_STATUS_LABELS, SOURCE_TYPE_LABELS, FORTNIGHT_TYPE_LABELS,
-  PaymentStatus, FortnightType,
+  PaymentStatus, FortnightType, SourceType,
 } from '../../core/models/models';
 
 type ActiveTab = 'expenses' | 'incomes' | 'indicators';
@@ -38,7 +38,7 @@ type ActiveTab = 'expenses' | 'incomes' | 'indicators';
 
     <app-purge-warning-banner />
 
-    <!-- Barra de abas + botão de filtro -->
+    <!-- Barra de abas -->
     <div class="purge-toolbar">
       <div class="purge-tabs">
         <button
@@ -63,25 +63,25 @@ type ActiveTab = 'expenses' | 'incomes' | 'indicators';
           Indicadores
         </button>
       </div>
-
-      <!-- Botão de filtro -->
-      <app-filter-button
-        [activeCount]="activeFilterCount()"
-        (toggled)="filterOpen.set(!filterOpen())"
-      />
     </div>
-
-    <!-- Modal de filtros -->
-    <app-filter-modal
-      [fields]="filterFields()"
-      [open]="filterOpen()"
-      (apply)="onFilterApply($event)"
-      (clear)="onFilterClear()"
-      (closed)="filterOpen.set(false)"
-    />
 
     <!-- Aba Despesas -->
     @if (activeTab() === 'expenses') {
+      <div class="purge-filter-bar">
+        <app-filter-button
+          [activeCount]="expActiveFilterCount()"
+          (toggled)="expFilterOpen.set(!expFilterOpen())"
+        />
+      </div>
+
+      <app-filter-modal
+        [fields]="expFilterFields()"
+        [open]="expFilterOpen()"
+        (apply)="onExpFilterApply($event)"
+        (clear)="onExpFilterClear()"
+        (closed)="expFilterOpen.set(false)"
+      />
+
       @if (filteredExpenses().length > 0) {
         <section class="purge-section">
           <div class="table-wrap">
@@ -122,6 +122,21 @@ type ActiveTab = 'expenses' | 'incomes' | 'indicators';
 
     <!-- Aba Receitas -->
     @if (activeTab() === 'incomes') {
+      <div class="purge-filter-bar">
+        <app-filter-button
+          [activeCount]="incActiveFilterCount()"
+          (toggled)="incFilterOpen.set(!incFilterOpen())"
+        />
+      </div>
+
+      <app-filter-modal
+        [fields]="incFilterFields()"
+        [open]="incFilterOpen()"
+        (apply)="onIncFilterApply($event)"
+        (clear)="onIncFilterClear()"
+        (closed)="incFilterOpen.set(false)"
+      />
+
       @if (filteredIncomes().length > 0) {
         <section class="purge-section">
           <div class="table-wrap">
@@ -236,6 +251,12 @@ type ActiveTab = 'expenses' | 'incomes' | 'indicators';
       color: #fff;
     }
 
+    .purge-filter-bar {
+      display: flex;
+      justify-content: flex-end;
+      padding: 0.75rem 1.5rem 0;
+    }
+
     .purge-summary-cards {
       display: flex;
       gap: 1rem;
@@ -341,10 +362,16 @@ export class PurgeDetailComponent {
   // Aba ativa
   readonly activeTab = signal<ActiveTab>('expenses');
 
-  // Filtros compartilhados
-  readonly filterDesc      = signal<string>('');
-  readonly filterFortnight = signal<FortnightType | null>(null);
-  readonly filterOpen      = signal<boolean>(false);
+  // Filtros da aba Despesas
+  readonly expFilterOpen  = signal<boolean>(false);
+  readonly expFilterDesc  = signal<string>('');
+  readonly expFortnight   = signal<FortnightType | null>(null);
+  readonly expStatus      = signal<PaymentStatus | null>(null);
+  readonly expSourceType  = signal<SourceType | null>(null);
+
+  // Filtros da aba Receitas
+  readonly incFilterOpen = signal<boolean>(false);
+  readonly incFilterDesc = signal<string>('');
 
   // Ordenação de despesas
   readonly expSortColumn = signal<keyof ExpenseResponse | ''>('');
@@ -354,13 +381,20 @@ export class PurgeDetailComponent {
   private readonly incSortColumn = signal<keyof IncomeResponse | ''>('');
   private readonly incSortAsc    = signal<boolean>(true);
 
-  // Contador de filtros ativos
-  readonly activeFilterCount = computed<number>(() => {
+  // Contador de filtros ativos — aba Despesas
+  readonly expActiveFilterCount = computed<number>(() => {
     let count = 0;
-    if (this.filterDesc().trim() !== '') count++;
-    if (this.filterFortnight() !== null) count++;
+    if (this.expFilterDesc().trim() !== '') count++;
+    if (this.expFortnight() !== null) count++;
+    if (this.expStatus() !== null) count++;
+    if (this.expSourceType() !== null) count++;
     return count;
   });
+
+  // Contador de filtros ativos — aba Receitas
+  readonly incActiveFilterCount = computed<number>(() =>
+    this.incFilterDesc().trim() !== '' ? 1 : 0
+  );
 
   // Subtitle do header com info do CSV
   readonly headerSubtitle = computed<string>(() => {
@@ -369,19 +403,43 @@ export class PurgeDetailComponent {
     return `${expCount} despesas · ${incCount} receitas`;
   });
 
-  // Campos de filtro para o FilterModalComponent
-  readonly filterFields = computed<FilterFieldConfig[]>(() => [
+  // Campos de filtro da aba Despesas — description, sourceType, paymentStatus, fortnightType (sem categoria)
+  readonly expFilterFields = computed<FilterFieldConfig[]>(() => [
     {
       key:   'description',
       label: 'Descrição',
       type:  'text',
-      value: this.filterDesc(),
+      value: this.expFilterDesc(),
+    },
+    {
+      key:     'sourceType',
+      label:   'Fonte',
+      type:    'select',
+      value:   this.expSourceType() !== null ? String(this.expSourceType()) : '',
+      options: [
+        { value: '', label: 'Todas' },
+        { value: String(SourceType.Parental), label: 'Parental' },
+        { value: String(SourceType.Personal), label: 'Própria' },
+      ],
+    },
+    {
+      key:     'paymentStatus',
+      label:   'Status',
+      type:    'select',
+      value:   this.expStatus() !== null ? String(this.expStatus()) : '',
+      options: [
+        { value: '', label: 'Todos' },
+        { value: String(PaymentStatus.Pending),   label: 'Pendente' },
+        { value: String(PaymentStatus.Paid),      label: 'Pago' },
+        { value: String(PaymentStatus.Partial),   label: 'Parcial' },
+        { value: String(PaymentStatus.Cancelled), label: 'Cancelado' },
+      ],
     },
     {
       key:     'fortnightType',
       label:   'Quinzena',
       type:    'select',
-      value:   this.filterFortnight() !== null ? String(this.filterFortnight()) : '',
+      value:   this.expFortnight() !== null ? String(this.expFortnight()) : '',
       options: [
         { value: '',                           label: 'Ambas' },
         { value: String(FortnightType.First),  label: '1ª Quinzena' },
@@ -390,21 +448,35 @@ export class PurgeDetailComponent {
     },
   ]);
 
+  // Campos de filtro da aba Receitas — apenas description
+  readonly incFilterFields = computed<FilterFieldConfig[]>(() => [
+    {
+      key:   'description',
+      label: 'Descrição',
+      type:  'text',
+      value: this.incFilterDesc(),
+    },
+  ]);
+
   // Despesas filtradas
   readonly filteredExpenses = computed<ExpenseResponse[]>(() => {
-    const desc      = this.filterDesc().trim().toLowerCase();
-    const fortnight = this.filterFortnight();
+    const desc       = this.expFilterDesc().trim().toLowerCase();
+    const fortnight  = this.expFortnight();
+    const status     = this.expStatus();
+    const sourceType = this.expSourceType();
 
     return this.expenses().filter(exp => {
       if (desc && !exp.description.toLowerCase().includes(desc)) return false;
       if (fortnight !== null && exp.fortnightType !== fortnight) return false;
+      if (status !== null && exp.paymentStatus !== status) return false;
+      if (sourceType !== null && exp.sourceType !== sourceType) return false;
       return true;
     });
   });
 
   // Receitas filtradas
   readonly filteredIncomes = computed<IncomeResponse[]>(() => {
-    const desc = this.filterDesc().trim().toLowerCase();
+    const desc = this.incFilterDesc().trim().toLowerCase();
 
     return this.incomes().filter(inc => {
       if (desc && !inc.description.toLowerCase().includes(desc)) return false;
@@ -473,25 +545,41 @@ export class PurgeDetailComponent {
     return Math.min((this.kpiTotalPaid() / total) * 100, 100);
   });
 
-  // Aplica filtros vindos do FilterModalComponent
-  onFilterApply(values: Record<string, unknown>): void {
+  // Aplica filtros vindos do FilterModalComponent — aba Despesas
+  onExpFilterApply(values: Record<string, unknown>): void {
     const desc = (values['description'] as string) ?? '';
-    this.filterDesc.set(desc);
+    this.expFilterDesc.set(desc);
 
     const ft = values['fortnightType'];
-    if (ft === '' || ft === null || ft === undefined) {
-      this.filterFortnight.set(null);
-    } else {
-      this.filterFortnight.set(Number(ft) as FortnightType);
-    }
+    this.expFortnight.set(ft === '' || ft === null || ft === undefined ? null : Number(ft) as FortnightType);
 
-    this.filterOpen.set(false);
+    const status = values['paymentStatus'];
+    this.expStatus.set(status === '' || status === null || status === undefined ? null : Number(status) as PaymentStatus);
+
+    const sourceType = values['sourceType'];
+    this.expSourceType.set(sourceType === '' || sourceType === null || sourceType === undefined ? null : Number(sourceType) as SourceType);
+
+    this.expFilterOpen.set(false);
   }
 
-  // Limpa todos os filtros
-  onFilterClear(): void {
-    this.filterDesc.set('');
-    this.filterFortnight.set(null);
+  // Limpa os filtros da aba Despesas
+  onExpFilterClear(): void {
+    this.expFilterDesc.set('');
+    this.expFortnight.set(null);
+    this.expStatus.set(null);
+    this.expSourceType.set(null);
+  }
+
+  // Aplica filtro vindo do FilterModalComponent — aba Receitas
+  onIncFilterApply(values: Record<string, unknown>): void {
+    const desc = (values['description'] as string) ?? '';
+    this.incFilterDesc.set(desc);
+    this.incFilterOpen.set(false);
+  }
+
+  // Limpa o filtro da aba Receitas
+  onIncFilterClear(): void {
+    this.incFilterDesc.set('');
   }
 
   // Ordenação de despesas
