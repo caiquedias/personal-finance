@@ -73,6 +73,62 @@ const INCOME_1: IncomeResponse = {
   isActive:      true,
 };
 
+// Fixtures extras — cobertura dos 4 valores de PaymentStatus e filtro combinado
+const EXPENSE_3: ExpenseResponse = {
+  id:             'e-3',
+  periodId:       'purge-period-1',
+  userId:         'u',
+  categoryId:     'cat-1',
+  description:    'Assinatura Cancelada',
+  amount:         50,
+  dueDate:        '2024-03-12',
+  paymentDate:    null,
+  paymentStatus:  PaymentStatus.Cancelled,
+  sourceType:     SourceType.Personal,
+  fortnightType:  FortnightType.First,
+  notes:          null,
+  isActive:       true,
+  isRecurring:    false,
+  updatedAt:      '2024-03-12T10:00:00',
+};
+
+const EXPENSE_4: ExpenseResponse = {
+  id:             'e-4',
+  periodId:       'purge-period-1',
+  userId:         'u',
+  categoryId:     'cat-1',
+  description:    'Parcela Parcial',
+  amount:         200,
+  dueDate:        '2024-03-15',
+  paymentDate:    '2024-03-15',
+  paymentStatus:  PaymentStatus.Partial,
+  sourceType:     SourceType.Parental,
+  fortnightType:  FortnightType.Second,
+  notes:          null,
+  isActive:       true,
+  isRecurring:    false,
+  updatedAt:      '2024-03-15T10:00:00',
+};
+
+// Dataset para o filtro combinado (edge case 4): só a combinação exata de
+// descrição + fonte + status + quinzena deve restringir ao subconjunto correto.
+const COMBO_A: ExpenseResponse = {
+  ...EXPENSE_1, id: 'combo-a', description: 'Aluguel Casa',
+  sourceType: SourceType.Personal, paymentStatus: PaymentStatus.Paid, fortnightType: FortnightType.First,
+};
+const COMBO_B: ExpenseResponse = {
+  ...EXPENSE_1, id: 'combo-b', description: 'Aluguel Carro',
+  sourceType: SourceType.Personal, paymentStatus: PaymentStatus.Paid, fortnightType: FortnightType.Second,
+};
+const COMBO_C: ExpenseResponse = {
+  ...EXPENSE_1, id: 'combo-c', description: 'Aluguel Casa',
+  sourceType: SourceType.Parental, paymentStatus: PaymentStatus.Paid, fortnightType: FortnightType.First,
+};
+const COMBO_D: ExpenseResponse = {
+  ...EXPENSE_1, id: 'combo-d', description: 'Aluguel Casa',
+  sourceType: SourceType.Personal, paymentStatus: PaymentStatus.Pending, fortnightType: FortnightType.First,
+};
+
 // Alias tipado para acessar membros ainda não existentes (RED phase)
 type AnyComponent = any;
 
@@ -412,7 +468,7 @@ describe('PurgeDetailComponent', () => {
     });
   });
 
-  // ── filteredExpenses — computed signal ─────────────────────────────────────
+  // ── filteredExpenses — computed signal (filtro por aba Despesas) ──────────
 
   describe('filteredExpenses — computed signal', () => {
     it('existe sinal filteredExpenses no componente', () => {
@@ -426,32 +482,93 @@ describe('PurgeDetailComponent', () => {
       expect(c.filteredExpenses().length).toBe(2);
     });
 
-    it('filtra despesas por descrição ao aplicar filtro', () => {
+    it('filtra despesas por expFilterDesc', () => {
       csvSpy.expenses.and.returnValue([EXPENSE_1, EXPENSE_2]);
       fixture.detectChanges();
-      c.filterDesc.set('Aluguel');
+      c.expFilterDesc.set('Aluguel');
       expect(c.filteredExpenses().length).toBe(1);
       expect(c.filteredExpenses()[0].description).toBe('Aluguel');
     });
 
-    it('filtra despesas por quinzena ao aplicar filtro', () => {
+    it('filtra despesas por expFortnight', () => {
       csvSpy.expenses.and.returnValue([EXPENSE_1, EXPENSE_2]);
       fixture.detectChanges();
       // EXPENSE_1 é First, EXPENSE_2 é Second
-      c.filterFortnight.set(FortnightType.First);
+      c.expFortnight.set(FortnightType.First);
       expect(c.filteredExpenses().length).toBe(1);
       expect(c.filteredExpenses()[0].id).toBe('e-1');
+    });
+
+    it('filtra despesas por expStatus isoladamente — cobre os 4 valores de PaymentStatus', () => {
+      csvSpy.expenses.and.returnValue([EXPENSE_1, EXPENSE_2, EXPENSE_3, EXPENSE_4]);
+      fixture.detectChanges();
+
+      c.expStatus.set(PaymentStatus.Pending);
+      expect(c.filteredExpenses().map((e: ExpenseResponse) => e.id)).toEqual(['e-2']);
+
+      c.expStatus.set(PaymentStatus.Paid);
+      expect(c.filteredExpenses().map((e: ExpenseResponse) => e.id)).toEqual(['e-1']);
+
+      c.expStatus.set(PaymentStatus.Cancelled);
+      expect(c.filteredExpenses().map((e: ExpenseResponse) => e.id)).toEqual(['e-3']);
+
+      c.expStatus.set(PaymentStatus.Partial);
+      expect(c.filteredExpenses().map((e: ExpenseResponse) => e.id)).toEqual(['e-4']);
+    });
+
+    it('filtra despesas por expSourceType isoladamente — cobre Parental e Personal', () => {
+      csvSpy.expenses.and.returnValue([EXPENSE_1, EXPENSE_2]);
+      fixture.detectChanges();
+
+      c.expSourceType.set(SourceType.Personal);
+      expect(c.filteredExpenses().map((e: ExpenseResponse) => e.id)).toEqual(['e-1']);
+
+      c.expSourceType.set(SourceType.Parental);
+      expect(c.filteredExpenses().map((e: ExpenseResponse) => e.id)).toEqual(['e-2']);
+    });
+
+    it('filtro combinado (descrição + fonte + status + quinzena) restringe corretamente', () => {
+      csvSpy.expenses.and.returnValue([COMBO_A, COMBO_B, COMBO_C, COMBO_D]);
+      fixture.detectChanges();
+
+      // Somente descrição → A, C, D (3 resultados)
+      c.expFilterDesc.set('Aluguel Casa');
+      expect(c.filteredExpenses().length).toBe(3);
+
+      // + fonte Personal → A, D (2 resultados)
+      c.expSourceType.set(SourceType.Personal);
+      expect(c.filteredExpenses().length).toBe(2);
+
+      // + status Paid → apenas A (1 resultado)
+      c.expStatus.set(PaymentStatus.Paid);
+      expect(c.filteredExpenses().length).toBe(1);
+
+      // + quinzena First → continua apenas A
+      c.expFortnight.set(FortnightType.First);
+      expect(c.filteredExpenses().length).toBe(1);
+      expect(c.filteredExpenses()[0].id).toBe('combo-a');
     });
 
     it('retorna lista vazia quando filtro não tem correspondência', () => {
       csvSpy.expenses.and.returnValue([EXPENSE_1, EXPENSE_2]);
       fixture.detectChanges();
-      c.filterDesc.set('XYZ não existe');
+      c.expFilterDesc.set('XYZ não existe');
       expect(c.filteredExpenses().length).toBe(0);
+    });
+
+    it('setar expFilterDesc não afeta filteredIncomes (independência entre abas)', () => {
+      const INCOME_2: IncomeResponse = { ...INCOME_1, id: 'i-2', description: 'Freelance' };
+      csvSpy.expenses.and.returnValue([EXPENSE_1, EXPENSE_2]);
+      csvSpy.incomes.and.returnValue([INCOME_1, INCOME_2]);
+      fixture.detectChanges();
+
+      const incomesBefore = c.filteredIncomes().length;
+      c.expFilterDesc.set('Aluguel');
+      expect(c.filteredIncomes().length).toBe(incomesBefore);
     });
   });
 
-  // ── filteredIncomes — computed signal ──────────────────────────────────────
+  // ── filteredIncomes — computed signal (filtro por aba Receitas) ───────────
 
   describe('filteredIncomes — computed signal', () => {
     it('existe sinal filteredIncomes no componente', () => {
@@ -465,13 +582,23 @@ describe('PurgeDetailComponent', () => {
       expect(c.filteredIncomes().length).toBe(1);
     });
 
-    it('filtra receitas por descrição ao aplicar filtro', () => {
+    it('filtra receitas por incFilterDesc', () => {
       const INCOME_2: IncomeResponse = { ...INCOME_1, id: 'i-2', description: 'Freelance' };
       csvSpy.incomes.and.returnValue([INCOME_1, INCOME_2]);
       fixture.detectChanges();
-      c.filterDesc.set('Freela');
+      c.incFilterDesc.set('Freela');
       expect(c.filteredIncomes().length).toBe(1);
       expect(c.filteredIncomes()[0].description).toBe('Freelance');
+    });
+
+    it('setar incFilterDesc não afeta filteredExpenses (independência entre abas)', () => {
+      csvSpy.expenses.and.returnValue([EXPENSE_1, EXPENSE_2]);
+      csvSpy.incomes.and.returnValue([INCOME_1]);
+      fixture.detectChanges();
+
+      const expensesBefore = c.filteredExpenses().length;
+      c.incFilterDesc.set('Salário');
+      expect(c.filteredExpenses().length).toBe(expensesBefore);
     });
   });
 
@@ -501,120 +628,263 @@ describe('PurgeDetailComponent', () => {
     });
   });
 
-  // ── Filtros compartilhados — filterDesc e filterFortnight ─────────────────
+  // ── Filtros por aba — sinais expFilterDesc / incFilterDesc / expFortnight ─
 
-  describe('filtros compartilhados — filterDesc e filterFortnight', () => {
-    it('existe sinal filterDesc no componente', () => {
+  describe('filtros por aba — independência entre Despesas e Receitas', () => {
+    it('existe sinal expFilterDesc no componente', () => {
       fixture.detectChanges();
-      expect(c.filterDesc).withContext('filterDesc deve existir no componente').toBeDefined();
+      expect(c.expFilterDesc).withContext('expFilterDesc deve existir no componente').toBeDefined();
     });
 
-    it('filterDesc inicia como string vazia', () => {
+    it('expFilterDesc inicia como string vazia', () => {
       fixture.detectChanges();
-      expect(c.filterDesc()).toBe('');
+      expect(c.expFilterDesc()).toBe('');
     });
 
-    it('existe sinal filterFortnight no componente', () => {
+    it('existe sinal incFilterDesc no componente', () => {
       fixture.detectChanges();
-      expect(c.filterFortnight).withContext('filterFortnight deve existir no componente').toBeDefined();
+      expect(c.incFilterDesc).withContext('incFilterDesc deve existir no componente').toBeDefined();
     });
 
-    it('filterFortnight inicia como null', () => {
+    it('incFilterDesc inicia como string vazia', () => {
       fixture.detectChanges();
-      expect(c.filterFortnight()).toBeNull();
+      expect(c.incFilterDesc()).toBe('');
     });
 
-    it('filtros aplicam-se simultaneamente em despesas e receitas', () => {
-      const INCOME_2: IncomeResponse = { ...INCOME_1, id: 'i-2', description: 'Freelance' };
-      csvSpy.expenses.and.returnValue([EXPENSE_1, EXPENSE_2]);
-      csvSpy.incomes.and.returnValue([INCOME_1, INCOME_2]);
+    it('existe sinal expFortnight no componente', () => {
       fixture.detectChanges();
-
-      c.filterDesc.set('Al');
-
-      // Filtra despesas por "Al" → apenas EXPENSE_1 (Aluguel)
-      expect(c.filteredExpenses().length).toBe(1);
-      // O mesmo filterDesc é compartilhado — resultado deve ser <= total
-      const expFiltered = c.filteredExpenses().length;
-      const incFiltered = c.filteredIncomes().length;
-      expect(expFiltered).toBeLessThanOrEqual(2);
-      expect(incFiltered).toBeLessThanOrEqual(2);
-    });
-  });
-
-  // ── onFilterApply() — método de aplicação de filtros ──────────────────────
-
-  describe('onFilterApply() — aplica filtros às 3 abas', () => {
-    it('existe método onFilterApply no componente', () => {
-      fixture.detectChanges();
-      const hasMeth = typeof c.onFilterApply === 'function';
-      expect(hasMeth).withContext('onFilterApply deve ser um método do componente').toBeTrue();
+      expect(c.expFortnight).withContext('expFortnight deve existir no componente').toBeDefined();
     });
 
-    it('onFilterApply define filterDesc a partir da chave "description"', () => {
+    it('expFortnight inicia como null', () => {
       fixture.detectChanges();
-      c.onFilterApply({ description: 'aluguel' });
-      expect(c.filterDesc()).toBe('aluguel');
+      expect(c.expFortnight()).toBeNull();
     });
 
-    it('onFilterApply define filterFortnight a partir da chave "fortnightType"', () => {
+    it('existe sinal expStatus no componente, iniciando como null', () => {
       fixture.detectChanges();
-      c.onFilterApply({ fortnightType: `${FortnightType.Second}` });
-      expect(c.filterFortnight()).toBe(FortnightType.Second);
+      expect(c.expStatus).withContext('expStatus deve existir no componente').toBeDefined();
+      expect(c.expStatus()).toBeNull();
     });
 
-    it('onFilterApply com fortnightType vazio limpa o filtro', () => {
+    it('existe sinal expSourceType no componente, iniciando como null', () => {
       fixture.detectChanges();
-      c.filterFortnight.set(FortnightType.First);
-      c.onFilterApply({ fortnightType: '' });
-      expect(c.filterFortnight()).toBeNull();
+      expect(c.expSourceType).withContext('expSourceType deve existir no componente').toBeDefined();
+      expect(c.expSourceType()).toBeNull();
+    });
+
+    it('expFilterDesc e incFilterDesc são independentes — setar um não altera o outro', () => {
+      fixture.detectChanges();
+      c.expFilterDesc.set('Aluguel');
+      expect(c.incFilterDesc()).toBe('');
+
+      c.incFilterDesc.set('Salário');
+      expect(c.expFilterDesc()).toBe('Aluguel');
     });
   });
 
-  // ── onFilterClear() — limpa todos os filtros ───────────────────────────────
+  // ── onExpFilterApply() — aplica filtros da aba Despesas ────────────────────
 
-  describe('onFilterClear() — limpa filtros', () => {
-    it('existe método onFilterClear no componente', () => {
+  describe('onExpFilterApply() — aplica filtros da aba Despesas', () => {
+    it('existe método onExpFilterApply no componente', () => {
       fixture.detectChanges();
-      const hasMeth = typeof c.onFilterClear === 'function';
-      expect(hasMeth).withContext('onFilterClear deve ser um método do componente').toBeTrue();
+      const hasMeth = typeof c.onExpFilterApply === 'function';
+      expect(hasMeth).withContext('onExpFilterApply deve ser um método do componente').toBeTrue();
     });
 
-    it('onFilterClear limpa filterDesc', () => {
+    it('onExpFilterApply define expFilterDesc a partir da chave "description"', () => {
       fixture.detectChanges();
-      c.filterDesc.set('algo');
-      c.onFilterClear();
-      expect(c.filterDesc()).toBe('');
+      c.onExpFilterApply({ description: 'aluguel' });
+      expect(c.expFilterDesc()).toBe('aluguel');
     });
 
-    it('onFilterClear limpa filterFortnight', () => {
+    it('onExpFilterApply define expFortnight a partir da chave "fortnightType" (string numérica → enum)', () => {
       fixture.detectChanges();
-      c.filterFortnight.set(FortnightType.First);
-      c.onFilterClear();
-      expect(c.filterFortnight()).toBeNull();
+      c.onExpFilterApply({ fortnightType: `${FortnightType.Second}` });
+      expect(c.expFortnight()).toBe(FortnightType.Second);
+    });
+
+    it('onExpFilterApply define expStatus a partir da chave "paymentStatus" (string numérica → enum)', () => {
+      fixture.detectChanges();
+      c.onExpFilterApply({ paymentStatus: `${PaymentStatus.Partial}` });
+      expect(c.expStatus()).toBe(PaymentStatus.Partial);
+    });
+
+    it('onExpFilterApply define expSourceType a partir da chave "sourceType" (string numérica → enum)', () => {
+      fixture.detectChanges();
+      c.onExpFilterApply({ sourceType: `${SourceType.Parental}` });
+      expect(c.expSourceType()).toBe(SourceType.Parental);
+    });
+
+    it('onExpFilterApply com valores vazios ("") resulta em null — não em 0 ou NaN', () => {
+      fixture.detectChanges();
+      c.expFortnight.set(FortnightType.First);
+      c.expStatus.set(PaymentStatus.Paid);
+      c.expSourceType.set(SourceType.Personal);
+
+      c.onExpFilterApply({ fortnightType: '', paymentStatus: '', sourceType: '' });
+
+      expect(c.expFortnight()).toBeNull();
+      expect(c.expStatus()).toBeNull();
+      expect(c.expSourceType()).toBeNull();
+    });
+
+    it('onExpFilterApply fecha expFilterOpen ao aplicar', () => {
+      fixture.detectChanges();
+      c.expFilterOpen.set(true);
+      c.onExpFilterApply({ description: 'x' });
+      expect(c.expFilterOpen()).toBeFalse();
+    });
+
+    it('onExpFilterApply não altera incFilterOpen nem os filtros da aba Receitas', () => {
+      fixture.detectChanges();
+      c.incFilterOpen.set(true);
+      c.onExpFilterApply({ description: 'aluguel' });
+      expect(c.incFilterOpen()).toBeTrue();
+      expect(c.incFilterDesc()).toBe('');
     });
   });
 
-  // ── filterFields computed ──────────────────────────────────────────────────
+  // ── onIncFilterApply() — aplica filtro da aba Receitas ─────────────────────
 
-  describe('filterFields computed', () => {
-    it('existe filterFields no componente', () => {
+  describe('onIncFilterApply() — aplica filtro da aba Receitas', () => {
+    it('existe método onIncFilterApply no componente', () => {
       fixture.detectChanges();
-      expect(c.filterFields).withContext('filterFields deve existir').toBeDefined();
+      const hasMeth = typeof c.onIncFilterApply === 'function';
+      expect(hasMeth).withContext('onIncFilterApply deve ser um método do componente').toBeTrue();
     });
 
-    it('filterFields contém campo "description"', () => {
+    it('onIncFilterApply define incFilterDesc a partir da chave "description"', () => {
       fixture.detectChanges();
-      const fields = c.filterFields();
-      const hasDesc = fields.some((f: any) => f.key === 'description');
-      expect(hasDesc).withContext('filterFields deve conter campo "description"').toBeTrue();
+      c.onIncFilterApply({ description: 'salário' });
+      expect(c.incFilterDesc()).toBe('salário');
     });
 
-    it('filterFields contém campo "fortnightType"', () => {
+    it('onIncFilterApply com description vazia resulta em string vazia', () => {
       fixture.detectChanges();
-      const fields = c.filterFields();
-      const hasFortnight = fields.some((f: any) => f.key === 'fortnightType');
-      expect(hasFortnight).withContext('filterFields deve conter campo "fortnightType"').toBeTrue();
+      c.incFilterDesc.set('algo');
+      c.onIncFilterApply({ description: '' });
+      expect(c.incFilterDesc()).toBe('');
+    });
+
+    it('onIncFilterApply fecha incFilterOpen ao aplicar', () => {
+      fixture.detectChanges();
+      c.incFilterOpen.set(true);
+      c.onIncFilterApply({ description: 'x' });
+      expect(c.incFilterOpen()).toBeFalse();
+    });
+
+    it('onIncFilterApply não altera expFilterOpen nem os filtros da aba Despesas', () => {
+      fixture.detectChanges();
+      c.expFilterOpen.set(true);
+      c.onIncFilterApply({ description: 'salário' });
+      expect(c.expFilterOpen()).toBeTrue();
+      expect(c.expFilterDesc()).toBe('');
+    });
+  });
+
+  // ── onExpFilterClear() / onIncFilterClear() — limpam filtros da respectiva aba ──
+
+  describe('onExpFilterClear() e onIncFilterClear() — limpam filtros por aba', () => {
+    it('existe método onExpFilterClear no componente', () => {
+      fixture.detectChanges();
+      const hasMeth = typeof c.onExpFilterClear === 'function';
+      expect(hasMeth).withContext('onExpFilterClear deve ser um método do componente').toBeTrue();
+    });
+
+    it('existe método onIncFilterClear no componente', () => {
+      fixture.detectChanges();
+      const hasMeth = typeof c.onIncFilterClear === 'function';
+      expect(hasMeth).withContext('onIncFilterClear deve ser um método do componente').toBeTrue();
+    });
+
+    it('onExpFilterClear reseta expFilterDesc, expFortnight, expStatus e expSourceType para o estado neutro', () => {
+      fixture.detectChanges();
+      c.expFilterDesc.set('algo');
+      c.expFortnight.set(FortnightType.First);
+      c.expStatus.set(PaymentStatus.Paid);
+      c.expSourceType.set(SourceType.Personal);
+
+      c.onExpFilterClear();
+
+      expect(c.expFilterDesc()).toBe('');
+      expect(c.expFortnight()).toBeNull();
+      expect(c.expStatus()).toBeNull();
+      expect(c.expSourceType()).toBeNull();
+    });
+
+    it('onExpFilterClear não altera os filtros da aba Receitas', () => {
+      fixture.detectChanges();
+      c.incFilterDesc.set('salário');
+      c.onExpFilterClear();
+      expect(c.incFilterDesc()).toBe('salário');
+    });
+
+    it('onIncFilterClear reseta incFilterDesc para o estado neutro', () => {
+      fixture.detectChanges();
+      c.incFilterDesc.set('algo');
+      c.onIncFilterClear();
+      expect(c.incFilterDesc()).toBe('');
+    });
+
+    it('onIncFilterClear não altera os filtros da aba Despesas', () => {
+      fixture.detectChanges();
+      c.expFilterDesc.set('aluguel');
+      c.expStatus.set(PaymentStatus.Paid);
+      c.onIncFilterClear();
+      expect(c.expFilterDesc()).toBe('aluguel');
+      expect(c.expStatus()).toBe(PaymentStatus.Paid);
+    });
+  });
+
+  // ── expFilterFields / incFilterFields — computeds por aba ─────────────────
+
+  describe('expFilterFields computed — 4 campos (sem categoria)', () => {
+    it('existe expFilterFields no componente', () => {
+      fixture.detectChanges();
+      expect(c.expFilterFields).withContext('expFilterFields deve existir').toBeDefined();
+    });
+
+    it('expFilterFields possui exatamente 4 entradas', () => {
+      fixture.detectChanges();
+      expect(c.expFilterFields().length).toBe(4);
+    });
+
+    it('expFilterFields contém exatamente as keys description, sourceType, paymentStatus, fortnightType', () => {
+      fixture.detectChanges();
+      const keys = c.expFilterFields().map((f: any) => f.key).sort();
+      expect(keys).toEqual(['description', 'fortnightType', 'paymentStatus', 'sourceType']);
+    });
+
+    it('expFilterFields NÃO contém campo de categoria (categoryId/category)', () => {
+      fixture.detectChanges();
+      const keys = c.expFilterFields().map((f: any) => f.key);
+      expect(keys).not.toContain('categoryId');
+      expect(keys).not.toContain('category');
+    });
+  });
+
+  describe('incFilterFields computed — 1 campo apenas (sem quinzena)', () => {
+    it('existe incFilterFields no componente', () => {
+      fixture.detectChanges();
+      expect(c.incFilterFields).withContext('incFilterFields deve existir').toBeDefined();
+    });
+
+    it('incFilterFields possui exatamente 1 entrada', () => {
+      fixture.detectChanges();
+      expect(c.incFilterFields().length).toBe(1);
+    });
+
+    it('incFilterFields contém apenas a key "description"', () => {
+      fixture.detectChanges();
+      const keys = c.incFilterFields().map((f: any) => f.key);
+      expect(keys).toEqual(['description']);
+    });
+
+    it('incFilterFields NÃO contém campo "fortnightType"', () => {
+      fixture.detectChanges();
+      const keys = c.incFilterFields().map((f: any) => f.key);
+      expect(keys).not.toContain('fortnightType');
     });
   });
 
@@ -627,33 +897,67 @@ describe('PurgeDetailComponent', () => {
       csvSpy.summary.and.returnValue(SUMMARY);
     });
 
-    it('kpiTotalPaid recalcula com filtro de descrição ativo', () => {
+    it('kpiTotalPaid recalcula com expFilterDesc ativo', () => {
       fixture.detectChanges();
       // Sem filtro: EXPENSE_1 (Paid 1500) + EXPENSE_2 (Pending 100) → pago = 1500
       expect(c.kpiTotalPaid()).toBe(1500);
 
       // Com filtro "Internet" → apenas EXPENSE_2 (Pending) → pago = 0
-      c.filterDesc.set('Internet');
+      c.expFilterDesc.set('Internet');
       expect(c.kpiTotalPaid()).toBe(0);
     });
 
-    it('kpiTotalOwed recalcula com filtro ativo', () => {
+    it('kpiTotalOwed recalcula com expFilterDesc ativo', () => {
       fixture.detectChanges();
       // Sem filtro: EXPENSE_2 Pending (100) → owed = 100
       expect(c.kpiTotalOwed()).toBe(100);
 
       // Com filtro "Aluguel" → apenas EXPENSE_1 (Paid) → owed = 0
-      c.filterDesc.set('Aluguel');
+      c.expFilterDesc.set('Aluguel');
       expect(c.kpiTotalOwed()).toBe(0);
     });
 
-    it('kpiBalance deriva de filteredIncomes - filteredExpenses quando há filtro', () => {
+    it('kpiBalance deriva de filteredIncomes - filteredExpenses quando expFilterDesc está ativo', () => {
       fixture.detectChanges();
-      c.filterDesc.set('Aluguel');
+      c.expFilterDesc.set('Aluguel');
       // filteredExpenses = [EXPENSE_1(1500)], filteredIncomes = [] (nenhum "Aluguel" em receitas)
       const expTotal = c.filteredExpenses().reduce((s: number, e: ExpenseResponse) => s + e.amount, 0);
       const incTotal = c.filteredIncomes().reduce((s: number, i: IncomeResponse) => s + i.amount, 0);
       expect(c.kpiBalance()).toBe(incTotal - expTotal);
+    });
+
+    it('setar expFilterDesc não altera kpiTotalIncome (independência entre KPIs de despesa e receita)', () => {
+      fixture.detectChanges();
+      const incomeBefore = c.kpiTotalIncome();
+      c.expFilterDesc.set('Aluguel');
+      expect(c.kpiTotalIncome()).toBe(incomeBefore);
+    });
+
+    it('setar incFilterDesc não altera kpiTotalPaid, kpiTotalOwed nem kpiTotalExpense', () => {
+      fixture.detectChanges();
+      const paidBefore    = c.kpiTotalPaid();
+      const owedBefore    = c.kpiTotalOwed();
+      const expenseBefore = c.kpiTotalExpense();
+
+      c.incFilterDesc.set('Salário');
+
+      expect(c.kpiTotalPaid()).toBe(paidBefore);
+      expect(c.kpiTotalOwed()).toBe(owedBefore);
+      expect(c.kpiTotalExpense()).toBe(expenseBefore);
+    });
+
+    it('kpiBalance reflete alterações independentes de expFilterDesc e incFilterDesc', () => {
+      fixture.detectChanges();
+      // Baseline: totalIncome (5000) - totalExpense (1600) = 3400
+      expect(c.kpiBalance()).toBe(5000 - 1600);
+
+      // Filtra despesas por "Aluguel" → totalExpense passa a 1500, income inalterado
+      c.expFilterDesc.set('Aluguel');
+      expect(c.kpiBalance()).toBe(5000 - 1500);
+
+      // Adicionalmente filtra receitas por termo que não bate com "Salário" → income vira 0
+      c.incFilterDesc.set('Inexistente');
+      expect(c.kpiBalance()).toBe(0 - 1500);
     });
   });
 
@@ -709,21 +1013,21 @@ describe('PurgeDetailComponent', () => {
       csvSpy.summary.and.returnValue(SUMMARY);
     });
 
-    it('filteredExpenses retorna lista vazia quando filtro não tem correspondência', () => {
+    it('filteredExpenses retorna lista vazia quando expFilterDesc não tem correspondência', () => {
       fixture.detectChanges();
-      c.filterDesc.set('ITEM_QUE_NAO_EXISTE_XYZABC');
+      c.expFilterDesc.set('ITEM_QUE_NAO_EXISTE_XYZABC');
       expect(c.filteredExpenses().length).toBe(0);
     });
 
-    it('filteredIncomes retorna lista vazia quando filtro não tem correspondência', () => {
+    it('filteredIncomes retorna lista vazia quando incFilterDesc não tem correspondência', () => {
       fixture.detectChanges();
-      c.filterDesc.set('ITEM_QUE_NAO_EXISTE_XYZABC');
+      c.incFilterDesc.set('ITEM_QUE_NAO_EXISTE_XYZABC');
       expect(c.filteredIncomes().length).toBe(0);
     });
 
-    it('aba Despesas exibe mensagem quando filtro não retorna resultados', () => {
+    it('aba Despesas exibe mensagem quando expFilterDesc não retorna resultados', () => {
       fixture.detectChanges();
-      c.filterDesc.set('ITEM_QUE_NAO_EXISTE_XYZABC');
+      c.expFilterDesc.set('ITEM_QUE_NAO_EXISTE_XYZABC');
       c.activeTab.set('expenses');
       fixture.detectChanges();
       const text = fixture.nativeElement.textContent as string;
@@ -732,50 +1036,101 @@ describe('PurgeDetailComponent', () => {
     });
   });
 
-  // ── activeFilterCount — contador de filtros ativos ────────────────────────
+  // ── expActiveFilterCount — contador de filtros ativos da aba Despesas ─────
 
-  describe('activeFilterCount — contador para FilterButtonComponent', () => {
-    it('existe activeFilterCount no componente', () => {
+  describe('expActiveFilterCount — contador para FilterButtonComponent (Despesas)', () => {
+    it('existe expActiveFilterCount no componente', () => {
       fixture.detectChanges();
-      expect(c.activeFilterCount).withContext('activeFilterCount deve existir').toBeDefined();
+      expect(c.expActiveFilterCount).withContext('expActiveFilterCount deve existir').toBeDefined();
     });
 
-    it('activeFilterCount é 0 sem filtros', () => {
+    it('expActiveFilterCount é 0 sem filtros', () => {
       fixture.detectChanges();
-      expect(c.activeFilterCount()).toBe(0);
+      expect(c.expActiveFilterCount()).toBe(0);
     });
 
-    it('activeFilterCount é 1 com filterDesc preenchido', () => {
+    it('expActiveFilterCount é 1 com expFilterDesc preenchido', () => {
       fixture.detectChanges();
-      c.filterDesc.set('algo');
-      expect(c.activeFilterCount()).toBe(1);
+      c.expFilterDesc.set('algo');
+      expect(c.expActiveFilterCount()).toBe(1);
     });
 
-    it('activeFilterCount é 1 com filterFortnight preenchido', () => {
+    it('expActiveFilterCount é 1 com expFortnight preenchido', () => {
       fixture.detectChanges();
-      c.filterFortnight.set(FortnightType.First);
-      expect(c.activeFilterCount()).toBe(1);
+      c.expFortnight.set(FortnightType.First);
+      expect(c.expActiveFilterCount()).toBe(1);
     });
 
-    it('activeFilterCount é 2 com ambos os filtros preenchidos', () => {
+    it('expActiveFilterCount é 2 com status e fonte preenchidos (incremento parcial)', () => {
       fixture.detectChanges();
-      c.filterDesc.set('algo');
-      c.filterFortnight.set(FortnightType.First);
-      expect(c.activeFilterCount()).toBe(2);
+      c.expStatus.set(PaymentStatus.Paid);
+      c.expSourceType.set(SourceType.Personal);
+      expect(c.expActiveFilterCount()).toBe(2);
+    });
+
+    it('expActiveFilterCount é 4 com os 4 filtros preenchidos', () => {
+      fixture.detectChanges();
+      c.expFilterDesc.set('algo');
+      c.expFortnight.set(FortnightType.First);
+      c.expStatus.set(PaymentStatus.Paid);
+      c.expSourceType.set(SourceType.Personal);
+      expect(c.expActiveFilterCount()).toBe(4);
     });
   });
 
-  // ── filterOpen — sinal para controle do modal de filtros ──────────────────
+  // ── incActiveFilterCount — contador de filtros ativos da aba Receitas ─────
 
-  describe('filterOpen — sinal para abrir/fechar modal de filtros', () => {
-    it('existe sinal filterOpen no componente', () => {
+  describe('incActiveFilterCount — contador para FilterButtonComponent (Receitas)', () => {
+    it('existe incActiveFilterCount no componente', () => {
       fixture.detectChanges();
-      expect(c.filterOpen).withContext('filterOpen deve existir').toBeDefined();
+      expect(c.incActiveFilterCount).withContext('incActiveFilterCount deve existir').toBeDefined();
     });
 
-    it('filterOpen inicia como false', () => {
+    it('incActiveFilterCount é 0 sem filtro', () => {
       fixture.detectChanges();
-      expect(c.filterOpen()).toBeFalse();
+      expect(c.incActiveFilterCount()).toBe(0);
+    });
+
+    it('incActiveFilterCount é 1 com incFilterDesc preenchido', () => {
+      fixture.detectChanges();
+      c.incFilterDesc.set('algo');
+      expect(c.incActiveFilterCount()).toBe(1);
+    });
+  });
+
+  // ── expFilterOpen / incFilterOpen — sinais independentes de modal ─────────
+
+  describe('expFilterOpen e incFilterOpen — controle independente dos modais de filtro', () => {
+    it('existe sinal expFilterOpen no componente', () => {
+      fixture.detectChanges();
+      expect(c.expFilterOpen).withContext('expFilterOpen deve existir').toBeDefined();
+    });
+
+    it('expFilterOpen inicia como false', () => {
+      fixture.detectChanges();
+      expect(c.expFilterOpen()).toBeFalse();
+    });
+
+    it('existe sinal incFilterOpen no componente', () => {
+      fixture.detectChanges();
+      expect(c.incFilterOpen).withContext('incFilterOpen deve existir').toBeDefined();
+    });
+
+    it('incFilterOpen inicia como false', () => {
+      fixture.detectChanges();
+      expect(c.incFilterOpen()).toBeFalse();
+    });
+
+    it('abrir expFilterOpen não abre incFilterOpen', () => {
+      fixture.detectChanges();
+      c.expFilterOpen.set(true);
+      expect(c.incFilterOpen()).toBeFalse();
+    });
+
+    it('abrir incFilterOpen não abre expFilterOpen', () => {
+      fixture.detectChanges();
+      c.incFilterOpen.set(true);
+      expect(c.expFilterOpen()).toBeFalse();
     });
   });
 });
