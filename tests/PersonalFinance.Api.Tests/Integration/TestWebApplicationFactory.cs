@@ -23,6 +23,23 @@ public sealed class TestWebApplicationFactory : WebApplicationFactory<Program>
     // a cada request (DbContext é Scoped), criando um banco vazio por request.
     private readonly string _dbName = $"TestDb_{Guid.NewGuid()}";
 
+    // Secret fixo apenas para infraestrutura de testes — não é segredo real.
+    // appsettings.json não deve conter SecretKey em texto puro (ver #389),
+    // então injetamos aqui via configuração in-memory.
+    private const string TestJwtSecretKey = "TestOnly_9f8e7d6c5b4a3210_FakeJwtSecretKey_NotForProd";
+
+    // Program.cs (minimal hosting) lê builder.Configuration.GetSection("JwtSettings")
+    // de forma síncrona, durante a construção do WebApplicationBuilder — antes de
+    // qualquer callback ConfigureAppConfiguration/ConfigureServices registrado via
+    // ConfigureWebHost ter chance de rodar. Por isso a variável de ambiente é setada
+    // no construtor estático (roda uma única vez, antes da primeira instância da
+    // factory ser usada) — AddEnvironmentVariables() é uma fonte de configuração
+    // padrão do WebApplicationBuilder e tem precedência sobre appsettings.json.
+    static TestWebApplicationFactory()
+    {
+        Environment.SetEnvironmentVariable("JwtSettings__SecretKey", TestJwtSecretKey);
+    }
+
     protected override void ConfigureWebHost(
         Microsoft.AspNetCore.Hosting.IWebHostBuilder builder)
     {

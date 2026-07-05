@@ -21,6 +21,7 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 | #378 | Expurgo - Análise Detalhe | 2026-06-29 | [378.md](378.md) |
 | #376 | Expurgo - Botão "Análise" | 2026-06-29 | [376.md](376.md) |
 | #387 | Tela de Login - Remover seção de criação de usuário | 2026-07-04 | [387.md](387.md) |
+| #389 | [Security] Remover JWT SecretKey hardcoded e rotacionar | 2026-07-04 | [389.md](389.md) |
 
 ---
 
@@ -31,6 +32,7 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 | Expurgo (Purge) | #329, #330, #331, #332, #356, #369, #367, #368, #377, #376 | 2026-06-29 |
 | Batch Expenses / Serialização | #355 | 2026-06-26 |
 | Login / Auth UI | #387 | 2026-07-04 |
+| Segurança / JWT | #389 | 2026-07-04 |
 
 ---
 
@@ -61,7 +63,7 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
   - POST /api/v1/purge/{periodId} — requer { csvFileName } no body
   - GET /api/v1/purge/records — retorna `year`, `month`, `itemCount` (DTO, não entidade direta)
   - DELETE /api/v1/purge/records/{id}
-- **Auth:** JWT Bearer; AuthController [AllowAnonymous]; Admin [Authorize(Roles="Admin")]
+- **Auth:** JWT Bearer; AuthController [AllowAnonymous]; Admin [Authorize(Roles="Admin")]; `JwtSettings:SecretKey` não é mais hardcoded em `appsettings.json` — configurado via User Secrets (dev) / env var `JwtSettings__SecretKey` no Render (homolog/prod) (#389)
 - **Converters:** `FlexibleEnumConverterFactory` registrada globalmente via `AddJsonOptions` — deserializa enums de int, string numérica ou nome; serializa como int
 
 ### Frontend (Angular 21)
