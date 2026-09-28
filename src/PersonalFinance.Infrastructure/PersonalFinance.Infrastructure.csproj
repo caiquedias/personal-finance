@@ -25,6 +25,9 @@
 
     <!-- Leitura de Excel com suporte a cores de célula (MIT license) -->
     <PackageReference Include="ClosedXML" Version="0.104.1" />
+
+    <!-- Leitura de PDF do extrato bancário (Apache-2.0) -->
+    <PackageReference Include="PdfPig" Version="0.1.9" />
   </ItemGroup>
 
   <ItemGroup>

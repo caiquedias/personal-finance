@@ -33,6 +33,10 @@ Você tem acesso restrito a **somente arquivos de teste** — nunca crie ou edit
 - Um arquivo de teste por classe testada — sem exceção
 - Backend: xUnit + Moq + FluentAssertions
 - Frontend: Jasmine/Karma dentro de `personal-finance/src/`
+- Antes de escrever os testes, **confirmar por compilação** as APIs das libs de teste que você vai usar
+  (ex.: PDFsharp, PdfPig `PdfDocumentBuilder`) e os **ids de pacote NuGet** (`dotnet add package` /
+  restore num scratch) — nunca assumir nomes de propriedades, métodos ou ids de memória; a versão
+  instalada pode não tê-los (ex.: `DocumentSecurityLevel` inexistente no PDFsharp 6.1.1, id `PdfPig` ≠ `UglyToad.PdfPig`)
 - Commitar ao finalizar: `test(escopo): red — testes falhando #<issue-id>`
 
 ## Shell e ambiente
