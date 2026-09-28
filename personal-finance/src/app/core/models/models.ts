@@ -235,6 +235,14 @@ export interface CreateIncomeRequest {
   notes?:        string;
 }
 
+export interface UpdateIncomeRequest {
+  fortnightType: FortnightType;
+  description:   string;
+  amount:        number;
+  receivedAt:    string;
+  notes?:        string;
+}
+
 // ── Admin ─────────────────────────────────────────────────────────────────────
 
 export interface AdminUserFilterParams {

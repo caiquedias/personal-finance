@@ -136,6 +136,9 @@
               }
             </select>
             @if (showError('periodId')) { <span class="field-error">Obrigatório</span> }
+            @if (modalMode() === 'edit') {
+              <span class="text-muted text-sm">Período não pode ser alterado</span>
+            }
           </div>
 
           <div class="field">
