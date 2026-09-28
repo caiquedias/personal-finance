@@ -29,7 +29,7 @@ describe('IncomesComponent', () => {
 
   beforeEach(async () => {
     apiSpy = jasmine.createSpyObj('ApiService', [
-      'getPeriods', 'getIncomesByPeriod', 'createIncome', 'deleteIncome'
+      'getPeriods', 'getIncomesByPeriod', 'createIncome', 'updateIncome', 'deleteIncome'
     ]);
     apiSpy.getPeriods.and.returnValue(of([PERIOD]));
     apiSpy.getIncomesByPeriod.and.returnValue(of({ items: [INCOME], totalCount: 1, pageNumber: 1, pageSize: 20 }));
@@ -113,7 +113,7 @@ describe('IncomesComponent', () => {
     }));
   });
 
-  describe('onSubmit() — edit (delete + create)', () => {
+  describe('onSubmit() — edit (update)', () => {
     beforeEach(() => {
       component.incomes.set([INCOME]);
       component.openEditModal(INCOME);
@@ -122,28 +122,57 @@ describe('IncomesComponent', () => {
       });
     });
 
-    it('faz delete e create, fecha modal e recarrega a lista', fakeAsync(() => {
+    it('chama updateIncome com o Id em edição e o payload atualizado', fakeAsync(() => {
+      (component as any).selectedPeriodId = 'p-1';
+      apiSpy.updateIncome.and.returnValue(of(undefined));
+
+      component.onSubmit();
+      tick();
+
+      expect(apiSpy.updateIncome).toHaveBeenCalledWith('i-1', jasmine.objectContaining({
+        description: 'Salário Atualizado',
+        amount: 3500,
+      }));
+    }));
+
+    it('não chama deleteIncome nem createIncome em modo edit', fakeAsync(() => {
+      (component as any).selectedPeriodId = 'p-1';
+      apiSpy.updateIncome.and.returnValue(of(undefined));
+
+      component.onSubmit();
+      tick();
+
+      expect(apiSpy.deleteIncome).not.toHaveBeenCalled();
+      expect(apiSpy.createIncome).not.toHaveBeenCalled();
+    }));
+
+    it('fecha modal, para saving e recarrega a lista quando updateIncome tem sucesso', fakeAsync(() => {
       const updated: IncomeResponse = { ...INCOME, description: 'Salário Atualizado', amount: 3500 };
       (component as any).selectedPeriodId = 'p-1';
-      apiSpy.deleteIncome.and.returnValue(of(undefined));
-      apiSpy.createIncome.and.returnValue(of(updated));
+      apiSpy.updateIncome.and.returnValue(of(undefined));
       apiSpy.getIncomesByPeriod.and.returnValue(of({ items: [updated], totalCount: 1, pageNumber: 1, pageSize: 20 }));
 
       component.onSubmit();
       tick();
 
+      expect(component.modalOpen()).toBeFalse();
+      expect(component.saving()).toBeFalse();
       const found = component.incomes().find(i => i.id === 'i-1');
       expect(found?.description).toBe('Salário Atualizado');
-      expect(component.modalOpen()).toBeFalse();
     }));
 
-    it('define apiError quando deleteIncome falha', fakeAsync(() => {
-      apiSpy.deleteIncome.and.returnValue(
+    it('define apiError e mantém modal aberto quando updateIncome falha', fakeAsync(() => {
+      (component as any).selectedPeriodId = 'p-1';
+      apiSpy.updateIncome.and.returnValue(
         throwError(() => ({ error: { message: 'Erro ao atualizar receita.' } }))
       );
+
       component.onSubmit();
       tick();
+
       expect(component.apiError()).toBe('Erro ao atualizar receita.');
+      expect(component.modalOpen()).toBeTrue();
+      expect(component.saving()).toBeFalse();
     }));
   });
 
