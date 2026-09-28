@@ -54,6 +54,7 @@ describe('IncomesComponent', () => {
       component.openCreateModal();
       expect(component.modalOpen()).toBeTrue();
       expect(component.modalMode()).toBe('create');
+      expect(component.form.get('periodId')?.disabled).toBe(false);
     });
   });
 
@@ -64,6 +65,7 @@ describe('IncomesComponent', () => {
       expect(component.modalMode()).toBe('edit');
       expect(component.form.get('description')!.value).toBe('Salário');
       expect(component.form.get('amount')!.value).toBe(3000);
+      expect(component.form.get('periodId')?.disabled).toBe(true);
     });
   });
 
