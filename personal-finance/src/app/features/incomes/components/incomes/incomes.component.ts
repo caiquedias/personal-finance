@@ -13,7 +13,7 @@ import { FilterModalComponent } from '../../../../shared/components/filter-modal
 import { FilterButtonComponent } from '../../../../shared/components/filter-modal/filter-button.component';
 import { FilterFieldConfig } from '../../../../shared/components/filter-modal/filter-field-config';
 import {
-  IncomeResponse, PeriodResponse,
+  IncomeResponse, PeriodResponse, CreateIncomeRequest, UpdateIncomeRequest,
   MONTH_NAMES, FORTNIGHT_TYPE_LABELS, FortnightType
 } from '../../../../core/models/models';
 
@@ -202,6 +202,7 @@ export class IncomesComponent implements OnInit {
     this.editingId = null;
     this.modalMode.set('create');
     this.apiError.set(null);
+    this.form.get('periodId')?.enable();
     this.form.reset({ periodId: this.selectedPeriodId ?? '', fortnightType: FortnightType.First });
     this.modalOpen.set(true);
   }
@@ -218,6 +219,8 @@ export class IncomesComponent implements OnInit {
       receivedAt:    income.receivedAt.split('T')[0],
       notes:         income.notes ?? '',
     });
+    // Período é imutável no update — backend não altera PeriodId
+    this.form.get('periodId')?.disable();
     this.modalOpen.set(true);
   }
 
@@ -233,16 +236,16 @@ export class IncomesComponent implements OnInit {
     this.apiError.set(null);
 
     const v = this.form.getRawValue();
-    const payload = {
-      periodId:      v.periodId!,
-      fortnightType: Number(v.fortnightType) as FortnightType,
-      description:   v.description!,
-      amount:        v.amount!,
-      receivedAt:    v.receivedAt!,
-      notes:         v.notes || undefined,
-    };
 
     if (this.modalMode() === 'create') {
+      const payload: CreateIncomeRequest = {
+        periodId:      v.periodId!,
+        fortnightType: Number(v.fortnightType) as FortnightType,
+        description:   v.description!,
+        amount:        v.amount!,
+        receivedAt:    v.receivedAt!,
+        notes:         v.notes || undefined,
+      };
       this.api.createIncome(payload).subscribe({
         next: () => {
           this.closeModal();
@@ -253,20 +256,18 @@ export class IncomesComponent implements OnInit {
       });
     } else {
       const id = this.editingId!;
-      this.api.deleteIncome(id).subscribe({
+      const payload: UpdateIncomeRequest = {
+        fortnightType: Number(v.fortnightType) as FortnightType,
+        description:   v.description!,
+        amount:        v.amount!,
+        receivedAt:    v.receivedAt!,
+        notes:         v.notes || undefined,
+      };
+      this.api.updateIncome(id, payload).subscribe({
         next: () => {
-          this.api.createIncome(payload).subscribe({
-            next: () => {
-              this.closeModal();
-              this.saving.set(false);
-              this.loadPage();
-            },
-            error: err => {
-              this.apiError.set(err.error?.message ?? 'Erro ao salvar alterações.');
-              this.saving.set(false);
-              this.loadPage();
-            }
-          });
+          this.closeModal();
+          this.saving.set(false);
+          this.loadPage();
         },
         error: err => { this.apiError.set(err.error?.message ?? 'Erro ao atualizar receita.'); this.saving.set(false); }
       });
