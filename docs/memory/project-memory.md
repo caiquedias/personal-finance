@@ -23,6 +23,7 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 | #387 | Tela de Login - Remover seção de criação de usuário | 2026-07-04 | [387.md](387.md) |
 | #389 | [Security] Remover JWT SecretKey hardcoded e rotacionar | 2026-07-04 | [389.md](389.md) |
 | #384 | Expurgo - Análise Detalhe — Filtros por aba (padrão tela de Despesas) | 2026-07-05 | [384.md](384.md) |
+| #419 | [Import] Update de Income — backend e frontend | 2026-09-28 | [419.md](419.md) |
 
 ---
 
@@ -34,6 +35,7 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 | Batch Expenses / Serialização | #355 | 2026-06-26 |
 | Login / Auth UI | #387 | 2026-07-04 |
 | Segurança / JWT | #389 | 2026-07-04 |
+| Import (Income) | #419 | 2026-09-28 |
 
 ---
 
@@ -46,8 +48,8 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 - **Interfaces:** IPurgeRepository, ICsvExportService (Application layer)
 
 ### Application
-- **Use cases:** ExportPeriodUseCase, PurgePeriodUseCase, GetPurgeRecordsUseCase, DeletePurgeRecordUseCase, GetEligiblePeriodsUseCase
-- **DTOs:** EligiblePeriodDto, PurgeRecordDto
+- **Use cases:** ExportPeriodUseCase, PurgePeriodUseCase, GetPurgeRecordsUseCase, DeletePurgeRecordUseCase, GetEligiblePeriodsUseCase, UpdateIncomeUseCase (#419 — ownership 400 via DomainException, mesmo padrão do UpdateExpenseUseCase)
+- **DTOs:** EligiblePeriodDto, PurgeRecordDto, UpdateIncomeDto (#419 — sem PeriodId, sem SourceType)
 - **Use cases alterados:** GetPurgeRecordsUseCase — retorna `IEnumerable<PurgeRecordDto>` (antes `IEnumerable<PurgeRecord>`), mapeamento interno com `ItemCount = ExpenseCount + IncomeCount`
 - **Validações (FluentValidation):** —
 
@@ -64,6 +66,7 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
   - POST /api/v1/purge/{periodId} — requer { csvFileName } no body
   - GET /api/v1/purge/records — retorna `year`, `month`, `itemCount` (DTO, não entidade direta)
   - DELETE /api/v1/purge/records/{id}
+  - PUT /api/v1/incomes/{id} — update de receita; 204; 400 para amount inválido/ownership/not-found/soft-deleted; PeriodId imutável (#419)
 - **Auth:** JWT Bearer; AuthController [AllowAnonymous]; Admin [Authorize(Roles="Admin")]; `JwtSettings:SecretKey` não é mais hardcoded em `appsettings.json` — configurado via User Secrets (dev) / env var `JwtSettings__SecretKey` no Render (homolog/prod) (#389)
 - **Converters:** `FlexibleEnumConverterFactory` registrada globalmente via `AddJsonOptions` — deserializa enums de int, string numérica ou nome; serializa como int
 
@@ -71,9 +74,10 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 - **Rotas (app.routes.ts):** `/purge` (lazy, authGuard); `purge/analysis` (PurgeAnalysisComponent, providers: [CsvReaderService]); `purge/analysis/detail` (PurgeDetailComponent)
 - **Componentes standalone:** PurgeComponent redesenhado — cards grid, modal Sonic pixel-art, tabela histórico, modal delete, botão "Upload CSV" no header via ng-content (classe `btn-primary`, #368/#376) (`features/purge/components/purge/`); PurgeAnalysisComponent, PurgeDetailComponent, PurgeWarningBannerComponent (`features/purge/`) — `PurgeWarningBannerComponent` removido da tela principal em #367; permanece apenas em `purge-detail.component.ts`
 - **Assets:** `public/sonic-tile.svg` (tile pixel-art do frame Sonic)
-- **Serviços:** ApiService (wrapper HTTP) com métodos purge (`getEligiblePeriods`, `exportPurgeCsv`, `executePurge(periodId, csvFileName)`, `getPurgeRecords`, `deletePurgeRecord`); ThemeService (dark/light); CsvReaderService (parse CSV offline, sem `providedIn: 'root'`) — corrigido em #369 para 12 colunas, RFC 4180, enums como string
+- **Serviços:** ApiService (wrapper HTTP) com métodos purge (`getEligiblePeriods`, `exportPurgeCsv`, `executePurge(periodId, csvFileName)`, `getPurgeRecords`, `deletePurgeRecord`), `updateIncome(id, data)` (#419); ThemeService (dark/light); CsvReaderService (parse CSV offline, sem `providedIn: 'root'`) — corrigido em #369 para 12 colunas, RFC 4180, enums como string
 - **Componentes:** `PurgeDetailComponent` (#378, #384) — header, 3 abas (expenses/incomes/indicators), grid padronizado (.table/.table-wrap, badges, CurrencyBrlPipe, ícones de sort), KPIs (kpiTotalIncome, kpiTotalExpense, kpiTotalPaid, kpiTotalOwed, kpiBalance, kpiPaymentProgress). Filtros independentes por aba (#384): Despesas (expFilterDesc, expFortnight, expStatus, expSourceType, expFilterOpen, expFilterFields 4 campos, expActiveFilterCount) e Receitas (incFilterDesc, incFilterOpen, incFilterFields 1 campo, incActiveFilterCount); Indicadores sem filtro próprio
-- **Modelos:** `PurgeRecordResponse` adicionado em models.ts
+- **Componentes:** `IncomesComponent` — modo edit do modal faz update real via `updateIncome` (antes fazia delete+create); select de período desabilitado em modo edit, com hint visual (#419)
+- **Modelos:** `PurgeRecordResponse` adicionado em models.ts; `UpdateIncomeRequest` adicionado (#419)
 - **Sidebar:** item "Expurgo" com ícone `archive` e rota `/purge`
 - **Auth:** authInterceptor injeta token automaticamente
 - **Login:** `LoginComponent` sem seção de cadastro — link `/register` e `RouterLink` removidos (#387)
