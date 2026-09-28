@@ -48,16 +48,23 @@ public class C6StatementPdfParserServiceTests
         {
             var page = builder.AddPage(595, 842);
             foreach (var c in cells)
-                page.AddText(c.Text, 9, new PdfPoint(c.X, c.Y), font);
+                page.AddText(StripDiacritics(c.Text), 9, new PdfPoint(c.X, c.Y), font);
         }
         return new MemoryStream(builder.Build());
     }
+
+    // Fonte Standard14 do PdfPig não possui glifos acentuados; remove diacríticos só para gerar o PDF
+    private static string StripDiacritics(string text) =>
+        new string(text.Normalize(System.Text.NormalizationForm.FormD)
+            .Where(ch => System.Globalization.CharUnicodeInfo.GetUnicodeCategory(ch)
+                         != System.Globalization.UnicodeCategory.NonSpacingMark)
+            .ToArray());
 
     private static MemoryStream Encrypt(MemoryStream plain, string userPassword)
     {
         plain.Position = 0;
         using var doc = PdfReader.Open(plain, PdfDocumentOpenMode.Modify);
-        doc.SecuritySettings.DocumentSecurityLevel = PdfDocumentSecurityLevel.Encrypted128Bit;
+        doc.SecurityHandler.SetEncryptionToV2With128Bits();
         doc.SecuritySettings.UserPassword = userPassword;
         doc.SecuritySettings.OwnerPassword = userPassword + "-owner";
         var output = new MemoryStream();
