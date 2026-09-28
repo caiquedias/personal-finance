@@ -24,6 +24,7 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 | #389 | [Security] Remover JWT SecretKey hardcoded e rotacionar | 2026-07-04 | [389.md](389.md) |
 | #384 | Expurgo - Análise Detalhe — Filtros por aba (padrão tela de Despesas) | 2026-07-05 | [384.md](384.md) |
 | #419 | [Import] Update de Income — backend e frontend | 2026-09-28 | [419.md](419.md) |
+| #420 | [Import] Parser PDF do extrato C6 Bank | 2026-09-28 | [420.md](420.md) |
 
 ---
 
@@ -36,6 +37,7 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 | Login / Auth UI | #387 | 2026-07-04 |
 | Segurança / JWT | #389 | 2026-07-04 |
 | Import (Income) | #419 | 2026-09-28 |
+| Import (Extrato C6 PDF) | #420 | 2026-09-28 |
 
 ---
 
@@ -49,13 +51,14 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 
 ### Application
 - **Use cases:** ExportPeriodUseCase, PurgePeriodUseCase, GetPurgeRecordsUseCase, DeletePurgeRecordUseCase, GetEligiblePeriodsUseCase, UpdateIncomeUseCase (#419 — ownership 400 via DomainException, mesmo padrão do UpdateExpenseUseCase)
-- **DTOs:** EligiblePeriodDto, PurgeRecordDto, UpdateIncomeDto (#419 — sem PeriodId, sem SourceType)
+- **Interfaces:** IStatementParserService (#420 — parser de extrato PDF com senha; `ParseAsync(Stream, password, ct)`)
+- **DTOs:** ParsedStatementEntryDto (#420 — record: EventDate, PostingDate, RawType, Description, Amount com sinal), EligiblePeriodDto, PurgeRecordDto, UpdateIncomeDto (#419 — sem PeriodId, sem SourceType)
 - **Use cases alterados:** GetPurgeRecordsUseCase — retorna `IEnumerable<PurgeRecordDto>` (antes `IEnumerable<PurgeRecord>`), mapeamento interno com `ItemCount = ExpenseCount + IncomeCount`
 - **Validações (FluentValidation):** —
 
 ### Infrastructure
 - **Repositórios:** PurgeRepository
-- **Serviços:** Argon2PasswordHasher, JwtTokenService, ExcelParserService, DatabaseInitializer, CsvExportService
+- **Serviços:** Argon2PasswordHasher, JwtTokenService, ExcelParserService, C6StatementPdfParserService (#420 — PdfPig por coordenadas x/y, DomainException para senha/PDF/linha inválida; sem consumidor ainda), DatabaseInitializer, CsvExportService
 - **Migrations aplicadas:** AddPurgeModule (2026-06-26)
 - **Views:** vw_PeriodSummary (criada pelo DatabaseInitializer no startup)
 
