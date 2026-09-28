@@ -328,6 +328,130 @@ public class C6StatementPdfParserServiceTests
         await act.Should().ThrowAsync<DomainException>();
     }
 
+    // ── Valor/data inválidos ──────────────────────────────────────────────────
+
+    [Fact]
+    public async Task ParseAsync_RowWithValidDateButInvalidAmount_ThrowsDomainException()
+    {
+        using var pdf = BuildPdf(SimplePage("01/03/2025 a 31/03/2025",
+            Row(730, "05/03", "05/03", "Compra", "LOJA A", "abc")));
+
+        var act = () => _sut.ParseAsync(pdf, null);
+
+        await act.Should().ThrowAsync<DomainException>();
+    }
+
+    [Fact]
+    public async Task ParseAsync_InvalidAmount_ExceptionMessageDoesNotLeakRawValueOrDescription()
+    {
+        using var pdf = BuildPdf(SimplePage("01/03/2025 a 31/03/2025",
+            Row(730, "05/03", "05/03", "Compra", "DESCRICAO SIGILOSA", "valorquebrado")));
+
+        var act = () => _sut.ParseAsync(pdf, null);
+
+        var ex = await act.Should().ThrowAsync<DomainException>();
+        ex.Which.Message.Should().NotContain("valorquebrado").And.NotContain("DESCRICAO SIGILOSA");
+    }
+
+    [Fact]
+    public async Task ParseAsync_RowWithImpossibleDate_ThrowsDomainException()
+    {
+        using var pdf = BuildPdf(SimplePage("01/03/2025 a 31/03/2025",
+            Row(730, "31/02", "01/03", "Compra", "LOJA A", "-R$ 10,00")));
+
+        var act = () => _sut.ParseAsync(pdf, null);
+
+        await act.Should().ThrowAsync<DomainException>();
+    }
+
+    [Fact]
+    public async Task ParseAsync_RowWithEmptyAmountColumn_ThrowsDomainException()
+    {
+        using var pdf = BuildPdf(SimplePage("01/03/2025 a 31/03/2025",
+            new[]
+            {
+                new Cell("05/03", XEvent, 730), new Cell("05/03", XPosting, 730),
+                new Cell("Compra", XType, 730), new Cell("LOJA A", XDesc, 730)
+            }));
+
+        var act = () => _sut.ParseAsync(pdf, null);
+
+        await act.Should().ThrowAsync<DomainException>();
+    }
+
+    // ── Cabeçalho reaproveitado ───────────────────────────────────────────────
+
+    [Fact]
+    public async Task ParseAsync_SecondPageWithoutColumnHeader_ReusesPreviousPageHeader()
+    {
+        using var pdf = BuildPdf(
+            SimplePage("01/03/2025 a 31/03/2025",
+                Row(730, "05/03", "05/03", "Compra", "LOJA A", "-R$ 10,00")),
+            Row(760, "20/03", "20/03", "Compra", "LOJA B", "-R$ 20,00"));
+
+        var result = await _sut.ParseAsync(pdf, null);
+
+        result.Select(r => r.Description).Should().Equal("LOJA A", "LOJA B");
+        result[1].Amount.Should().Be(-20.00m);
+    }
+
+    // ── Stream não seekable ───────────────────────────────────────────────────
+
+    [Fact]
+    public async Task ParseAsync_NonSeekableStream_ParsesNormally()
+    {
+        using var pdf = BuildPdf(SimplePage("01/03/2025 a 31/03/2025",
+            Row(730, "05/03", "06/03", "Compra", "LOJA A", "-R$ 10,00")));
+        using var nonSeekable = new NonSeekableStream(pdf.ToArray());
+
+        var result = await _sut.ParseAsync(nonSeekable, null);
+
+        result.Should().ContainSingle();
+        result[0].Description.Should().Be("LOJA A");
+    }
+
+    [Fact]
+    public async Task ParseAsync_NonSeekableStreamThatIsNotPdf_ThrowsDomainException()
+    {
+        using var nonSeekable = new NonSeekableStream(System.Text.Encoding.UTF8.GetBytes("nao e pdf"));
+
+        var act = () => _sut.ParseAsync(nonSeekable, null);
+
+        await act.Should().ThrowAsync<DomainException>();
+    }
+
+    /// <summary>Envolve bytes em um stream que não suporta seek (simula upload/rede).</summary>
+    private sealed class NonSeekableStream : MemoryStream
+    {
+        public NonSeekableStream(byte[] bytes) : base(bytes) { }
+        public override bool CanSeek => false;
+        public override long Length => throw new NotSupportedException();
+        public override long Position
+        {
+            get => throw new NotSupportedException();
+            set => throw new NotSupportedException();
+        }
+        public override long Seek(long offset, SeekOrigin loc) => throw new NotSupportedException();
+    }
+
+    // ── Cancelamento ──────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task ParseAsync_CancelledToken_ThrowsOperationCanceledNotDomainException()
+    {
+        using var pdf = BuildPdf(
+            SimplePage("01/03/2025 a 31/03/2025",
+                Row(730, "05/03", "05/03", "Compra", "LOJA A", "-R$ 10,00")),
+            SimplePage("01/03/2025 a 31/03/2025",
+                Row(730, "20/03", "20/03", "Compra", "LOJA B", "-R$ 20,00")));
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+
+        var act = () => _sut.ParseAsync(pdf, null, cts.Token);
+
+        await act.Should().ThrowAsync<OperationCanceledException>();
+    }
+
     // ── Cultura ───────────────────────────────────────────────────────────────
 
     [Fact]
