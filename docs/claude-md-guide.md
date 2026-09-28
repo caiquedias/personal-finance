@@ -31,6 +31,13 @@ Se uma adição ao CLAUDE.md ultrapassar o limite → mover o conteúdo mais lon
 |---------|----------|
 | `docs/patterns.md` | Padrão de modal Angular; armadilhas conhecidas |
 | `docs/test-factory.md` | Setup do `TestWebApplicationFactory` |
+| `docs/testing.md` | Protocolo geral de TDD e guardrails de teste |
+| `docs/agents.md` | Guia de criação/spawn de sub-agentes |
+| `docs/qa-agent.md` | Protocolo QA completo |
+| `docs/code-review.md` | Checklist do Reviewer |
+| `docs/sprint-planning.md` | Protocolo de planning, sizing, fórmula de estimativa |
+| `docs/bug-fix.md` | Protocolo de bug fix explícito |
+| `docs/session-flow.md` | Regra de pré-ação e revisão de sessão |
 | `docs/claude-md-guide.md` | Este arquivo |
 
 ---

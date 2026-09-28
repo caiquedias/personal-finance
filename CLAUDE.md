@@ -43,38 +43,8 @@ npm test -- --watch=false --browsers=ChromeHeadless 2>&1 | grep -E "SUCCESS|FAIL
 gh auth refresh -h github.com -s project  # só se token não tiver escopo project
 ```
 
-### Passo a passo
-
-1. Listar issues: `gh issue list --state open --limit 50 --json number,title,body,labels --repo caiquedias/personal-finance`
-2. Explorar codebase — identificar o que existe e o que falta implementar
-3. Definir por issue: Estimativa (h), Prioridade, Size (XS/S/M/L/XL), arquivos afetados
-4. **Issues L/XL ou com >15 arquivos afetados → propor divisão em sub-issues antes de iniciar**
-5. Postar comentário de planejamento:
-   ```
-   ## 📋 Sprint Planning
-   **Estimativa:** Xh | **Prioridade:** N | **Size:** XS/S/M/L/XL | **Risco:** Baixo/Médio/Alto
-   ---
-   **Backend** — o que criar/alterar
-   **Frontend** — o que criar/alterar
-   ### Arquivos afetados
-   - lista de arquivos
-   ```
-6. Atualizar campos no board (Status → Ready, Size, Priority, Estimate):
-   ```bash
-   gh project item-edit --project-id <PROJECT_ID> --id <ITEM_ID> --field-id <FIELD_ID> --single-select-option-id <OPT_ID>
-   gh project item-edit --project-id <PROJECT_ID> --id <ITEM_ID> --field-id <ESTIMATE_FIELD_ID> --number <HORAS>
-   ```
-
-### IDs fixos (Project #2)
-
-| Campo | Field ID | Opções |
-|-------|----------|--------|
-| Status | `PVTSSF_lAHOAOhFlc4BUMJ_zhBWAHQ` | Backlog `f75ad846` · Ready `61e4505c` · In progress `47fc9ee4` · In review `df73e18b` · Done `98236657` |
-| Priority | `PVTSSF_lAHOAOhFlc4BUMJ_zhBWAPM` | P0 `79628723` · P1 `0a877460` · P2 `da944a9c` |
-| Size | `PVTSSF_lAHOAOhFlc4BUMJ_zhBWAPQ` | XS `6c6483d2` · S `f784b110` · M `7515a9f1` · L `817d0097` · XL `db339eb2` |
-| Estimate | `PVTF_lAHOAOhFlc4BUMJ_zhBWAPU` | número (horas) |
-
-**Project ID:** `PVT_kwHOAOhFlc4BUMJ_`
+Passo a passo completo, IDs de campos do board, critério de sizing e fórmula de estimativa:
+→ [`docs/sprint-planning.md`](docs/sprint-planning.md)
 
 ### Ciclo de vida da issue
 
@@ -174,7 +144,8 @@ Integration: `WebApplicationFactory<Program>` + banco InMemory. Unit: xUnit + Mo
 - **Nunca alterar fora do escopo** — apresentar como novo plano, Caique aprova caso a caso
 - **Verificar PR antes de push** — se fechado/mergeado, abrir novo PR para os ajustes
 - **Pré-ação obrigatória** — antes de post em issue, board update ou push: exibir ação e aguardar OK do Caique
-→ Fluxo completo: [`docs/session-flow.md`](docs/session-flow.md)
+- **Sub-agentes: sempre `subagent_type` nomeado** — nunca colar o corpo de `.claude/agents/*.md` no prompt
+→ Fluxo completo: [`docs/session-flow.md`](docs/session-flow.md) · Spawn de agentes: [`docs/agents.md`](docs/agents.md)
 
 ---
 
@@ -208,7 +179,7 @@ Integration: `WebApplicationFactory<Program>` + banco InMemory. Unit: xUnit + Mo
 - Um arquivo de teste por classe | xUnit + Moq + FluentAssertions
 - `MarkAsPaid` rejeita data futura → usar `DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-1))`
 - `HasData` não popula InMemory → `SeedLookupData()` manual na factory
-→ Setup factory: [`docs/test-factory.md`](docs/test-factory.md)
+→ Setup factory: [`docs/test-factory.md`](docs/test-factory.md) · Protocolo TDD/guardrails: [`docs/testing.md`](docs/testing.md)
 
 ---
 
@@ -246,5 +217,11 @@ Regra geral: **worktree é espaço de implementação autônomo**. Volta ao modo
 
 - [`docs/claude-md-guide.md`](docs/claude-md-guide.md) — **consultar antes de qualquer alteração neste arquivo**
 - [`docs/test-factory.md`](docs/test-factory.md) — TestWebApplicationFactory setup
+- [`docs/testing.md`](docs/testing.md) — Protocolo TDD e guardrails de teste
 - [`docs/patterns.md`](docs/patterns.md) — Padrão de modal Angular + Armadilhas conhecidas
 - [`docs/session-flow.md`](docs/session-flow.md) — Fluxo de sessão: regra de pré-ação e revisão de planning
+- [`docs/agents.md`](docs/agents.md) — Spawn de sub-agentes por `subagent_type`, contexto compartilhado
+- [`docs/qa-agent.md`](docs/qa-agent.md) — Protocolo QA completo
+- [`docs/code-review.md`](docs/code-review.md) — Checklist do Reviewer
+- [`docs/sprint-planning.md`](docs/sprint-planning.md) — Planning, sizing, fórmula de estimativa
+- [`docs/bug-fix.md`](docs/bug-fix.md) — Protocolo de bug fix explícito
