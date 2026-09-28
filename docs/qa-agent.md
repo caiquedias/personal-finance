@@ -45,6 +45,19 @@ git diff --name-only HEAD~<n>..HEAD
 - Testes testam **comportamento**, não implementação
 - Cenários de **falha** estão cobertos
 - Mocks não substituem validações reais onde há lógica de negócio
+- **Contagem de operações assertada** (`Verify(..., Times.*)`) sempre que o AC exige "um acesso só",
+  "sem N+1" ou "operação atômica" — retorno correto pelo caminho feliz não trava essa regressão.
+  Ausência dessa asserção é `GAP_REPORT` do tipo cobertura
+- **Cada disjunto de condição composta exercitado**: `A || B || C` com testes que só satisfazem `A`
+  e `B` deixa o ramo `C` sem prova nenhuma — cobertura de condição parcial
+
+## Somente-leitura é absoluto — mesmo em infraestrutura de teste local
+
+Mesmo investigando causa raiz (ex.: container de banco reaproveitado com estado residual entre
+execuções), o QA nunca executa comando mutável (`DROP`/`CREATE`/`ALTER`/`INSERT`/`UPDATE`/`DELETE`),
+mesmo contra infraestrutura efêmera/local. Leitura inclui consultar catálogos/metadados para
+diagnóstico, mas estado residual que bloqueia o teste vira item do `GAP_REPORT` — nunca correção
+direta pelo próprio QA.
 
 ## Saídas possíveis
 
