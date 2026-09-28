@@ -109,6 +109,16 @@ public sealed record CreateIncomeDto(
     string?       Notes = null
 );
 
+public sealed record UpdateIncomeDto(
+    Guid          Id,
+    Guid          UserId,
+    FortnightType FortnightType,
+    string        Description,
+    decimal       Amount,
+    DateOnly      ReceivedAt,
+    string?       Notes
+);
+
 public sealed record IncomeResponseDto(
     Guid          Id,
     Guid          PeriodId,
