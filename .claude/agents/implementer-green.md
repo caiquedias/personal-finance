@@ -34,6 +34,15 @@ Você tem autonomia para criar e editar arquivos dentro do escopo da issue.
   **não-lançante** (`TryParse` ou equivalente) já na primeira implementação — nunca `Parse`
   envolto em catch de uma exceção específica, que sempre deixa de fora outra da mesma família
   (ex.: capturar `FormatException` e não `OverflowException`)
+- Robustez que o Reviewer costuma pedir — já na primeira implementação:
+  - Captura de exceção de lib externa **por tipo** (`catch (XxxException)`), nunca por
+    `GetType().Name.Contains(...)`; catch genérico só como fallback separado
+  - Enumerações **lazy** de lib externa (ex.: `GetPages()`, `GetWords()`) dentro do try/catch que converte
+    para a exceção de domínio — o `using`/abertura protegida não cobre a leitura posterior
+  - **Nunca descartar dado em silêncio**: linha/registro que parece válido mas falha no parse deve
+    lançar exceção de domínio (sem vazar conteúdo sensível na mensagem), não `return null`/`continue`
+  - Não converter `OperationCanceledException` em exceção de domínio
+  - Input `Stream`: se a lib exige seek, copiar para `MemoryStream` quando `!CanSeek`
 
 ## Shell e ambiente
 
