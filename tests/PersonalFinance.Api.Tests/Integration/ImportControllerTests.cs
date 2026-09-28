@@ -116,6 +116,61 @@ public class ImportControllerTests : ApiIntegrationTestBase
 
     // ── Helper: workbook mínimo em memória ───────────────────────────────────
 
+    // ── Preview de extrato (PDF) ──────────────────────────────────────────────
+
+    [Fact(DisplayName = "POST /import/statement/preview sem token deve retornar 401")]
+    public async Task StatementPreview_WithoutToken_ShouldReturn401()
+    {
+        using var content = new MultipartFormDataContent();
+        content.Add(new ByteArrayContent(new byte[] { 1, 2, 3 }), "file", "extrato.pdf");
+
+        var r = await Client.PostAsync("/api/v1/import/statement/preview", content);
+
+        r.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact(DisplayName = "POST /import/statement/preview sem arquivo deve retornar 400")]
+    public async Task StatementPreview_WithoutFile_ShouldReturn400()
+    {
+        var (client, _) = await GetAuthenticatedClientAsync();
+
+        using var content = new MultipartFormDataContent();
+        var r = await client.PostAsync("/api/v1/import/statement/preview", content);
+
+        r.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact(DisplayName = "POST /import/statement/preview com extensão diferente de .pdf deve retornar 400")]
+    public async Task StatementPreview_WithNonPdfExtension_ShouldReturn400()
+    {
+        var (client, _) = await GetAuthenticatedClientAsync();
+
+        using var content = new MultipartFormDataContent();
+        content.Add(new ByteArrayContent(new byte[] { 1, 2, 3 }), "file", "extrato.xlsx");
+
+        var r = await client.PostAsync("/api/v1/import/statement/preview", content);
+
+        r.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var body = await r.Content.ReadAsStringAsync();
+        body.Should().Contain("pdf");
+    }
+
+    [Fact(DisplayName = "POST /import/statement/preview com conteúdo que não é PDF deve retornar 400")]
+    public async Task StatementPreview_WithInvalidPdfContent_ShouldReturn400()
+    {
+        var (client, _) = await GetAuthenticatedClientAsync();
+
+        using var content = new MultipartFormDataContent();
+        content.Add(
+            new ByteArrayContent(System.Text.Encoding.UTF8.GetBytes("isto nao e um pdf")),
+            "file", "extrato.pdf");
+        content.Add(new StringContent("2026-01-01"), "fromDate");
+
+        var r = await client.PostAsync("/api/v1/import/statement/preview", content);
+
+        r.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
     private static byte[] BuildMinimalWorkbook()
     {
         using var wb = new ClosedXML.Excel.XLWorkbook();
