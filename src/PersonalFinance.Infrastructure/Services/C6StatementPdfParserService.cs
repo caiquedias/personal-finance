@@ -5,6 +5,7 @@ using PersonalFinance.Application.Interfaces;
 using PersonalFinance.Domain.Exceptions;
 using UglyToad.PdfPig;
 using UglyToad.PdfPig.Content;
+using UglyToad.PdfPig.Exceptions;
 
 namespace PersonalFinance.Infrastructure.Services;
 
@@ -33,6 +34,21 @@ public sealed class C6StatementPdfParserService : IStatementParserService
 
         using var document = OpenDocument(pdfStream, password);
 
+        try
+        {
+            ReadPages(document, entries, ct);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException and not DomainException)
+        {
+            // GetPages()/GetWords() são lazy: falhas de leitura só aparecem aqui
+            throw new DomainException("Não foi possível ler o conteúdo do PDF.", ex);
+        }
+
+        return Task.FromResult<IReadOnlyList<ParsedStatementEntryDto>>(entries);
+    }
+
+    private static void ReadPages(PdfDocument document, List<ParsedStatementEntryDto> entries, CancellationToken ct)
+    {
         DateOnly? periodStart = null, periodEnd = null;
         Columns? columns = null;
 
@@ -67,30 +83,38 @@ public sealed class C6StatementPdfParserService : IStatementParserService
 
             for (var i = headerIndex + 1; i < lines.Count; i++)
             {
-                var entry = ParseRow(lines[i], columns, periodStart.Value, periodEnd.Value);
+                var entry = ParseRow(lines[i], columns, periodStart.Value, periodEnd.Value, page.Number, i + 1);
                 if (entry is not null) entries.Add(entry);
             }
         }
-
-        return Task.FromResult<IReadOnlyList<ParsedStatementEntryDto>>(entries);
     }
 
     private static PdfDocument OpenDocument(Stream stream, string? password)
     {
         try
         {
+            // PdfPig exige stream seekable
+            var source = stream;
+            if (!stream.CanSeek)
+            {
+                var copy = new MemoryStream();
+                stream.CopyTo(copy);
+                copy.Position = 0;
+                source = copy;
+            }
+
             var options = new ParsingOptions { UseLenientParsing = true };
             if (password is not null)
                 options.Password = password;
-            return PdfDocument.Open(stream, options);
+            return PdfDocument.Open(source, options);
+        }
+        catch (PdfDocumentEncryptedException ex)
+        {
+            throw new DomainException("Senha do extrato ausente ou incorreta.", ex);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            var isPassword = ex.GetType().Name.Contains("Encrypted", StringComparison.OrdinalIgnoreCase);
-            throw new DomainException(
-                isPassword
-                    ? "Senha do extrato ausente ou incorreta."
-                    : "O arquivo enviado não é um PDF válido.", ex);
+            throw new DomainException("O arquivo enviado não é um PDF válido.", ex);
         }
     }
 
@@ -131,7 +155,7 @@ public sealed class C6StatementPdfParserService : IStatementParserService
     }
 
     private static ParsedStatementEntryDto? ParseRow(
-        List<Word> line, Columns c, DateOnly periodStart, DateOnly periodEnd)
+        List<Word> line, Columns c, DateOnly periodStart, DateOnly periodEnd, int pageNumber, int lineNumber)
     {
         var cells = new[] { new List<string>(), new List<string>(), new List<string>(), new List<string>(), new List<string>() };
         foreach (var w in line)
@@ -149,7 +173,9 @@ public sealed class C6StatementPdfParserService : IStatementParserService
         if (!TryResolveDate(eventMatch, periodStart, periodEnd, out var eventDate) ||
             !TryResolveDate(postingMatch, periodStart, periodEnd, out var postingDate) ||
             !TryParseAmount(string.Join(" ", cells[4]), out var amount))
-            return null;
+            // Sem descrição/valor bruto na mensagem: dados financeiros sensíveis
+            throw new DomainException(
+                $"Linha de lançamento inválida no extrato (página {pageNumber}, linha {lineNumber}).");
 
         return new ParsedStatementEntryDto(
             eventDate, postingDate,
