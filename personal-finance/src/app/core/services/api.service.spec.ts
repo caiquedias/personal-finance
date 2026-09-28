@@ -136,6 +136,13 @@ describe('ApiService', () => {
     req.flush({});
   });
 
+  it('updateIncome faz PUT /incomes/:id', () => {
+    service.updateIncome('i-1', {} as any).subscribe();
+    const req = httpMock.expectOne(`${BASE}/incomes/i-1`);
+    expect(req.request.method).toBe('PUT');
+    req.flush(null);
+  });
+
   it('deleteIncome faz DELETE /incomes/:id', () => {
     service.deleteIncome('i-1').subscribe();
     const req = httpMock.expectOne(`${BASE}/incomes/i-1`);

@@ -95,5 +95,137 @@ namespace PersonalFinance.Api.Tests.Integration
             var getById = await client.GetAsync($"/api/v1/incomes/{id}");
             getById.StatusCode.Should().Be(HttpStatusCode.NotFound);
         }
+
+        [Fact(DisplayName = "PUT /incomes/{id} deve retornar 204 e GET seguinte deve refletir os novos valores com o mesmo Id")]
+        public async Task Update_ShouldReturn204AndGetReflectsNewValuesWithSameId()
+        {
+            var (client, pid) = await SetupAsync();
+
+            var created = await client.PostAsJsonAsync("/api/v1/incomes", new
+            {
+                periodId = pid,
+                fortnightType = 1,
+                description = "Original",
+                amount = 100.00,
+                receivedAt = "2026-09-10"
+            });
+            var body = await created.Content.ReadFromJsonAsync<JsonElement>();
+            var id = body.GetProperty("id").GetString()!;
+
+            var r = await client.PutAsJsonAsync($"/api/v1/incomes/{id}", new
+            {
+                fortnightType = 2,
+                description = "Atualizado",
+                amount = 200.00,
+                receivedAt = "2026-09-20",
+                notes = "Ajuste"
+            });
+            r.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+            var getById = await client.GetAsync($"/api/v1/incomes/{id}");
+            getById.StatusCode.Should().Be(HttpStatusCode.OK);
+            var inc = await getById.Content.ReadFromJsonAsync<JsonElement>();
+            inc.GetProperty("id").GetString().Should().Be(id);
+            inc.GetProperty("description").GetString().Should().Be("Atualizado");
+            inc.GetProperty("amount").GetDecimal().Should().Be(200m);
+            inc.GetProperty("fortnightType").GetInt32().Should().Be(2);
+        }
+
+        [Fact(DisplayName = "PUT /incomes/{id} deve retornar 400 para amount inválido")]
+        public async Task Update_WithInvalidAmount_ShouldReturn400()
+        {
+            var (client, pid) = await SetupAsync();
+
+            var created = await client.PostAsJsonAsync("/api/v1/incomes", new
+            {
+                periodId = pid,
+                fortnightType = 1,
+                description = "Original",
+                amount = 100.00,
+                receivedAt = "2026-09-10"
+            });
+            var body = await created.Content.ReadFromJsonAsync<JsonElement>();
+            var id = body.GetProperty("id").GetString()!;
+
+            var r = await client.PutAsJsonAsync($"/api/v1/incomes/{id}", new
+            {
+                fortnightType = 1,
+                description = "Original",
+                amount = -50.00,
+                receivedAt = "2026-09-10"
+            });
+            r.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        }
+
+        [Fact(DisplayName = "PUT /incomes/{id} de outro usuário deve retornar 400")]
+        public async Task Update_ForIncomeOfAnotherUser_ShouldReturn400()
+        {
+            var (client1, pid) = await SetupAsync();
+            var (client2, _)   = await GetAuthenticatedClientAsync();
+
+            var created = await client1.PostAsJsonAsync("/api/v1/incomes", new
+            {
+                periodId = pid,
+                fortnightType = 1,
+                description = "Privada",
+                amount = 100.00,
+                receivedAt = "2026-09-10"
+            });
+            var body = await created.Content.ReadFromJsonAsync<JsonElement>();
+            var id = body.GetProperty("id").GetString()!;
+
+            var r = await client2.PutAsJsonAsync($"/api/v1/incomes/{id}", new
+            {
+                fortnightType = 1,
+                description = "Invadido",
+                amount = 300.00,
+                receivedAt = "2026-09-10"
+            });
+            r.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        }
+
+        [Fact(DisplayName = "PUT /incomes/{id} inexistente deve retornar 400")]
+        public async Task Update_WithNonExistentId_ShouldReturn400()
+        {
+            var (client, _) = await SetupAsync();
+
+            var r = await client.PutAsJsonAsync($"/api/v1/incomes/{Guid.NewGuid()}", new
+            {
+                fortnightType = 1,
+                description = "X",
+                amount = 100.00,
+                receivedAt = "2026-09-10"
+            });
+            r.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        }
+
+        [Fact(DisplayName = "PUT /incomes/{id} em receita soft-deleted deve retornar 400")]
+        public async Task Update_ForSoftDeletedIncome_ShouldReturn400()
+        {
+            var (client, pid) = await SetupAsync();
+
+            var created = await client.PostAsJsonAsync("/api/v1/incomes", new
+            {
+                periodId = pid,
+                fortnightType = 1,
+                description = "Será excluída",
+                amount = 100.00,
+                receivedAt = "2026-09-10"
+            });
+            var body = await created.Content.ReadFromJsonAsync<JsonElement>();
+            var id = body.GetProperty("id").GetString()!;
+
+            var del = await client.DeleteAsync($"/api/v1/incomes/{id}");
+            del.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+            var r = await client.PutAsJsonAsync($"/api/v1/incomes/{id}", new
+            {
+                fortnightType = 1,
+                description = "Não deveria funcionar",
+                amount = 100.00,
+                receivedAt = "2026-09-10"
+            });
+            r.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        }
     }
 }

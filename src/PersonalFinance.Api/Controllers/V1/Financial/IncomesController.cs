@@ -14,17 +14,20 @@ public sealed class IncomesController : ApiControllerBase
     private readonly GetIncomesByPeriodUseCase _getByPeriodUseCase;
     private readonly GetIncomeByIdUseCase      _getByIdUseCase;
     private readonly CreateIncomeUseCase       _createUseCase;
+    private readonly UpdateIncomeUseCase       _updateUseCase;
     private readonly DeleteIncomeUseCase       _deleteUseCase;
 
     public IncomesController(
         GetIncomesByPeriodUseCase getByPeriodUseCase,
         GetIncomeByIdUseCase      getByIdUseCase,
         CreateIncomeUseCase       createUseCase,
+        UpdateIncomeUseCase       updateUseCase,
         DeleteIncomeUseCase       deleteUseCase)
     {
         _getByPeriodUseCase = getByPeriodUseCase;
         _getByIdUseCase     = getByIdUseCase;
         _createUseCase      = createUseCase;
+        _updateUseCase      = updateUseCase;
         _deleteUseCase      = deleteUseCase;
     }
 
@@ -62,6 +65,17 @@ public sealed class IncomesController : ApiControllerBase
     {
         var result = await _createUseCase.ExecuteAsync(dto with { UserId = CurrentUserId }, ct);
         return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
+    }
+
+    /// <summary>Atualiza os dados editáveis de uma receita existente.</summary>
+    [HttpPut("{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateIncomeDto dto, CancellationToken ct)
+    {
+        await _updateUseCase.ExecuteAsync(dto with { Id = id, UserId = CurrentUserId }, ct);
+        return NoContent();
     }
 
     /// <summary>Exclui logicamente uma receita.</summary>

@@ -8,7 +8,7 @@ import {
   ExpenseResponse, CreateExpenseRequest, UpdateExpenseRequest, MarkAsPaidRequest, ExpenseOrderItem,
   BatchExpenseItemRequest, CreateExpensesBatchRequest,
   PagedResult, ExpenseFilterParams, IncomeFilterParams,
-  IncomeResponse, CreateIncomeRequest,
+  IncomeResponse, CreateIncomeRequest, UpdateIncomeRequest,
   LookupItem,
   CreatePaymentStatusRequest, CreateSourceTypeRequest, CreateFortnightTypeRequest,
   UpdatePaymentStatusRequest, UpdateSourceTypeRequest, UpdateFortnightTypeRequest,
@@ -160,6 +160,10 @@ export class ApiService {
 
   createIncome(data: CreateIncomeRequest): Observable<IncomeResponse> {
     return this.http.post<IncomeResponse>(`${this.base}/incomes`, data);
+  }
+
+  updateIncome(id: string, data: UpdateIncomeRequest): Observable<void> {
+    return this.http.put<void>(`${this.base}/incomes/${id}`, data);
   }
 
   deleteIncome(id: string): Observable<void> {
