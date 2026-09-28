@@ -13,6 +13,11 @@ gh pr list --repo caiquedias/personal-finance --state merged --json number,title
 ```
 Se não estiver: informe o status atual, interrompa e instrua o Caique a aguardar o merge.
 
+**Nunca validar merge com `git merge-base --is-ancestor`** se o merge foi squash: o commit de squash
+não tem a branch de origem como ancestral, dando falso negativo em PR já mergeado. Validar pelo
+status do PR (`gh pr list --state merged`) e, se precisar confirmar em git, por
+`git diff --stat <base>..<branch>` (vazio = conteúdo já está na base).
+
 ---
 
 ## Passos de execução (nesta ordem)
@@ -41,7 +46,12 @@ git branch -d feat/<id>-<slug>
 git push origin --delete feat/<id>-<slug>
 ```
 
-### 5. Confirmar estado final
+### 5. Auditar o estado da issue e tasks
+
+Conferir que a issue está em **Done** e que nenhuma task filha ficou presa em **In Progress**.
+Corrigir qualquer divergência encontrada e reportar em uma única linha — sem resumo extenso.
+
+### 6. Confirmar estado final
 ```bash
 git worktree list
 git branch -a | grep <issue-id>

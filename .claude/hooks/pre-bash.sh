@@ -3,11 +3,25 @@
 # exit 2 bloqueia execução e retorna erro ao agente
 
 INPUT=$(cat)
-CMD=$(echo "$INPUT" | python3 -c "
-import sys, json
-d = json.load(sys.stdin)
-print(d.get('tool_input', {}).get('command', ''))
+
+CMD=$(printf '%s' "$INPUT" | node -e "
+let d='';
+process.stdin.on('data', c => d += c).on('end', () => {
+  try { process.stdout.write(((JSON.parse(d).tool_input) || {}).command || ''); } catch (e) {}
+});
 " 2>/dev/null)
+
+# Fallback sem node — extração bruta do campo "command"
+if [ -z "$CMD" ]; then
+  CMD=$(printf '%s' "$INPUT" | sed -n 's/.*"command"[[:space:]]*:[[:space:]]*"\(.*\)".*/\1/p' | head -1)
+fi
+
+# Sem comando identificado e input não-vazio → falha ao parsear: bloquear em vez de liberar
+if [ -z "$CMD" ] && [ -n "$INPUT" ]; then
+  echo "BLOQUEADO: não foi possível parsear o comando do hook (node indisponível?)." >&2
+  echo "Guardrails não podem ser avaliados — corrija o ambiente antes de executar Bash." >&2
+  exit 2
+fi
 
 # Branches protegidas — commits e pushes diretos proibidos
 PROTECTED_BRANCH_PATTERN="^(master|release|develop|feat/.+|fix/.+|hotfix/.+)$"
@@ -29,7 +43,8 @@ fi
 
 # 3. Bloqueia commit direto em branches protegidas
 if echo "$CMD" | grep -qE "git commit"; then
-  WORKTREE_PATH=$(echo "$CMD" | grep -oP '(?<=git -C )[^ ]+' | head -1)
+  # -oE + sed em vez de -oP: lookbehind PCRE não está disponível em todo grep (macOS/BusyBox)
+  WORKTREE_PATH=$(echo "$CMD" | grep -oE 'git -C [^ ]+' | head -1 | sed 's/git -C //')
   if [ -n "$WORKTREE_PATH" ]; then
     CURRENT_BRANCH=$(git -C "$WORKTREE_PATH" rev-parse --abbrev-ref HEAD 2>/dev/null)
   else
