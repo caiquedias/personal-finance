@@ -91,9 +91,10 @@ por classe é regra obrigatória, não só a feature).
 
 ## Fórmula de Estimativa
 
-> **Última calibração:** nunca · n=0 issues com codificação medida
-> **Origem dos números:** sem prior herdado de outro projeto — primeira calibração é local, após
-> acumular ~10 issues com o bloco "Análise de eficiência da sessão" do `/end-issue` preenchido.
+> **Última calibração:** 2026-09-28 · n=2 issues com codificação medida
+> **Origem dos números:** sem prior herdado de outro projeto — amostra local ainda pequena (n=2, alvo
+> ~10). Fórmula sugerida pelo script: codificação mediana 5min (p75 6min) + piso de orquestração 2min
+> = 7min por issue; sem correlação calculável entre nº de arquivos e tempo. Tratar como indicativo.
 
 Até a primeira calibração, `Estimativa: Xh` do comentário de planning continua sendo um número
 definido manualmente por Caique/PO — **não** deriva do Size (correlação entre nº de arquivos e

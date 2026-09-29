@@ -80,6 +80,8 @@ public static class ApplicationExtensions
 
         // ── Import ────────────────────────────────────────────────────────────────────
         services.AddScoped<ImportLegacyDataUseCase>();
+        services.AddScoped<StatementEntryClassifier>();
+        services.AddScoped<PreviewStatementImportUseCase>();
 
         // ── Reports ───────────────────────────────────────────────────────────
         services.AddScoped<GetExpensesReportUseCase>();

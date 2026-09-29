@@ -5,6 +5,18 @@ _(formato esperado: `<issue-number>` ou `<issue-url>`)_
 
 ---
 
+## Diretriz de autonomia
+
+Todo o `/end-issue` roda **dentro do worktree da issue** (`.claude/worktrees/<id>-<slug>`, branch
+`claude/<id>-<slug>`) e é **autônomo**: criar/alterar arquivos de docs, mover o board para Done,
+apresentar a análise de sessão, recalibrar estimativas quando vencidas, commitar, dar push para
+`claude/` e criar o PR `claude/` → `feat/` — **sem pedir OK por ação**.
+Nunca escrever os docs no checkout principal (`feat/`/`develop`).
+Única exceção que exige aval do Caique: **aplicar** as melhorias propostas no passo 5 (só pontuar é livre)
+e qualquer ação fora deste fluxo (fora do escopo, branches do Caique, ambientes).
+
+---
+
 ## O que fazer
 
 ### 1. Coletar dados da sessão
@@ -65,7 +77,8 @@ Fazer `str_replace` cirúrgico:
 gh project item-edit --project-id PVT_kwHOAOhFlc4BUMJ_ --id <ITEM_ID> --field-id PVTSSF_lAHOAOhFlc4BUMJ_zhBWAHQ --single-select-option-id 98236657
 ```
 
-**Exibir a ação acima e aguardar OK do Caique antes de executar.**
+Executar direto (autorizado pela diretriz de autonomia acima). Obter `<ITEM_ID>` via `gh api graphql`
+(ver memória "Project item ID via GraphQL") e conferir o par id/number antes de chamar `item-edit`.
 
 ### 5. Analisar eficiência da sessão
 
@@ -150,6 +163,20 @@ node scripts/calibrate-estimates.js --check
 - **`RECALIBRAR: ...`** (exit 1) → rode sem flag, atualize `docs/sprint-planning.md` →
   "Fórmula de Estimativa" com os números que mudaram **e** a linha
   `> **Última calibração:** <data> · n=<N> issues com codificação medida`
+
+### 8. Commit, push e PR (a partir do worktree)
+
+```bash
+cd .claude/worktrees/<id>-<slug>
+git branch --show-current            # deve ser claude/<id>-<slug>
+git fetch origin && git merge --ff-only origin/feat/<id>-<slug>   # sincronizar com a feat, se houver merge novo
+git add docs/ .claude/ && git commit -m "chore(docs): session memory #<number>"   # git -C se o hook reclamar do cwd
+git push origin HEAD:claude/<id>-<slug>
+gh pr create --head claude/<id>-<slug> --base feat/<id>-<slug> --title "chore(docs): session memory #<number>" --body "..."
+```
+
+- Verificar antes se já existe PR aberto para a branch; se o anterior foi mergeado, abrir um novo.
+- Corpo do PR com a lista de arquivos tocados; sem `Closes #N` (a issue já foi fechada pelo PR da feature).
 
 ---
 
