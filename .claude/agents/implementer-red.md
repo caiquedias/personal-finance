@@ -30,6 +30,10 @@ Você tem acesso restrito a **somente arquivos de teste** — nunca crie ou edit
 - Escrever testes para **todas** as tasks da issue antes de qualquer implementação
 - Cada teste deve falhar por razão correta (comportamento ausente), não por erro de compilação
 - Cobrir: caminho feliz, edge cases recebidos e cenários de falha
+- Ação de confirmação/persistência (save, confirm, submit) que grava em lote sem idempotência no
+  backend: incluir **teste de duplo submit** — após sucesso, `canSave()` é false e um segundo
+  `save()` não dispara outra chamada (`toHaveBeenCalledTimes(1)`); e que o erro mantém os dados
+  para nova tentativa
 - Um arquivo de teste por classe testada — sem exceção
 - Backend: xUnit + Moq + FluentAssertions
 - Frontend: Jasmine/Karma dentro de `personal-finance/src/`

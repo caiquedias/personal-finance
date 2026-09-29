@@ -1,0 +1,101 @@
+<div class="statement-import">
+  @if (errorMessage()) {
+    <div class="alert-error" role="alert">{{ errorMessage() }}</div>
+  }
+
+  <div class="form-row">
+    <label class="field">
+      <span>Extrato (.pdf, até 10 MB)</span>
+      <input type="file" accept=".pdf,application/pdf" (change)="onFileSelected($event)" />
+    </label>
+    <label class="field">
+      <span>Senha (opcional)</span>
+      <input type="password" autocomplete="off" [ngModel]="password()" (ngModelChange)="password.set($event)" />
+    </label>
+    <label class="field">
+      <span>Data de início (opcional)</span>
+      <input type="date" [ngModel]="fromDate()" (ngModelChange)="fromDate.set($event)" />
+    </label>
+    <button type="button" class="btn btn-primary" [disabled]="!selectedFile() || loading()" (click)="preview()">
+      {{ loading() ? 'Processando...' : 'Pré-visualizar' }}
+    </button>
+  </div>
+
+  @if (items().length > 0) {
+    @if (discardedCount() > 0) {
+      <p class="discarded">{{ discardedCount() }} lançamento(s) descartado(s) por estarem antes da data de início.</p>
+    }
+
+    <div class="table-wrapper">
+      <table class="review-table">
+        <thead>
+          <tr>
+            <th>Data</th><th>Descrição</th><th>Tipo</th><th>Categoria</th><th>Valor</th><th>Avisos</th><th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of items(); track $index; let i = $index) {
+            <tr [class.row-warning]="item.isLikelyInternalTransfer || item.isLikelyDuplicate"
+                [class.row-invalid]="!isItemValid(item)">
+              <td>
+                <input type="date" [ngModel]="item.date" (ngModelChange)="updateItem(i, { date: $event })" />
+              </td>
+              <td>
+                <input type="text" maxlength="200" [ngModel]="item.description"
+                       (ngModelChange)="updateItem(i, { description: $event })" />
+              </td>
+              <td>
+                <select [ngModel]="item.kind" (ngModelChange)="updateItem(i, { kind: $event })">
+                  <option value="Expense">Despesa</option>
+                  <option value="Income">Receita</option>
+                </select>
+              </td>
+              <td>
+                @if (item.kind === 'Expense') {
+                  <select [ngModel]="item.categoryId" (ngModelChange)="updateItem(i, { categoryId: $event })">
+                    <option [ngValue]="null">Selecione...</option>
+                    @for (cat of categories(); track cat.id) {
+                      <option [ngValue]="cat.id">{{ cat.name }}</option>
+                    }
+                  </select>
+                } @else {
+                  <span class="muted">—</span>
+                }
+              </td>
+              <td>
+                <input type="number" step="0.01" min="0" [ngModel]="item.amount"
+                       (ngModelChange)="updateItem(i, { amount: +$event })" />
+                <small class="muted">R$ {{ item.amount | number:'1.2-2' }}</small>
+              </td>
+              <td>
+                @if (item.isLikelyInternalTransfer) {
+                  <span class="badge badge-warning" title="Possível transferência entre contas próprias">Transferência interna</span>
+                }
+                @if (item.isLikelyDuplicate) {
+                  <span class="badge badge-danger" title="Possível lançamento já existente">Duplicata</span>
+                }
+              </td>
+              <td>
+                <button type="button" class="btn-remove" aria-label="Remover linha" (click)="removeItem(i)">✕</button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="actions">
+      <button type="button" class="btn btn-primary" [disabled]="!canSave()" (click)="save()">
+        {{ saving() ? 'Salvando...' : 'Confirmar importação' }}
+      </button>
+    </div>
+  }
+
+  @if (result(); as r) {
+    <div class="summary" role="status">
+      <strong>Importação concluída.</strong>
+      Períodos criados: {{ r.periodsCreated }} · reaproveitados: {{ r.periodsReused }} ·
+      despesas: {{ r.expensesCreated }} · receitas: {{ r.incomesCreated }}
+    </div>
+  }
+</div>

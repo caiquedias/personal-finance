@@ -2,6 +2,7 @@ import { Component, inject, signal } from '@angular/core';
 import { HttpClient, HttpEventType } from '@angular/common/http';
 import { RouterLink } from '@angular/router';
 import { HeaderComponent } from '../../../../shared/components/header/header.component';
+import { StatementImportComponent } from '../statement-import/statement-import.component';
 import { environment } from '../../../../../environments/environment';
 
 interface ImportResult {
@@ -15,24 +16,31 @@ interface ImportResult {
   warnings:          string[];
 }
 
+type ImportTab = 'legacy' | 'statement';
+
 type ImportState = 'idle' | 'uploading' | 'processing' | 'done' | 'error';
 
 @Component({
   selector: 'app-import',
   standalone: true,
-  imports: [HeaderComponent, RouterLink],
+  imports: [HeaderComponent, RouterLink, StatementImportComponent],
   templateUrl: './import.component.html',
   styleUrls: ['./import.component.css'],
 })
 export class ImportComponent {
   private readonly http = inject(HttpClient);
 
+  readonly activeTab      = signal<ImportTab>('legacy');
   readonly state          = signal<ImportState>('idle');
   readonly selectedFile   = signal<File | null>(null);
   readonly isDragging     = signal(false);
   readonly uploadProgress = signal(0);
   readonly result         = signal<ImportResult | null>(null);
   readonly errorMessage   = signal<string | null>(null);
+
+  setTab(tab: ImportTab): void {
+    this.activeTab.set(tab);
+  }
 
   // ── Drag & Drop ───────────────────────────────────────────────────────────
 

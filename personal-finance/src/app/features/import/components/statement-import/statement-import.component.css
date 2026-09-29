@@ -1,0 +1,29 @@
+.statement-import { display: flex; flex-direction: column; gap: 20px; }
+
+.form-row { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; }
+.field { display: flex; flex-direction: column; gap: 6px; font-size: 0.85rem; }
+
+.alert-error {
+  padding: 10px 14px;
+  background: var(--color-danger-bg);
+  border-radius: var(--radius);
+  border: 1px solid var(--color-danger);
+  color: var(--color-danger);
+}
+
+.discarded { font-size: 0.85rem; color: var(--text-muted); }
+
+.table-wrapper { overflow-x: auto; }
+.review-table { width: 100%; border-collapse: collapse; }
+.review-table th, .review-table td { padding: 6px 8px; text-align: left; vertical-align: top; }
+.review-table input, .review-table select { width: 100%; min-width: 90px; }
+
+.row-warning { background: var(--color-warning-bg); }
+.row-invalid { outline: 1px solid var(--color-danger); outline-offset: -1px; }
+
+
+.muted { color: var(--text-muted); }
+.btn-remove { background: none; border: none; cursor: pointer; color: var(--color-danger); }
+
+.summary { margin-top: 16px; padding: 12px; border-radius: var(--radius); border: 1px solid var(--border); }
+.actions { margin-top: 16px; display: flex; justify-content: flex-end; }
