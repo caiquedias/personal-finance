@@ -16,7 +16,7 @@
       <span>Data de início (opcional)</span>
       <input type="date" [ngModel]="fromDate()" (ngModelChange)="fromDate.set($event)" />
     </label>
-    <button type="button" class="btn-primary" [disabled]="!selectedFile() || loading()" (click)="preview()">
+    <button type="button" class="btn btn-primary" [disabled]="!selectedFile() || loading()" (click)="preview()">
       {{ loading() ? 'Processando...' : 'Pré-visualizar' }}
     </button>
   </div>
@@ -69,10 +69,10 @@
               </td>
               <td>
                 @if (item.isLikelyInternalTransfer) {
-                  <span class="badge badge-transfer" title="Possível transferência entre contas próprias">Transferência interna</span>
+                  <span class="badge badge-warning" title="Possível transferência entre contas próprias">Transferência interna</span>
                 }
                 @if (item.isLikelyDuplicate) {
-                  <span class="badge badge-duplicate" title="Possível lançamento já existente">Duplicata</span>
+                  <span class="badge badge-danger" title="Possível lançamento já existente">Duplicata</span>
                 }
               </td>
               <td>
@@ -85,7 +85,7 @@
     </div>
 
     <div class="actions">
-      <button type="button" class="btn-primary" [disabled]="!canSave()" (click)="save()">
+      <button type="button" class="btn btn-primary" [disabled]="!canSave()" (click)="save()">
         {{ saving() ? 'Salvando...' : 'Confirmar importação' }}
       </button>
     </div>
