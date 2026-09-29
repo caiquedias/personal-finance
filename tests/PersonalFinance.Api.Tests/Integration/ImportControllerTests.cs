@@ -171,6 +171,91 @@ public class ImportControllerTests : ApiIntegrationTestBase
         r.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
+    // ── Confirmação de extrato ────────────────────────────────────────────────
+
+    [Fact(DisplayName = "POST /import/statement/confirm sem token deve retornar 401")]
+    public async Task StatementConfirm_WithoutToken_ShouldReturn401()
+    {
+        var r = await Client.PostAsJsonAsync("/api/v1/import/statement/confirm", new { items = new object[0] });
+
+        r.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact(DisplayName = "POST /import/statement/confirm com lista vazia deve retornar 400")]
+    public async Task StatementConfirm_EmptyList_ShouldReturn400()
+    {
+        var (client, _) = await GetAuthenticatedClientAsync();
+
+        var r = await client.PostAsJsonAsync("/api/v1/import/statement/confirm", new { items = new object[0] });
+
+        r.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact(DisplayName = "POST /import/statement/confirm com data futura deve retornar 400")]
+    public async Task StatementConfirm_FutureDate_ShouldReturn400()
+    {
+        var (client, _) = await GetAuthenticatedClientAsync();
+        var categoryId = await CreateCategoryAsync(client);
+        var future = DateTime.UtcNow.AddDays(10).ToString("yyyy-MM-dd");
+
+        var r = await client.PostAsJsonAsync("/api/v1/import/statement/confirm", new
+        {
+            items = new object[]
+            {
+                new { date = future, description = "FUTURO", amount = 10m, kind = "Expense", categoryId }
+            }
+        });
+
+        r.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact(DisplayName = "POST /import/statement/confirm em dois meses deve retornar 200 e persistir")]
+    public async Task StatementConfirm_TwoMonths_ShouldReturn200AndPersist()
+    {
+        var (client, _) = await GetAuthenticatedClientAsync();
+        var categoryId = await CreateCategoryAsync(client);
+
+        var r = await client.PostAsJsonAsync("/api/v1/import/statement/confirm", new
+        {
+            items = new object[]
+            {
+                new { date = "2025-01-20", description = "MERCADO JAN", amount = 50m,  kind = "Expense", categoryId },
+                new { date = "2025-02-03", description = "MERCADO FEV", amount = 70m,  kind = "Expense", categoryId },
+                new { date = "2025-02-05", description = "SALARIO FEV", amount = 900m, kind = "Income" }
+            }
+        });
+
+        r.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await r.Content.ReadFromJsonAsync<JsonElement>();
+        body.GetProperty("periodsCreated").GetInt32().Should().Be(2);
+        body.GetProperty("periodsReused").GetInt32().Should().Be(0);
+        body.GetProperty("expensesCreated").GetInt32().Should().Be(2);
+        body.GetProperty("incomesCreated").GetInt32().Should().Be(1);
+
+        var periods = await (await client.GetAsync("/api/v1/periods")).Content.ReadFromJsonAsync<JsonElement>();
+        var feb = periods.EnumerateArray()
+            .Single(p => p.GetProperty("year").GetInt32() == 2025 && p.GetProperty("month").GetInt32() == 2);
+        var febId = feb.GetProperty("id").GetString();
+
+        var expenses = await (await client.GetAsync($"/api/v1/expenses?periodId={febId}"))
+            .Content.ReadFromJsonAsync<JsonElement>();
+        expenses.GetProperty("items").EnumerateArray().Should().ContainSingle()
+            .Which.GetProperty("description").GetString().Should().Be("MERCADO FEV");
+
+        var incomes = await (await client.GetAsync($"/api/v1/incomes?periodId={febId}"))
+            .Content.ReadFromJsonAsync<JsonElement>();
+        incomes.GetProperty("items").EnumerateArray().Should().ContainSingle()
+            .Which.GetProperty("description").GetString().Should().Be("SALARIO FEV");
+    }
+
+    private static async Task<Guid> CreateCategoryAsync(HttpClient client)
+    {
+        var created = await client.PostAsJsonAsync("/api/v1/categories",
+            new { name = $"Cat {Guid.NewGuid():N}", color = "#1E4D2B", icon = "home" });
+        var body = await created.Content.ReadFromJsonAsync<JsonElement>();
+        return Guid.Parse(body.GetProperty("id").GetString()!);
+    }
+
     private static byte[] BuildMinimalWorkbook()
     {
         using var wb = new ClosedXML.Excel.XLWorkbook();
