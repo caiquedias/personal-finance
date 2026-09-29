@@ -235,6 +235,34 @@ public class C6StatementPdfParserServiceTests
         result[0].Amount.Should().Be(-50.00m);
     }
 
+    // ── Layout real do extrato C6 ─────────────────────────────────────────────
+
+    [Fact]
+    public async Task ParseAsync_LongPeriodTwoLineHeaderAndAmountLeftOfValorTitle_ParsesEntries()
+    {
+        // Período por extenso, cabeçalho em 2 linhas e "-R$" começando à esquerda do título "Valor"
+        var page = new[]
+        {
+            new Cell("Período 29 de agosto de 2026 até 28 de setembro de 2026", 40, 800),
+            new Cell("Data", 36, 760), new Cell("Data", 95, 760),
+            new Cell("lançamento", 36, 748), new Cell("contábil", 95, 748), new Cell("Tipo", 154, 748),
+            new Cell("Descrição", 234, 748), new Cell("Valor", 541, 748),
+            new Cell("29/08", 36, 730), new Cell("31/08", 95, 730), new Cell("Débito", 154, 730),
+            new Cell("SUPERMERCADO SALTO", 235, 730), new Cell("-R$", 529, 730), new Cell("94,31", 544, 730),
+            new Cell("30/08", 36, 715), new Cell("31/08", 95, 715), new Cell("Entrada", 154, 715),
+            new Cell("Pix recebido de FULANO", 235, 715), new Cell("R$", 526, 715), new Cell("2.436,88", 535, 715),
+        };
+        using var pdf = BuildPdf(page);
+
+        var result = await _sut.ParseAsync(pdf, null);
+
+        result.Should().HaveCount(2);
+        result[0].PostingDate.Should().Be(new DateOnly(2026, 8, 31));
+        result[0].Description.Should().Be("SUPERMERCADO SALTO");
+        result[0].Amount.Should().Be(-94.31m);
+        result[1].Amount.Should().Be(2436.88m);
+    }
+
     // ── Ano do período ────────────────────────────────────────────────────────
 
     [Fact]

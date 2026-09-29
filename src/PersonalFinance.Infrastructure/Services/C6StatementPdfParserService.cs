@@ -18,12 +18,23 @@ public sealed class C6StatementPdfParserService : IStatementParserService
     private static readonly CultureInfo PtBr = new("pt-BR");
     private static readonly Regex PeriodRegex =
         new(@"(\d{2}/\d{2}/\d{4})\s*a\s*(\d{2}/\d{2}/\d{4})", RegexOptions.Compiled);
+    // Formato por extenso: "29 de agosto de 2026 até 28 de setembro de 2026"
+    private static readonly Regex LongPeriodRegex =
+        new(@"(\d{1,2})\s+de\s+(\p{L}+)\s+de\s+(\d{4})\s+at\p{L}\p{M}*\s+(\d{1,2})\s+de\s+(\p{L}+)\s+de\s+(\d{4})",
+            RegexOptions.Compiled | RegexOptions.IgnoreCase);
+    private static readonly string[] MonthNames =
+    {
+        "janeiro", "fevereiro", "março", "abril", "maio", "junho",
+        "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"
+    };
     private static readonly Regex DayMonthRegex =
         new(@"^(\d{2})/(\d{2})$", RegexOptions.Compiled);
 
     // Tolerância (em pontos) para agrupar palavras na mesma linha e para bordas de coluna
     private const double YTolerance = 3.0;
     private const double XTolerance = 2.0;
+    // O valor ("-R$ 94,31") é alinhado à direita e começa à esquerda do título "Valor"
+    private const double AmountLeftMargin = 25.0;
 
     private sealed record Columns(double Event, double Posting, double Type, double Description, double Amount);
 
@@ -62,9 +73,7 @@ public sealed class C6StatementPdfParserService : IStatementParserService
             {
                 foreach (var line in lines)
                 {
-                    var m = PeriodRegex.Match(string.Join(" ", line.Select(w => w.Text)));
-                    if (!m.Success) continue;
-                    if (TryParseFullDate(m.Groups[1].Value, out var s) && TryParseFullDate(m.Groups[2].Value, out var e))
+                    if (TryParsePeriod(string.Join(" ", line.Select(w => w.Text)), out var s, out var e))
                     {
                         periodStart = s;
                         periodEnd = e;
@@ -74,9 +83,9 @@ public sealed class C6StatementPdfParserService : IStatementParserService
             }
 
             // Cabeçalho da página define as faixas de X; se ausente, reaproveita o anterior
-            var headerIndex = lines.FindIndex(l => TryParseHeader(l, out _));
+            var headerIndex = FindHeader(lines, out var headerColumns);
             if (headerIndex >= 0)
-                TryParseHeader(lines[headerIndex], out columns);
+                columns = headerColumns;
 
             if (columns is null || periodStart is null || periodEnd is null)
                 continue;
@@ -138,6 +147,47 @@ public sealed class C6StatementPdfParserService : IStatementParserService
             .ToList();
     }
 
+    private static bool TryParsePeriod(string text, out DateOnly start, out DateOnly end)
+    {
+        start = end = default;
+
+        var m = PeriodRegex.Match(text);
+        if (m.Success)
+            return TryParseFullDate(m.Groups[1].Value, out start) && TryParseFullDate(m.Groups[2].Value, out end);
+
+        var l = LongPeriodRegex.Match(text);
+        return l.Success
+            && TryParseLongDate(l.Groups[1].Value, l.Groups[2].Value, l.Groups[3].Value, out start)
+            && TryParseLongDate(l.Groups[4].Value, l.Groups[5].Value, l.Groups[6].Value, out end);
+    }
+
+    private static bool TryParseLongDate(string day, string monthName, string year, out DateOnly date)
+    {
+        date = default;
+        var month = Array.IndexOf(MonthNames, monthName.ToLowerInvariant()) + 1;
+        if (month == 0) return false;
+        return DateOnly.TryParseExact($"{day}/{month}/{year}", "d/M/yyyy",
+            CultureInfo.InvariantCulture, DateTimeStyles.None, out date);
+    }
+
+    /// <summary>
+    /// Localiza o cabeçalho da tabela. Ele pode ocupar duas linhas ("Data Data" e
+    /// "lançamento contábil Tipo Descrição Valor"), então tenta a linha isolada e
+    /// depois a linha combinada com a seguinte. Retorna o índice da última linha do cabeçalho.
+    /// </summary>
+    private static int FindHeader(List<List<Word>> lines, out Columns? columns)
+    {
+        for (var i = 0; i < lines.Count; i++)
+        {
+            if (TryParseHeader(lines[i], out columns)) return i;
+            if (i + 1 < lines.Count && TryParseHeader(lines[i].Concat(lines[i + 1]).ToList(), out columns))
+                return i + 1;
+        }
+
+        columns = null;
+        return -1;
+    }
+
     private static bool TryParseHeader(List<Word> line, out Columns? columns)
     {
         columns = null;
@@ -161,7 +211,7 @@ public sealed class C6StatementPdfParserService : IStatementParserService
         foreach (var w in line)
         {
             var x = w.BoundingBox.Left + XTolerance;
-            var idx = x >= c.Amount ? 4 : x >= c.Description ? 3 : x >= c.Type ? 2 : x >= c.Posting ? 1 : 0;
+            var idx = x >= c.Amount - AmountLeftMargin ? 4 : x >= c.Description ? 3 : x >= c.Type ? 2 : x >= c.Posting ? 1 : 0;
             cells[idx].Add(w.Text);
         }
 
