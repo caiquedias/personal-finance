@@ -27,6 +27,7 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 | #420 | [Import] Parser PDF do extrato C6 Bank | 2026-09-28 | [420.md](420.md) |
 | #421 | [Import] Preview de importação — classificação e duplicatas | 2026-09-28 | [421.md](421.md) |
 | #422 | [Import] Confirmação de importação — persistência multi-período | 2026-09-29 | [422.md](422.md) |
+| #423 | [Import] Frontend — upload e tela de revisão | 2026-09-29 | [423.md](423.md) |
 
 ---
 
@@ -39,7 +40,7 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 | Login / Auth UI | #387 | 2026-07-04 |
 | Segurança / JWT | #389 | 2026-07-04 |
 | Import (Income) | #419 | 2026-09-28 |
-| Import (Extrato C6 PDF) | #420, #421, #422 | 2026-09-29 |
+| Import (Extrato C6 PDF) | #420, #421, #422, #423 | 2026-09-29 |
 
 ---
 
@@ -88,6 +89,7 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 - **Sidebar:** item "Expurgo" com ícone `archive` e rota `/purge`
 - **Auth:** authInterceptor injeta token automaticamente
 - **Login:** `LoginComponent` sem seção de cadastro — link `/register` e `RouterLink` removidos (#387)
+- **Import (Extrato PDF, #423):** `/import` com abas "Legado | Extrato PDF" (`ImportComponent.activeTab`/`setTab`); `StatementImportComponent` (`features/import/components/statement-import/`) — upload .pdf ≤10 MB + senha + data de início nativa, tabela editável, badges de transferência interna/duplicata (só sinalizam), `save()` limpa `items` após sucesso. `ApiService.previewStatementImport`/`confirmStatementImport`; models `StatementPreviewItem`, `StatementPreviewResult`, `ConfirmStatementItemRequest`, `ConfirmStatementImportRequest`, `ConfirmStatementImportResult`
 
 ### Banco de dados
 - **Lookup tables seeded:** Role, PaymentStatus, SourceType, FortnightType
