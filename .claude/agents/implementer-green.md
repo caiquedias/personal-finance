@@ -43,6 +43,11 @@ Você tem autonomia para criar e editar arquivos dentro do escopo da issue.
     lançar exceção de domínio (sem vazar conteúdo sensível na mensagem), não `return null`/`continue`
   - Não converter `OperationCanceledException` em exceção de domínio
   - Input `Stream`: se a lib exige seek, copiar para `MemoryStream` quando `!CanSeek`
+- Frontend (CSS/HTML): **antes de escrever estilos**, conferir os tokens reais em
+  `personal-finance/src/styles/_variables.css` (light e dark) e as classes globais em `styles.css`
+  (`.btn` + `.btn-primary`, `.badge`/`.badge-warning`/`.badge-danger`, `.table`) — nunca usar cor
+  hardcoded, fallback (`var(--x, #abc)`) nem token não verificado; botões sempre `btn btn-<variante>`;
+  texto herdado da tela pai (subtítulo, título) deve refletir o novo contexto quando a tela ganha abas/modos
 
 ## Shell e ambiente
 
