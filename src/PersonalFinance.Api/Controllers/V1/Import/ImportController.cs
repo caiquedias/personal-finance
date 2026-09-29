@@ -13,13 +13,16 @@ public sealed class ImportController : ApiControllerBase
 {
     private readonly ImportLegacyDataUseCase _importUseCase;
     private readonly PreviewStatementImportUseCase _previewUseCase;
+    private readonly ConfirmStatementImportUseCase _confirmUseCase;
 
     public ImportController(
         ImportLegacyDataUseCase importUseCase,
-        PreviewStatementImportUseCase previewUseCase)
+        PreviewStatementImportUseCase previewUseCase,
+        ConfirmStatementImportUseCase confirmUseCase)
     {
         _importUseCase = importUseCase;
         _previewUseCase = previewUseCase;
+        _confirmUseCase = confirmUseCase;
     }
 
     /// <summary>
@@ -86,6 +89,23 @@ public sealed class ImportController : ApiControllerBase
         var result = await _previewUseCase.ExecuteAsync(
             stream, password, fromDate ?? DateOnly.MinValue, CurrentUserId, ct);
 
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Confirma a importação do extrato: persiste os lançamentos selecionados
+    /// (Receitas/Despesas) nos períodos correspondentes, criando-os quando necessário.
+    /// </summary>
+    /// <response code="200">Importação confirmada — retorna sumário.</response>
+    /// <response code="400">Payload inválido ou regra de negócio violada.</response>
+    [HttpPost("statement/confirm")]
+    [ProducesResponseType(typeof(ConfirmStatementImportResultDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ConfirmStatement(
+        [FromBody] ConfirmStatementImportRequestDto request,
+        CancellationToken ct)
+    {
+        var result = await _confirmUseCase.ExecuteAsync(request, CurrentUserId, ct);
         return Ok(result);
     }
 }
