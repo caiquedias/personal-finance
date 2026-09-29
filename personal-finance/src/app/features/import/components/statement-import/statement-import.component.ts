@@ -139,6 +139,8 @@ export class StatementImportComponent implements OnInit {
     this.api.confirmStatementImport(request).subscribe({
       next: res => {
         this.result.set(res);
+        this.items.set([]);
+        this.selectedFile.set(null);
         this.saving.set(false);
       },
       error: err => {
