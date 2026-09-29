@@ -345,3 +345,40 @@ export interface ExpensesReport {
   month: number | null;
   items: ExpenseByCategoryItem[];
 }
+
+// Import de extrato PDF
+export interface StatementPreviewItem {
+  date:                     string; // yyyy-MM-dd
+  description:              string;
+  amount:                   number;
+  kind:                     'Income' | 'Expense';
+  suggestedCategoryId:      string | null;
+  isLikelyInternalTransfer: boolean;
+  isLikelyDuplicate:        boolean;
+  duplicateOfId:            string | null;
+}
+
+export interface StatementPreviewResult {
+  items:                StatementPreviewItem[];
+  discardedByDateCount: number;
+}
+
+export interface ConfirmStatementItemRequest {
+  date:        string; // yyyy-MM-dd
+  description: string;
+  amount:      number;
+  kind:        'Income' | 'Expense';
+  categoryId:  string | null;
+  sourceType:  string | null;
+}
+
+export interface ConfirmStatementImportRequest {
+  items: ConfirmStatementItemRequest[];
+}
+
+export interface ConfirmStatementImportResult {
+  periodsCreated:  number;
+  periodsReused:   number;
+  expensesCreated: number;
+  incomesCreated:  number;
+}
