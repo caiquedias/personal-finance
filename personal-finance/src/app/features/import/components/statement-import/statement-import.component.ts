@@ -38,6 +38,7 @@ export class StatementImportComponent implements OnInit {
   readonly result         = signal<ConfirmStatementImportResult | null>(null);
   readonly loading        = signal(false);
   readonly saving         = signal(false);
+  readonly previewed      = signal(false);
 
   ngOnInit(): void {
     this.api.getCategories().subscribe({
@@ -75,6 +76,7 @@ export class StatementImportComponent implements OnInit {
     this.loading.set(true);
     this.errorMessage.set(null);
     this.result.set(null);
+    this.previewed.set(false);
     this.api.previewStatementImport(file, this.password() || undefined, this.fromDate() || undefined).subscribe({
       next: res => {
         this.items.set(res.items.map(i => ({
@@ -88,6 +90,7 @@ export class StatementImportComponent implements OnInit {
           isLikelyDuplicate:        i.isLikelyDuplicate,
         })));
         this.discardedCount.set(res.discardedByDateCount);
+        this.previewed.set(true);
         this.loading.set(false);
       },
       error: err => {

@@ -21,6 +21,16 @@
     </button>
   </div>
 
+  @if (previewed() && items().length === 0) {
+    <p class="empty-state" role="status">
+      @if (discardedCount() > 0) {
+        Nenhum lançamento a importar: {{ discardedCount() }} lançamento(s) descartado(s) por estarem antes da data de início.
+      } @else {
+        Nenhum lançamento encontrado no extrato.
+      }
+    </p>
+  }
+
   @if (items().length > 0) {
     @if (discardedCount() > 0) {
       <p class="discarded">{{ discardedCount() }} lançamento(s) descartado(s) por estarem antes da data de início.</p>

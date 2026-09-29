@@ -126,6 +126,30 @@ describe('StatementImportComponent', () => {
       expect(c.items().length).toBe(3);
     });
 
+    it('exibe estado vazio quando o extrato não tem lançamentos', () => {
+      api.previewStatementImport.and.returnValue(of({ items: [], discardedByDateCount: 0 } as any));
+      c.onFileSelected(fileEvent(makeFile('e.pdf')));
+      c.preview();
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('.empty-state')?.textContent).toContain('Nenhum lançamento encontrado');
+    });
+
+    it('estado vazio informa descartados pela data de início', () => {
+      api.previewStatementImport.and.returnValue(of({ items: [], discardedByDateCount: 4 } as any));
+      c.onFileSelected(fileEvent(makeFile('e.pdf')));
+      c.preview();
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('.empty-state')?.textContent).toContain('4 lançamento(s) descartado(s)');
+    });
+
+    it('não exibe estado vazio antes do preview nem quando há itens', () => {
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('.empty-state')).toBeNull();
+      loadPreview();
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('.empty-state')).toBeNull();
+    });
+
     it('exibe err.error.message em erro 400 (ex.: senha incorreta)', () => {
       api.previewStatementImport.and.returnValue(
         throwError(() => ({ status: 400, error: { message: 'Senha incorreta.' } })));
