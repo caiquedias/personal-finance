@@ -25,6 +25,7 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 | #384 | Expurgo - Análise Detalhe — Filtros por aba (padrão tela de Despesas) | 2026-07-05 | [384.md](384.md) |
 | #419 | [Import] Update de Income — backend e frontend | 2026-09-28 | [419.md](419.md) |
 | #420 | [Import] Parser PDF do extrato C6 Bank | 2026-09-28 | [420.md](420.md) |
+| #421 | [Import] Preview de importação — classificação e duplicatas | 2026-09-28 | [421.md](421.md) |
 
 ---
 
@@ -37,7 +38,7 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 | Login / Auth UI | #387 | 2026-07-04 |
 | Segurança / JWT | #389 | 2026-07-04 |
 | Import (Income) | #419 | 2026-09-28 |
-| Import (Extrato C6 PDF) | #420 | 2026-09-28 |
+| Import (Extrato C6 PDF) | #420, #421 | 2026-09-28 |
 
 ---
 
@@ -50,9 +51,9 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 - **Interfaces:** IPurgeRepository, ICsvExportService (Application layer)
 
 ### Application
-- **Use cases:** ExportPeriodUseCase, PurgePeriodUseCase, GetPurgeRecordsUseCase, DeletePurgeRecordUseCase, GetEligiblePeriodsUseCase, UpdateIncomeUseCase (#419 — ownership 400 via DomainException, mesmo padrão do UpdateExpenseUseCase)
+- **Use cases:** ExportPeriodUseCase, PurgePeriodUseCase, GetPurgeRecordsUseCase, DeletePurgeRecordUseCase, GetEligiblePeriodsUseCase, UpdateIncomeUseCase (#419 — ownership 400 via DomainException, mesmo padrão do UpdateExpenseUseCase), PreviewStatementImportUseCase (#421 — preview de extrato sem persistência; filtro `fromDate` por PostingDate, Receita/Despesa pelo sinal, categoria sugerida, transferência interna e duplicata por userId), StatementEntryClassifier (#421)
 - **Interfaces:** IStatementParserService (#420 — parser de extrato PDF com senha; `ParseAsync(Stream, password, ct)`)
-- **DTOs:** ParsedStatementEntryDto (#420 — record: EventDate, PostingDate, RawType, Description, Amount com sinal), EligiblePeriodDto, PurgeRecordDto, UpdateIncomeDto (#419 — sem PeriodId, sem SourceType)
+- **DTOs:** StatementPreviewItemDto, StatementPreviewResultDto (#421 — Items + DiscardedByDateCount), ParsedStatementEntryDto (#420 — record: EventDate, PostingDate, RawType, Description, Amount com sinal), EligiblePeriodDto, PurgeRecordDto, UpdateIncomeDto (#419 — sem PeriodId, sem SourceType)
 - **Use cases alterados:** GetPurgeRecordsUseCase — retorna `IEnumerable<PurgeRecordDto>` (antes `IEnumerable<PurgeRecord>`), mapeamento interno com `ItemCount = ExpenseCount + IncomeCount`
 - **Validações (FluentValidation):** —
 
@@ -69,6 +70,7 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
   - POST /api/v1/purge/{periodId} — requer { csvFileName } no body
   - GET /api/v1/purge/records — retorna `year`, `month`, `itemCount` (DTO, não entidade direta)
   - DELETE /api/v1/purge/records/{id}
+  - POST /api/v1/import/statement/preview — multipart (file .pdf ≤10 MB, password?, fromDate?); devolve preview sem persistir; 400 para arquivo ausente/vazio, extensão inválida, senha errada ou PDF inválido (#421)
   - PUT /api/v1/incomes/{id} — update de receita; 204; 400 para amount inválido/ownership/not-found/soft-deleted; PeriodId imutável (#419)
 - **Auth:** JWT Bearer; AuthController [AllowAnonymous]; Admin [Authorize(Roles="Admin")]; `JwtSettings:SecretKey` não é mais hardcoded em `appsettings.json` — configurado via User Secrets (dev) / env var `JwtSettings__SecretKey` no Render (homolog/prod) (#389)
 - **Converters:** `FlexibleEnumConverterFactory` registrada globalmente via `AddJsonOptions` — deserializa enums de int, string numérica ou nome; serializa como int
