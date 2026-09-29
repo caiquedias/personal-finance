@@ -238,6 +238,18 @@ describe('StatementImportComponent', () => {
       expect(c.saving()).toBeFalse();
     });
 
+    it('canSave é false após save com sucesso e o resumo permanece', () => {
+      c.save();
+      expect(c.result()).not.toBeNull();
+      expect(c.canSave()).toBeFalse();
+    });
+
+    it('segundo save após sucesso não dispara outro POST de confirm', () => {
+      c.save();
+      c.save();
+      expect(api.confirmStatementImport).toHaveBeenCalledTimes(1);
+    });
+
     it('exibe err.error.message em erro 400 do confirm e mantém itens', () => {
       api.confirmStatementImport.and.returnValue(
         throwError(() => ({ status: 400, error: { message: 'Data futura não permitida.' } })));
