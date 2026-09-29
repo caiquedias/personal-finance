@@ -121,6 +121,33 @@ export class StatementImportComponent implements OnInit {
     return list.length > 0 && !this.saving() && list.every(i => this.isItemValid(i));
   }
 
+  save(): void {
+    if (!this.canSave()) return;
+
+    this.saving.set(true);
+    this.errorMessage.set(null);
+    const request = {
+      items: this.items().map(i => ({
+        date:        i.date,
+        description: i.description.trim(),
+        amount:      i.amount,
+        kind:        i.kind,
+        categoryId:  i.kind === 'Expense' ? i.categoryId : null,
+        sourceType:  i.sourceType,
+      })),
+    };
+    this.api.confirmStatementImport(request).subscribe({
+      next: res => {
+        this.result.set(res);
+        this.saving.set(false);
+      },
+      error: err => {
+        this.errorMessage.set(err?.error?.message ?? 'Erro ao salvar o extrato.');
+        this.saving.set(false);
+      },
+    });
+  }
+
   // Data local yyyy-MM-dd (sem toISOString, que converte para UTC)
   private todayIso(): string {
     const d = new Date();

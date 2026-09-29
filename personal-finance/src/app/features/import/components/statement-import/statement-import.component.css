@@ -26,3 +26,6 @@
 
 .muted { color: var(--text-muted, #888); }
 .btn-remove { background: none; border: none; cursor: pointer; color: #c0392b; }
+
+.summary { margin-top: 16px; padding: 12px; border-radius: 6px; border: 1px solid var(--border, #ccc); }
+.actions { margin-top: 16px; display: flex; justify-content: flex-end; }

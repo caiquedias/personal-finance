@@ -83,5 +83,19 @@
         </tbody>
       </table>
     </div>
+
+    <div class="actions">
+      <button type="button" class="btn-primary" [disabled]="!canSave()" (click)="save()">
+        {{ saving() ? 'Salvando...' : 'Confirmar importação' }}
+      </button>
+    </div>
+  }
+
+  @if (result(); as r) {
+    <div class="summary" role="status">
+      <strong>Importação concluída.</strong>
+      Períodos criados: {{ r.periodsCreated }} · reaproveitados: {{ r.periodsReused }} ·
+      despesas: {{ r.expensesCreated }} · receitas: {{ r.incomesCreated }}
+    </div>
   }
 </div>
