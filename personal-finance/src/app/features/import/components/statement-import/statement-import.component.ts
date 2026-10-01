@@ -87,6 +87,22 @@ export class StatementImportComponent implements OnInit {
     return m ? `${m[3]}/${m[2]}/${m[1]}` : '';
   });
 
+  // Período(s) de destino: Ano+Mês+quinzena (Day <= 15 = 1ª), igual ao backend. Sem Date (fuso)
+  readonly targetPeriodLabel = computed(() => {
+    const keys = new Set<string>();
+    for (const i of this.items()) {
+      const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(i.date);
+      if (!m) continue;
+      keys.add(`${m[1]}-${m[2]}-${+m[3] <= 15 ? 1 : 2}`);
+    }
+    const labels = [...keys].sort().map(k => {
+      const [y, mo, f] = k.split('-');
+      return `${mo}/${y} (${f}ª quinzena)`;
+    });
+    if (labels.length === 0) return '';
+    return labels.length === 1 ? labels[0] : `${labels.length} períodos: ${labels.join(", ")}`;
+  });
+
   constructor() {
     this.destroyRef.onDestroy(() => this.clearTicker());
   }

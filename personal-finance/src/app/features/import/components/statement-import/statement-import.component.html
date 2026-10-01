@@ -178,11 +178,19 @@
       </table>
     </div>
 
-    <div class="actions">
-      <button type="button" class="btn btn-primary" [disabled]="!canSave()" (click)="save()">
-        {{ saving() ? 'Salvando...' : 'Confirmar importação' }}
-      </button>
-    </div>
+    @if (state() === 'preview') {
+      <div class="action-bar">
+        <div class="action-bar-info">
+          <span class="action-bar-period">Destino: {{ targetPeriodLabel() }}</span>
+          @if (pendingCount() > 0) {
+            <span class="action-bar-pending">{{ pendingCount() }} sem categoria — defina antes de importar</span>
+          }
+        </div>
+        <button type="button" class="btn btn-primary" [disabled]="!canSave()" (click)="save()">
+          Importar {{ items().length }} lançamentos
+        </button>
+      </div>
+    }
   }
 
   @if (result(); as r) {
