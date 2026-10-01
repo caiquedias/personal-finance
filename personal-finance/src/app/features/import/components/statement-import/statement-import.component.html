@@ -90,6 +90,10 @@
     </p>
   }
 
+  @if (resetDone() && state() === 'empty') {
+    <p class="empty-state">Pronto para um novo extrato. Selecione um PDF acima.</p>
+  }
+
   @if (items().length > 0) {
     @if (discardedCount() > 0) {
       <p class="discarded">{{ discardedCount() }} lançamento(s) descartado(s) por estarem antes da data de início.</p>
@@ -194,10 +198,30 @@
   }
 
   @if (result(); as r) {
-    <div class="summary" role="status">
-      <strong>Importação concluída.</strong>
-      Períodos criados: {{ r.periodsCreated }} · reaproveitados: {{ r.periodsReused }} ·
-      despesas: {{ r.expensesCreated }} · receitas: {{ r.incomesCreated }}
+    <div class="success-screen" role="status">
+      <div class="success-banner">
+        <strong>Importação concluída.</strong>
+      </div>
+      <div class="success-cards">
+        <div class="success-card" data-card="expenses">
+          <span class="success-card-label">Despesas</span>
+          <strong class="success-card-value">{{ r.expensesCreated }}</strong>
+        </div>
+        <div class="success-card" data-card="incomes">
+          <span class="success-card-label">Receitas</span>
+          <strong class="success-card-value">{{ r.incomesCreated }}</strong>
+        </div>
+        <div class="success-card" data-card="periods">
+          <span class="success-card-label">Períodos</span>
+          <strong class="success-card-value">{{ r.periodsCreated + r.periodsReused }}</strong>
+          <span class="success-card-sub">{{ r.periodsCreated }} criado(s) · {{ r.periodsReused }} reaproveitado(s)</span>
+        </div>
+      </div>
+      <div class="success-actions">
+        <button type="button" class="btn btn-primary" data-action="view-period" (click)="goTo('/periods')">Ver período</button>
+        <button type="button" class="btn btn-secondary" data-action="view-expenses" (click)="goTo('/expenses')">Ver despesas</button>
+        <button type="button" class="btn btn-ghost" data-action="import-another" (click)="importAnother()">Importar outro extrato</button>
+      </div>
     </div>
   }
 </div>
