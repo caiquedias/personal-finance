@@ -59,6 +59,34 @@ export class StatementImportComponent implements OnInit {
     return 'empty';
   });
 
+  // Cards de resumo: derivam de items() e fromDate()
+  readonly expenseItems = computed(() => this.items().filter(i => i.kind === 'Expense'));
+  readonly incomeItems  = computed(() => this.items().filter(i => i.kind === 'Income'));
+  readonly expenseSum   = computed(() => this.expenseItems().reduce((s, i) => s + i.amount, 0));
+  readonly incomeSum    = computed(() => this.incomeItems().reduce((s, i) => s + i.amount, 0));
+
+  private static isPending(i: StatementReviewItem): boolean {
+    return i.kind === 'Expense' && !i.categoryId;
+  }
+  private static hasWarning(i: StatementReviewItem): boolean {
+    return i.isLikelyInternalTransfer || i.isLikelyDuplicate;
+  }
+
+  readonly pendingCount = computed(() =>
+    this.items().filter(StatementImportComponent.isPending).length);
+  readonly warnCount = computed(() =>
+    this.items().filter(StatementImportComponent.hasWarning).length);
+  // União de pendentes e com aviso (item nas duas condições conta uma vez)
+  readonly attentionCount = computed(() =>
+    this.items().filter(i =>
+      StatementImportComponent.isPending(i) || StatementImportComponent.hasWarning(i)).length);
+
+  // yyyy-MM-dd -> dd/MM/yyyy sem passar por Date (evita deslocamento de fuso)
+  readonly discardedSinceLabel = computed(() => {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(this.fromDate());
+    return m ? `${m[3]}/${m[2]}/${m[1]}` : '';
+  });
+
   constructor() {
     this.destroyRef.onDestroy(() => this.clearTicker());
   }
