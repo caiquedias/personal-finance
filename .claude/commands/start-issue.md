@@ -32,23 +32,27 @@ Após confirmação, execute **nesta ordem exata**:
 ```bash
 git fetch origin
 git worktree add .claude/worktrees/<id>-<slug> -b claude/<id>-<slug> origin/develop
+cd .claude/worktrees/<id>-<slug>        # push SEMPRE de dentro do worktree
 git push origin HEAD:refs/heads/claude/<id>-<slug>
 git branch --set-upstream-to=origin/claude/<id>-<slug> claude/<id>-<slug>
-git checkout develop
-git checkout -b feat/<id>-<slug> origin/develop
-git push origin HEAD:refs/heads/feat/<id>-<slug>
-git branch --set-upstream-to=origin/feat/<id>-<slug>
-git checkout develop
+# feat/ sem checkout: não sai do worktree
+git push origin origin/develop:refs/heads/feat/<id>-<slug>
+git branch feat/<id>-<slug> origin/develop
+git branch --set-upstream-to=origin/feat/<id>-<slug> feat/<id>-<slug>
 ```
 
 > Nunca usar `git push -u origin <branch>` aqui: a branch criada a partir de `origin/develop` herda esse upstream
 > e o push tenta publicar em `develop` (bloqueado pelo hook). Refspec explícito + `--set-upstream-to`.
+> Nunca rodar `git push origin HEAD:...` no checkout principal (HEAD = `develop`): o hook bloqueia.
 
 **Verificação obrigatória antes de spawnar o Implementador:**
 ```bash
 cd .claude/worktrees/<id>-<slug> && git branch --show-current
 ```
 O output **deve ser exatamente** `claude/<id>-<slug>`.
+
+**Issue com frontend:** o worktree não tem `node_modules`. Rode `npm ci` em `personal-finance/` (no worktree)
+antes do Red, para ele não gastar um spawn instalando dependências.
 
 Mova a issue para **In Progress** via board:
 ```bash
