@@ -771,4 +771,209 @@ describe('StatementImportComponent', () => {
       // fakeAsync falha o teste se restar timer periódico/pendente
     }));
   });
+
+  describe('cards de resumo (#445)', () => {
+    // Contrato dos novos computeds (ainda inexistentes no componente)
+    interface SummaryApi {
+      expenseItems(): unknown[];
+      incomeItems(): unknown[];
+      expenseSum(): number;
+      incomeSum(): number;
+      pendingCount(): number;
+      warnCount(): number;
+      attentionCount(): number;
+      discardedSinceLabel(): string;
+    }
+    const s = () => c as unknown as SummaryApi;
+    const el = () => fixture.nativeElement as HTMLElement;
+    const cardValue = (key: string) =>
+      el().querySelector(`.summary-card[data-card="${key}"] .summary-card-value`)?.textContent?.trim();
+
+    describe('computeds', () => {
+      it('valores iniciais sobre o PREVIEW', () => {
+        loadPreview();
+        expect(s().expenseItems().length).toBe(2);
+        expect(s().incomeItems().length).toBe(1);
+        expect(s().expenseSum()).toBe(150);
+        expect(s().incomeSum()).toBe(5000);
+        expect(s().pendingCount()).toBe(1);
+        expect(s().warnCount()).toBe(1);
+        expect(s().attentionCount()).toBe(1);
+      });
+
+      it('sem itens: tudo zerado', () => {
+        expect(s().expenseSum()).toBe(0);
+        expect(s().incomeSum()).toBe(0);
+        expect(s().pendingCount()).toBe(0);
+        expect(s().attentionCount()).toBe(0);
+      });
+
+      it('updateItem de amount recalcula a soma', () => {
+        loadPreview();
+        c.updateItem(0, { amount: 300 });
+        expect(s().expenseSum()).toBe(350);
+      });
+
+      it('amount numérico soma sem concatenar', () => {
+        loadPreview();
+        c.updateItem(0, { amount: 0.1 });
+        c.updateItem(2, { amount: 0.2 });
+        expect(s().expenseSum()).toBeCloseTo(0.3, 5);
+      });
+
+      it('updateItem de categoryId zera pendentes', () => {
+        loadPreview();
+        c.updateItem(2, { categoryId: 'cat-1' });
+        expect(s().pendingCount()).toBe(0);
+      });
+
+      it('remover categoria de Expense aumenta pendentes', () => {
+        loadPreview();
+        c.updateItem(0, { categoryId: null });
+        expect(s().pendingCount()).toBe(2);
+      });
+
+      it('Income sem categoria não conta como pendente', () => {
+        loadPreview();
+        expect(c.items()[1].categoryId).toBeNull();
+        expect(s().pendingCount()).toBe(1);
+      });
+
+      it('Expense pendente -> Income sai de pendentes e das despesas', () => {
+        loadPreview();
+        c.updateItem(2, { kind: 'Income' });
+        expect(s().pendingCount()).toBe(0);
+        expect(s().expenseItems().length).toBe(1);
+        expect(s().incomeItems().length).toBe(2);
+        expect(s().expenseSum()).toBe(100);
+        expect(s().incomeSum()).toBe(5050);
+      });
+
+      it('removeItem recalcula tudo', () => {
+        loadPreview();
+        c.removeItem(2);
+        expect(s().expenseItems().length).toBe(1);
+        expect(s().expenseSum()).toBe(100);
+        expect(s().pendingCount()).toBe(0);
+        expect(s().warnCount()).toBe(0);
+        expect(s().attentionCount()).toBe(0);
+      });
+
+      it('attentionCount é união: item pendente e com aviso conta 1', () => {
+        loadPreview();
+        expect(s().pendingCount() + s().warnCount()).toBe(2);
+        expect(s().attentionCount()).toBe(1);
+      });
+
+      it('attentionCount soma quando pendentes e avisos são disjuntos', () => {
+        loadPreview();
+        c.updateItem(2, { categoryId: 'cat-1' }); // item 2 só com aviso
+        c.updateItem(0, { categoryId: null });    // item 0 só pendente
+        expect(s().pendingCount()).toBe(1);
+        expect(s().warnCount()).toBe(1);
+        expect(s().attentionCount()).toBe(2);
+      });
+
+      it('só duplicate conta como aviso', () => {
+        loadPreview();
+        c.updateItem(2, { categoryId: 'cat-1', isLikelyInternalTransfer: false });
+        expect(s().warnCount()).toBe(1);
+        expect(s().attentionCount()).toBe(1);
+      });
+
+      it('só transferência interna conta como aviso', () => {
+        loadPreview();
+        c.updateItem(2, { categoryId: 'cat-1', isLikelyDuplicate: false });
+        expect(s().warnCount()).toBe(1);
+        expect(s().attentionCount()).toBe(1);
+      });
+
+      it('discardedSinceLabel formata fromDate sem deslocar o dia', () => {
+        c.fromDate.set('2026-01-01');
+        expect(s().discardedSinceLabel()).toBe('01/01/2026');
+      });
+
+      it('discardedSinceLabel com fromDate vazio não exibe Invalid Date', () => {
+        c.fromDate.set('');
+        expect(s().discardedSinceLabel()).toBeDefined();
+        expect(s().discardedSinceLabel()).not.toContain('Invalid');
+        expect(s().discardedSinceLabel()).not.toContain('NaN');
+      });
+    });
+
+    describe('DOM', () => {
+      it('renderiza 4 cards de resumo', () => {
+        loadPreview();
+        expect(el().querySelectorAll('.summary-card').length).toBe(4);
+      });
+
+      it('cards refletem contagens do preview', () => {
+        loadPreview();
+        expect(cardValue('total')).toBe('3');
+        expect(cardValue('attention')).toBe('1');
+        expect(el().querySelector('.summary-card[data-card="expense"]')?.textContent).toContain('2');
+        expect(el().querySelector('.summary-card[data-card="income"]')?.textContent).toContain('1');
+      });
+
+      it('cards atualizam em tempo real ao remover linha', () => {
+        loadPreview();
+        c.removeItem(2);
+        fixture.detectChanges();
+        expect(cardValue('total')).toBe('2');
+        expect(cardValue('attention')).toBe('0');
+      });
+
+      it('não renderiza cards sem itens', () => {
+        expect(el().querySelectorAll('.summary-card').length).toBe(0);
+      });
+
+      it('select de Categoria tem classe de pendente só em Expense sem categoria', () => {
+        loadPreview();
+        const rows = el().querySelectorAll('.review-table tbody tr');
+        expect(rows[0].querySelector('select.select-pending')).toBeNull();      // Expense com categoria
+        expect(rows[1].querySelector('select.select-pending')).toBeNull();      // Income sem categoria
+        expect(rows[2].querySelector('select.select-pending')).not.toBeNull();  // Expense sem categoria
+      });
+
+      it('classe de pendente some ao escolher categoria', () => {
+        loadPreview();
+        c.updateItem(2, { categoryId: 'cat-1' });
+        fixture.detectChanges();
+        expect(el().querySelector('select.select-pending')).toBeNull();
+      });
+
+      it('pills de Avisos exibem textos esperados', () => {
+        loadPreview();
+        const row = el().querySelectorAll('.review-table tbody tr')[2];
+        expect(row.textContent).toContain('Transferência interna');
+        expect(row.textContent).toContain('Possível duplicado');
+      });
+
+      it('input de valor restilizado ainda aciona updateItem e canSave reage', async () => {
+        loadPreview();
+        c.updateItem(2, { categoryId: 'cat-1' });
+        expect(c.canSave()).toBeTrue();
+        const input = el().querySelectorAll('.review-table tbody tr')[0]
+          .querySelector('input[type="number"]') as HTMLInputElement;
+        input.value = '0';
+        input.dispatchEvent(new Event('input'));
+        fixture.detectChanges();
+        await fixture.whenStable();
+        expect(c.items()[0].amount).toBe(0);
+        expect(typeof c.items()[0].amount).toBe('number');
+        expect(c.canSave()).toBeFalse();
+      });
+
+      it('input de valor atualiza soma do card de despesas', async () => {
+        loadPreview();
+        const input = el().querySelectorAll('.review-table tbody tr')[0]
+          .querySelector('input[type="number"]') as HTMLInputElement;
+        input.value = '200';
+        input.dispatchEvent(new Event('input'));
+        fixture.detectChanges();
+        await fixture.whenStable();
+        expect(s().expenseSum()).toBe(250);
+      });
+    });
+  });
 });
