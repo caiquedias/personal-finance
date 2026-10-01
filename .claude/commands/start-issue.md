@@ -104,6 +104,11 @@ Passe no prompt:
 
 Aguarde GREEN CONCLUÍDO → passe para próxima task.
 
+**Hand-back vazio ("placeholder")**: o Green já devolveu relatório vazio em 2 de 2 spawns na #464 (os demais
+agentes, não). Não reenvie nem assuma sucesso: confirme no worktree com `git log --oneline -3`,
+`git status --short` e `git diff HEAD~1 --stat`; se o commit existe e o diff bate com a task, siga para o QA,
+que roda a suíte e é quem confirma os testes.
+
 **Agrupar tasks triviais fortemente acopladas num único spawn de Green.** Quando 2+ tasks são
 pequenas (juntas < ~60 linhas de produção) e uma é pré-requisito da outra para qualquer teste rodar,
 spawne **um** Green nomeando todos os IDs no prompt. O default continua sendo um Green por task.
