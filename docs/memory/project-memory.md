@@ -31,6 +31,7 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 | #443 | Redesign Extrato PDF (1/5): casca visual — dropzone e estados vazio/erro | 2026-10-01 | [443.md](443.md) |
 | #444 | Redesign Extrato PDF (2/5): stepper + estado unificado + card de processamento | 2026-10-01 | [444.md](444.md) |
 | #445 | Redesign Extrato PDF (3/5): cards de resumo + tabela de revisão | 2026-10-01 | [445.md](445.md) |
+| #446 | Redesign Extrato PDF (4/5): barra de ação fixa + tela de sucesso | 2026-10-01 | [446.md](446.md) |
 
 ---
 
@@ -43,7 +44,7 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 | Login / Auth UI | #387 | 2026-07-04 |
 | Segurança / JWT | #389 | 2026-07-04 |
 | Import (Income) | #419 | 2026-09-28 |
-| Import (Extrato C6 PDF) | #420, #421, #422, #423, #443, #444, #445 | 2026-10-01 |
+| Import (Extrato C6 PDF) | #420, #421, #422, #423, #443, #444, #445, #446 | 2026-10-01 |
 
 ---
 
@@ -92,7 +93,7 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 - **Sidebar:** item "Expurgo" com ícone `archive` e rota `/purge`
 - **Auth:** authInterceptor injeta token automaticamente
 - **Login:** `LoginComponent` sem seção de cadastro — link `/register` e `RouterLink` removidos (#387)
-- **Import (Extrato PDF, #423):** `/import` com abas "Legado | Extrato PDF" (`ImportComponent.activeTab`/`setTab`); `StatementImportComponent` (`features/import/components/statement-import/`) — upload .pdf ≤10 MB + senha + data de início nativa, tabela editável, badges de transferência interna/duplicata (só sinalizam), `save()` limpa `items` após sucesso. **#443:** casca visual dos estados vazio/erro — dropzone `.pdf-dropzone` com arraste (`isDragging`, `onDragOver`/`onDragLeave`/`onDrop`, validação comum em `acceptFile`), card `.pdf-file-card`, estado `.has-error` derivado (`errorMessage() && items().length === 0 && !result()`). **#444:** computed `state` (`empty|proc|preview|done|err`, precedência proc>done>err>preview>empty) que alimenta stepper `.stepper` e card `.proc-card`; `simulatedProgress` é ticker cosmético (teto 90%, 100% ao fim da request, limpo no destroy). **#445:** cards `.summary-cards` (Lançamentos/Despesas/Receitas/Precisam de atenção) via computeds `expenseItems/incomeItems/expenseSum/incomeSum/pendingCount/warnCount/attentionCount` (união) e `discardedSinceLabel` (regex, sem `Date`); tabela com pills `.pill-*`, `.select-pending` (âmbar) e `.cell-input` (edição inline preservada). `ApiService.previewStatementImport`/`confirmStatementImport`; models `StatementPreviewItem`, `StatementPreviewResult`, `ConfirmStatementItemRequest`, `ConfirmStatementImportRequest`, `ConfirmStatementImportResult`
+- **Import (Extrato PDF, #423):** `/import` com abas "Legado | Extrato PDF" (`ImportComponent.activeTab`/`setTab`); `StatementImportComponent` (`features/import/components/statement-import/`) — upload .pdf ≤10 MB + senha + data de início nativa, tabela editável, badges de transferência interna/duplicata (só sinalizam), `save()` limpa `items` após sucesso. **#443:** casca visual dos estados vazio/erro — dropzone `.pdf-dropzone` com arraste (`isDragging`, `onDragOver`/`onDragLeave`/`onDrop`, validação comum em `acceptFile`), card `.pdf-file-card`, estado `.has-error` derivado (`errorMessage() && items().length === 0 && !result()`). **#444:** computed `state` (`empty|proc|preview|done|err`, precedência proc>done>err>preview>empty) que alimenta stepper `.stepper` e card `.proc-card`; `simulatedProgress` é ticker cosmético (teto 90%, 100% ao fim da request, limpo no destroy). **#445:** cards `.summary-cards` (Lançamentos/Despesas/Receitas/Precisam de atenção) via computeds `expenseItems/incomeItems/expenseSum/incomeSum/pendingCount/warnCount/attentionCount` (união) e `discardedSinceLabel` (regex, sem `Date`); tabela com pills `.pill-*`, `.select-pending` (âmbar) e `.cell-input` (edição inline preservada). `ApiService.previewStatementImport`/`confirmStatementImport`; models `StatementPreviewItem`, `StatementPreviewResult`, `ConfirmStatementItemRequest`, `ConfirmStatementImportRequest`, `ConfirmStatementImportResult`. **#446:** barra sticky `.action-bar` (só em `state()==='preview'`; `targetPeriodLabel` informativo, botão "Importar N lançamentos" = `save()` inalterado) e tela `.success-screen` (cards Despesas/Receitas/Períodos, ações `/periods`, `/expenses`, `importAnother()` com `resetDone`)
 
 ### Banco de dados
 - **Lookup tables seeded:** Role, PaymentStatus, SourceType, FortnightType
