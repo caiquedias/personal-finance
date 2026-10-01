@@ -74,3 +74,23 @@
 
 .pdf-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
 .pdf-preview-btn { align-self: flex-start; }
+
+/* Stepper */
+.stepper { display: flex; gap: 8px; list-style: none; margin: 0; padding: 0; }
+.step { flex: 1; display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text-subtle); padding-bottom: 8px; border-bottom: 2px solid var(--border); }
+.step-dot { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--border2); font-size: 0.75rem; }
+.step.complete { color: var(--text-muted); border-bottom-color: var(--color-success); }
+.step.complete .step-dot { background: var(--color-success); border-color: var(--color-success); color: var(--surface-raised); }
+.step.active { color: var(--text); font-weight: 600; border-bottom-color: var(--sage2); }
+.step.active .step-dot { background: var(--sage2); border-color: var(--sage2); color: var(--surface-raised); }
+
+/* Card de processamento */
+.proc-card { display: flex; flex-direction: column; gap: 12px; padding: 16px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface-raised); box-shadow: var(--shadow-card); }
+.proc-head { display: flex; justify-content: space-between; align-items: baseline; }
+.proc-percent { font-size: 0.85rem; color: var(--text-muted); }
+.proc-bar { height: 8px; border-radius: var(--radius-sm); background: var(--bg3); overflow: hidden; }
+.proc-bar-fill { height: 100%; background: var(--sage2); transition: width var(--transition); }
+.proc-checklist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: 0.85rem; color: var(--text-subtle); }
+.proc-checklist li::before { content: '○'; margin-right: 8px; }
+.proc-checklist li.done { color: var(--text); }
+.proc-checklist li.done::before { content: '✓'; color: var(--color-success); }

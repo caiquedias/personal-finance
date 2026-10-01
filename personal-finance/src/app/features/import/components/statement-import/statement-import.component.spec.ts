@@ -1,5 +1,5 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { of, throwError } from 'rxjs';
+import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { of, Subject, throwError } from 'rxjs';
 import { StatementImportComponent } from './statement-import.component';
 import { ApiService } from '../../../../core/services/api.service';
 
@@ -432,5 +432,342 @@ describe('StatementImportComponent', () => {
       expect(() => c.onDrop(dragEvent())).not.toThrow();
       expect(c.selectedFile()).toBeNull();
     });
+  });
+
+  // ---- Issue #444: state unificado, stepper, card de processamento e ticker ----
+  describe('state() — máquina de estados unificada', () => {
+    const el = () => fixture.nativeElement as HTMLElement;
+    const errPreview = () => api.previewStatementImport.and.returnValue(
+      throwError(() => ({ status: 400, error: { message: 'Senha incorreta.' } })));
+
+    it('inicial: empty', () => {
+      expect(c.state()).toBe('empty');
+    });
+
+    it('arquivo selecionado: empty', () => {
+      c.onFileSelected(fileEvent(makeFile('extrato.pdf')));
+      expect(c.state()).toBe('empty');
+    });
+
+    it('preview em voo: proc', () => {
+      api.previewStatementImport.and.returnValue(new Subject<any>());
+      c.onFileSelected(fileEvent(makeFile('extrato.pdf')));
+      c.preview();
+      expect(c.state()).toBe('proc');
+    });
+
+    it('preview ok com itens: preview', () => {
+      loadPreview();
+      expect(c.state()).toBe('preview');
+    });
+
+    it('preview ok sem itens: empty e .empty-state visível', () => {
+      api.previewStatementImport.and.returnValue(of({ items: [], discardedByDateCount: 0 } as any));
+      c.onFileSelected(fileEvent(makeFile('e.pdf')));
+      c.preview();
+      fixture.detectChanges();
+      expect(c.state()).toBe('empty');
+      expect(el().querySelector('.empty-state')).not.toBeNull();
+    });
+
+    it('erro de preview: err', () => {
+      errPreview();
+      loadPreview();
+      expect(c.state()).toBe('err');
+    });
+
+    it('save em voo: proc', () => {
+      loadPreview();
+      c.updateItem(2, { categoryId: 'cat-2' });
+      api.confirmStatementImport.and.returnValue(new Subject<any>());
+      c.save();
+      expect(c.state()).toBe('proc');
+    });
+
+    it('save ok: done', () => {
+      loadPreview();
+      c.updateItem(2, { categoryId: 'cat-2' });
+      c.save();
+      expect(c.state()).toBe('done');
+    });
+
+    it('erro de save com itens mantidos: preview, banner role="alert" e sem .has-error', () => {
+      loadPreview();
+      c.updateItem(2, { categoryId: 'cat-2' });
+      api.confirmStatementImport.and.returnValue(
+        throwError(() => ({ status: 400, error: { message: 'Data futura não permitida.' } })));
+      c.save();
+      fixture.detectChanges();
+      expect(c.state()).toBe('preview');
+      expect(el().querySelector('[role="alert"]')?.textContent).toContain('Data futura não permitida.');
+      expect(el().querySelector('.has-error')).toBeNull();
+      expect(el().querySelectorAll('.review-table tbody tr').length).toBe(3);
+    });
+
+    it('arquivo rejeitado: err, com dropzone e campos visíveis', () => {
+      c.onFileSelected(fileEvent(makeFile('planilha.xlsx')));
+      fixture.detectChanges();
+      expect(c.state()).toBe('err');
+      expect(el().querySelector('.pdf-dropzone')).not.toBeNull();
+      expect(el().querySelector('input[type="password"]')).not.toBeNull();
+      expect(el().querySelector('input[type="date"]')).not.toBeNull();
+    });
+
+    it('drop inválido: err', () => {
+      c.onDrop({ preventDefault: () => {}, dataTransfer: { files: [makeFile('x.xlsx')] } } as unknown as DragEvent);
+      expect(c.state()).toBe('err');
+    });
+
+    it('falha de getCategories: err, com dropzone e campos visíveis', async () => {
+      api.getCategories.and.returnValue(throwError(() => new Error('falha')));
+      const f2 = TestBed.createComponent(StatementImportComponent);
+      f2.detectChanges();
+      const el2 = f2.nativeElement as HTMLElement;
+      expect((f2.componentInstance as any).state()).toBe('err');
+      expect(el2.querySelector('.pdf-dropzone')).not.toBeNull();
+      expect(el2.querySelector('input[type="password"]')).not.toBeNull();
+    });
+
+    it('precedência: done vence errorMessage', () => {
+      c.result.set({ periodsCreated: 1, periodsReused: 0, expensesCreated: 1, incomesCreated: 0 });
+      c.errorMessage.set('qualquer erro');
+      expect(c.state()).toBe('done');
+    });
+
+    it('precedência: proc vence items > 0', () => {
+      loadPreview();
+      c.saving.set(true);
+      expect(c.state()).toBe('proc');
+    });
+
+    it('precedência: proc vence done', () => {
+      c.result.set({ periodsCreated: 1, periodsReused: 0, expensesCreated: 1, incomesCreated: 0 });
+      c.loading.set(true);
+      expect(c.state()).toBe('proc');
+    });
+
+    it('precedência: err vence preview apenas se não há itens (itens + erro => preview)', () => {
+      loadPreview();
+      c.errorMessage.set('erro');
+      expect(c.state()).toBe('preview');
+    });
+  });
+
+  describe('stepper e card de processamento — DOM', () => {
+    const el = () => fixture.nativeElement as HTMLElement;
+    const activeStep = () => el().querySelector('.stepper .step.active')?.textContent ?? '';
+
+    it('renderiza 3 passos: Arquivo, Revisar lançamentos, Importar', () => {
+      const steps = Array.from(el().querySelectorAll('.stepper .step')).map(s => s.textContent);
+      expect(steps.length).toBe(3);
+      expect(steps[0]).toContain('Arquivo');
+      expect(steps[1]).toContain('Revisar lançamentos');
+      expect(steps[2]).toContain('Importar');
+    });
+
+    it('passo ativo: Arquivo em empty', () => {
+      expect(el().querySelectorAll('.stepper .step.active').length).toBe(1);
+      expect(activeStep()).toContain('Arquivo');
+    });
+
+    it('passo ativo: Arquivo em err', () => {
+      c.onFileSelected(fileEvent(makeFile('x.xlsx')));
+      fixture.detectChanges();
+      expect(activeStep()).toContain('Arquivo');
+    });
+
+    it('passo ativo: Revisar em preview', () => {
+      loadPreview();
+      expect(el().querySelectorAll('.stepper .step.active').length).toBe(1);
+      expect(activeStep()).toContain('Revisar lançamentos');
+    });
+
+    it('passo ativo: Importar em proc do save', () => {
+      loadPreview();
+      c.updateItem(2, { categoryId: 'cat-2' });
+      api.confirmStatementImport.and.returnValue(new Subject<any>());
+      c.save();
+      fixture.detectChanges();
+      expect(activeStep()).toContain('Importar');
+    });
+
+    it('passo ativo: Importar em done', () => {
+      loadPreview();
+      c.updateItem(2, { categoryId: 'cat-2' });
+      c.save();
+      fixture.detectChanges();
+      expect(activeStep()).toContain('Importar');
+    });
+
+    it('sem card de processamento fora de proc', () => {
+      expect(el().querySelector('.proc-card')).toBeNull();
+      loadPreview();
+      expect(el().querySelector('.proc-card')).toBeNull();
+    });
+
+    it('card "Lendo o extrato..." durante o preview', () => {
+      api.previewStatementImport.and.returnValue(new Subject<any>());
+      c.onFileSelected(fileEvent(makeFile('extrato.pdf')));
+      c.preview();
+      fixture.detectChanges();
+      expect(el().querySelector('.proc-card')?.textContent).toContain('Lendo o extrato...');
+    });
+
+    it('card "Importando lançamentos..." durante o save', () => {
+      loadPreview();
+      c.updateItem(2, { categoryId: 'cat-2' });
+      api.confirmStatementImport.and.returnValue(new Subject<any>());
+      c.save();
+      fixture.detectChanges();
+      expect(el().querySelector('.proc-card')?.textContent).toContain('Importando lançamentos...');
+    });
+
+    it('card contém checklist cosmético e percentual', () => {
+      api.previewStatementImport.and.returnValue(new Subject<any>());
+      c.onFileSelected(fileEvent(makeFile('extrato.pdf')));
+      c.preview();
+      fixture.detectChanges();
+      const txt = el().querySelector('.proc-card')?.textContent ?? '';
+      expect(txt).toContain('Arquivo enviado');
+      expect(txt).toContain('PDF lido');
+      expect(txt).toContain('Verificando duplicados');
+      expect(txt).toContain('%');
+    });
+
+    it('contrato #443: botão preview segue visível com "Processando..." e desabilitado durante o preview', () => {
+      api.previewStatementImport.and.returnValue(new Subject<any>());
+      c.onFileSelected(fileEvent(makeFile('extrato.pdf')));
+      c.preview();
+      fixture.detectChanges();
+      const btn = el().querySelector('.pdf-preview-btn') as HTMLButtonElement;
+      expect(btn.textContent).toContain('Processando...');
+      expect(btn.disabled).toBeTrue();
+    });
+  });
+
+  describe('ticker de progresso simulado', () => {
+    it('preview: avança em voo, nunca passa de 90 e salta para 100 no sucesso', fakeAsync(() => {
+      const subj = new Subject<any>();
+      api.previewStatementImport.and.returnValue(subj);
+      c.onFileSelected(fileEvent(makeFile('extrato.pdf')));
+      c.preview();
+      expect(c.simulatedProgress()).toBe(0);
+      tick(1000);
+      const early = c.simulatedProgress();
+      expect(early).toBeGreaterThan(0);
+      expect(early).toBeLessThanOrEqual(90);
+      tick(120000);
+      expect(c.simulatedProgress()).toBeGreaterThanOrEqual(early);
+      expect(c.simulatedProgress()).toBeLessThanOrEqual(90);
+      subj.next(PREVIEW);
+      subj.complete();
+      expect(c.simulatedProgress()).toBe(100);
+      tick(120000);
+      expect(c.simulatedProgress()).toBe(100);
+    }));
+
+    it('preview: salta para 100 também em erro', fakeAsync(() => {
+      const subj = new Subject<any>();
+      api.previewStatementImport.and.returnValue(subj);
+      c.onFileSelected(fileEvent(makeFile('extrato.pdf')));
+      c.preview();
+      tick(2000);
+      subj.error({ status: 400, error: { message: 'Senha incorreta.' } });
+      expect(c.simulatedProgress()).toBe(100);
+      tick(120000);
+      expect(c.simulatedProgress()).toBe(100);
+    }));
+
+    it('save: avança em voo até 90 e salta para 100 no sucesso', fakeAsync(() => {
+      loadPreview();
+      c.updateItem(2, { categoryId: 'cat-2' });
+      const subj = new Subject<any>();
+      api.confirmStatementImport.and.returnValue(subj);
+      c.save();
+      expect(c.simulatedProgress()).toBe(0);
+      tick(1000);
+      expect(c.simulatedProgress()).toBeGreaterThan(0);
+      tick(120000);
+      expect(c.simulatedProgress()).toBeLessThanOrEqual(90);
+      subj.next({ periodsCreated: 1, periodsReused: 0, expensesCreated: 1, incomesCreated: 0 });
+      subj.complete();
+      expect(c.simulatedProgress()).toBe(100);
+    }));
+
+    it('save: salta para 100 em erro e mantém itens', fakeAsync(() => {
+      loadPreview();
+      c.updateItem(2, { categoryId: 'cat-2' });
+      const subj = new Subject<any>();
+      api.confirmStatementImport.and.returnValue(subj);
+      c.save();
+      tick(2000);
+      subj.error({ status: 500, error: { message: 'Falha.' } });
+      expect(c.simulatedProgress()).toBe(100);
+      expect(c.items().length).toBe(3);
+      tick(120000);
+      expect(c.simulatedProgress()).toBe(100);
+    }));
+
+    it('zera a cada novo preview()', fakeAsync(() => {
+      const first = new Subject<any>();
+      api.previewStatementImport.and.returnValue(first);
+      c.onFileSelected(fileEvent(makeFile('extrato.pdf')));
+      c.preview();
+      tick(5000);
+      first.next(PREVIEW);
+      first.complete();
+      expect(c.simulatedProgress()).toBe(100);
+
+      const second = new Subject<any>();
+      api.previewStatementImport.and.returnValue(second);
+      c.preview();
+      expect(c.simulatedProgress()).toBe(0);
+      second.next(PREVIEW);
+      second.complete();
+    }));
+
+    it('zera a cada novo save()', fakeAsync(() => {
+      loadPreview();
+      c.updateItem(2, { categoryId: 'cat-2' });
+      const first = new Subject<any>();
+      api.confirmStatementImport.and.returnValue(first);
+      c.save();
+      tick(5000);
+      first.error({ status: 500, error: { message: 'Falha.' } });
+      expect(c.simulatedProgress()).toBe(100);
+
+      const second = new Subject<any>();
+      api.confirmStatementImport.and.returnValue(second);
+      c.save();
+      expect(c.simulatedProgress()).toBe(0);
+      second.error({ status: 500, error: { message: 'Falha.' } });
+    }));
+
+    it('novo preview() em voo cancela o ticker anterior (progresso não acelera)', fakeAsync(() => {
+      const first = new Subject<any>();
+      api.previewStatementImport.and.returnValue(first);
+      c.onFileSelected(fileEvent(makeFile('extrato.pdf')));
+      c.preview();
+      tick(100000);
+      const second = new Subject<any>();
+      api.previewStatementImport.and.returnValue(second);
+      c.preview();
+      expect(c.simulatedProgress()).toBe(0);
+      tick(1000);
+      // um único ticker ativo: após 1s o progresso fica abaixo do teto
+      expect(c.simulatedProgress()).toBeLessThan(90);
+      second.next(PREVIEW);
+      second.complete();
+      first.complete();
+    }));
+
+    it('sem timer pendente após fixture.destroy() com request em voo', fakeAsync(() => {
+      api.previewStatementImport.and.returnValue(new Subject<any>());
+      c.onFileSelected(fileEvent(makeFile('extrato.pdf')));
+      c.preview();
+      tick(1000);
+      fixture.destroy();
+      // fakeAsync falha o teste se restar timer periódico/pendente
+    }));
   });
 });
