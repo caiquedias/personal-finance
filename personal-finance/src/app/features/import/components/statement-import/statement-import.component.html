@@ -95,6 +95,31 @@
       <p class="discarded">{{ discardedCount() }} lançamento(s) descartado(s) por estarem antes da data de início.</p>
     }
 
+    <div class="summary-cards">
+      <div class="summary-card" data-card="total">
+        <span class="summary-card-label">Lançamentos</span>
+        <strong class="summary-card-value">{{ items().length }}</strong>
+        @if (discardedSinceLabel()) {
+          <span class="summary-card-sub">desde {{ discardedSinceLabel() }}</span>
+        }
+      </div>
+      <div class="summary-card" data-card="expense">
+        <span class="summary-card-label">Despesas</span>
+        <strong class="summary-card-value">{{ expenseItems().length }}</strong>
+        <span class="summary-card-sub">R$ {{ expenseSum() | number:'1.2-2' }}</span>
+      </div>
+      <div class="summary-card" data-card="income">
+        <span class="summary-card-label">Receitas</span>
+        <strong class="summary-card-value">{{ incomeItems().length }}</strong>
+        <span class="summary-card-sub">R$ {{ incomeSum() | number:'1.2-2' }}</span>
+      </div>
+      <div class="summary-card" data-card="attention" [class.has-attention]="attentionCount() > 0">
+        <span class="summary-card-label">Precisam de atenção</span>
+        <strong class="summary-card-value">{{ attentionCount() }}</strong>
+        <span class="summary-card-sub">{{ pendingCount() }} sem categoria · {{ warnCount() }} com aviso</span>
+      </div>
+    </div>
+
     <div class="table-wrapper">
       <table class="review-table">
         <thead>
@@ -107,21 +132,21 @@
             <tr [class.row-warning]="item.isLikelyInternalTransfer || item.isLikelyDuplicate"
                 [class.row-invalid]="!isItemValid(item)">
               <td>
-                <input type="date" [ngModel]="item.date" (ngModelChange)="updateItem(i, { date: $event })" />
+                <input class="cell-input" type="date" [ngModel]="item.date" (ngModelChange)="updateItem(i, { date: $event })" />
               </td>
               <td>
-                <input type="text" maxlength="200" [ngModel]="item.description"
+                <input class="cell-input" type="text" maxlength="200" [ngModel]="item.description"
                        (ngModelChange)="updateItem(i, { description: $event })" />
               </td>
               <td>
-                <select [ngModel]="item.kind" (ngModelChange)="updateItem(i, { kind: $event })">
+                <select class="pill pill-select" [class.pill-expense]="item.kind === 'Expense'" [class.pill-income]="item.kind === 'Income'" aria-label="Tipo" [ngModel]="item.kind" (ngModelChange)="updateItem(i, { kind: $event })">
                   <option value="Expense">Despesa</option>
                   <option value="Income">Receita</option>
                 </select>
               </td>
               <td>
                 @if (item.kind === 'Expense') {
-                  <select [ngModel]="item.categoryId" (ngModelChange)="updateItem(i, { categoryId: $event })">
+                  <select class="cell-input" [class.select-pending]="!item.categoryId" [ngModel]="item.categoryId" (ngModelChange)="updateItem(i, { categoryId: $event })">
                     <option [ngValue]="null">Selecione...</option>
                     @for (cat of categories(); track cat.id) {
                       <option [ngValue]="cat.id">{{ cat.name }}</option>
@@ -132,16 +157,16 @@
                 }
               </td>
               <td>
-                <input type="number" step="0.01" min="0" [ngModel]="item.amount"
+                <input class="cell-input" type="number" step="0.01" min="0" [ngModel]="item.amount"
                        (ngModelChange)="updateItem(i, { amount: +$event })" />
                 <small class="muted">R$ {{ item.amount | number:'1.2-2' }}</small>
               </td>
               <td>
                 @if (item.isLikelyInternalTransfer) {
-                  <span class="badge badge-warning" title="Possível transferência entre contas próprias">Transferência interna</span>
+                  <span class="pill pill-warn" title="Possível transferência entre contas próprias">Transferência interna</span>
                 }
                 @if (item.isLikelyDuplicate) {
-                  <span class="badge badge-danger" title="Possível lançamento já existente">Duplicata</span>
+                  <span class="pill pill-dup" title="Possível lançamento já existente">Possível duplicado</span>
                 }
               </td>
               <td>
