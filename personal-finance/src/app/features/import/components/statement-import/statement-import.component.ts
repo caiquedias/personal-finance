@@ -39,6 +39,7 @@ export class StatementImportComponent implements OnInit {
   readonly loading        = signal(false);
   readonly saving         = signal(false);
   readonly previewed      = signal(false);
+  readonly isDragging     = signal(false);
 
   ngOnInit(): void {
     this.api.getCategories().subscribe({
@@ -49,7 +50,27 @@ export class StatementImportComponent implements OnInit {
 
   onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
+    this.acceptFile(input.files?.[0]);
+  }
+
+  onDragOver(event: DragEvent): void {
+    event.preventDefault();
+    this.isDragging.set(true);
+  }
+
+  onDragLeave(event: DragEvent): void {
+    event.preventDefault();
+    this.isDragging.set(false);
+  }
+
+  onDrop(event: DragEvent): void {
+    event.preventDefault();
+    this.isDragging.set(false);
+    this.acceptFile(event.dataTransfer?.files?.[0]);
+  }
+
+  // Validação comum entre seleção por input e drag-and-drop
+  private acceptFile(file: File | undefined): void {
     if (!file) return;
 
     if (!file.name.toLowerCase().endsWith('.pdf')) {

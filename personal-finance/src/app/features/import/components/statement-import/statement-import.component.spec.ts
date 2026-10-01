@@ -283,5 +283,154 @@ describe('StatementImportComponent', () => {
       expect(c.items().length).toBe(3);
       expect(c.saving()).toBeFalse();
     });
+
+    it('erro de save com itens mantém banner visível e não aplica estado err', () => {
+      api.confirmStatementImport.and.returnValue(
+        throwError(() => ({ status: 400, error: { message: 'Data futura não permitida.' } })));
+      c.save();
+      fixture.detectChanges();
+      const el: HTMLElement = fixture.nativeElement;
+      expect(el.querySelector('[role="alert"]')?.textContent).toContain('Data futura não permitida.');
+      expect(el.querySelector('.has-error')).toBeNull();
+      expect(el.querySelector('.pdf-preview-btn')?.textContent).not.toContain('Tentar novamente');
+    });
+  });
+
+  // ---- Issue #443: casca visual (estados empty/err) e drag-and-drop ----
+  describe('casca visual — DOM', () => {
+    const el = () => fixture.nativeElement as HTMLElement;
+    const previewBtn = () => el().querySelector('.pdf-preview-btn') as HTMLButtonElement;
+
+    it('renderiza dropzone .pdf-dropzone sem arquivo e nenhuma .drop-zone', () => {
+      expect(el().querySelector('.pdf-dropzone')).not.toBeNull();
+      expect(el().querySelector('.drop-zone')).toBeNull();
+    });
+
+    it('não exibe card de arquivo sem arquivo selecionado', () => {
+      expect(el().querySelector('.pdf-file-card')).toBeNull();
+    });
+
+    it('card do arquivo exibe o nome quando há arquivo selecionado', () => {
+      c.onFileSelected(fileEvent(makeFile('meu-extrato.pdf')));
+      fixture.detectChanges();
+      expect(el().querySelector('.pdf-file-card')?.textContent).toContain('meu-extrato.pdf');
+    });
+
+    it('botão de preview fica desabilitado sem arquivo', () => {
+      expect(previewBtn().disabled).toBeTrue();
+      expect(previewBtn().textContent).toContain('Pré-visualizar');
+    });
+
+    it('botão de preview habilita com arquivo', () => {
+      c.onFileSelected(fileEvent(makeFile('extrato.pdf')));
+      fixture.detectChanges();
+      expect(previewBtn().disabled).toBeFalse();
+    });
+
+    it('botão mostra "Processando..." e desabilita em loading', () => {
+      c.onFileSelected(fileEvent(makeFile('extrato.pdf')));
+      c.loading.set(true);
+      fixture.detectChanges();
+      expect(previewBtn().textContent).toContain('Processando...');
+      expect(previewBtn().disabled).toBeTrue();
+    });
+
+    it('banner role="alert" exibe "Senha incorreta." após erro 400 de preview', () => {
+      api.previewStatementImport.and.returnValue(
+        throwError(() => ({ status: 400, error: { message: 'Senha incorreta.' } })));
+      loadPreview();
+      expect(el().querySelector('[role="alert"]')?.textContent).toContain('Senha incorreta.');
+    });
+
+    it('sem erro não há banner nem estado err', () => {
+      expect(el().querySelector('[role="alert"]')).toBeNull();
+      expect(el().querySelector('.has-error')).toBeNull();
+    });
+
+    it('estado err com arquivo: classe .has-error e botão "Tentar novamente"', () => {
+      api.previewStatementImport.and.returnValue(
+        throwError(() => ({ status: 400, error: { message: 'Senha incorreta.' } })));
+      loadPreview();
+      expect(el().querySelector('.has-error')).not.toBeNull();
+      expect(previewBtn().textContent).toContain('Tentar novamente');
+    });
+
+    it('mantém campos de senha e data de início', () => {
+      expect(el().querySelector('input[type="password"]')).not.toBeNull();
+      expect(el().querySelector('input[type="date"]')).not.toBeNull();
+    });
+  });
+
+  describe('drag-and-drop', () => {
+    function dragEvent(files?: File[]): DragEvent {
+      return {
+        preventDefault: jasmine.createSpy('preventDefault'),
+        dataTransfer: files ? { files } : null,
+      } as unknown as DragEvent;
+    }
+
+    it('isDragging inicia false', () => {
+      expect(c.isDragging()).toBeFalse();
+    });
+
+    it('onDragOver seta isDragging e chama preventDefault', () => {
+      const ev = dragEvent();
+      c.onDragOver(ev);
+      expect(c.isDragging()).toBeTrue();
+      expect(ev.preventDefault).toHaveBeenCalled();
+    });
+
+    it('onDragLeave volta isDragging para false', () => {
+      c.onDragOver(dragEvent());
+      c.onDragLeave(dragEvent());
+      expect(c.isDragging()).toBeFalse();
+    });
+
+    it('classe dragging é aplicada na dropzone durante o arraste', () => {
+      c.onDragOver(dragEvent());
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('.pdf-dropzone.dragging')).not.toBeNull();
+      c.onDragLeave(dragEvent());
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('.pdf-dropzone.dragging')).toBeNull();
+    });
+
+    it('onDrop com PDF válido seta selectedFile, limpa erro e isDragging', () => {
+      c.errorMessage.set('antigo');
+      c.onDragOver(dragEvent());
+      const ev = dragEvent([makeFile('solto.pdf')]);
+      c.onDrop(ev);
+      expect(ev.preventDefault).toHaveBeenCalled();
+      expect(c.selectedFile()!.name).toBe('solto.pdf');
+      expect(c.errorMessage()).toBeNull();
+      expect(c.isDragging()).toBeFalse();
+    });
+
+    it('onDrop com não-PDF rejeita com a mesma mensagem de onFileSelected', () => {
+      c.onDrop(dragEvent([makeFile('planilha.xlsx')]));
+      expect(c.selectedFile()).toBeNull();
+      expect(c.errorMessage()).toBe('Apenas arquivos .pdf são aceitos.');
+      expect(c.isDragging()).toBeFalse();
+    });
+
+    it('onDrop com arquivo > 10 MB rejeita com a mesma mensagem de onFileSelected', () => {
+      c.onDrop(dragEvent([makeFile('grande.pdf', 10 * 1024 * 1024 + 1)]));
+      expect(c.selectedFile()).toBeNull();
+      expect(c.errorMessage()).toBe('O arquivo excede o limite de 10 MB.');
+    });
+
+    it('onDrop sem arquivos é no-op (mantém arquivo atual) e zera isDragging', () => {
+      c.onFileSelected(fileEvent(makeFile('atual.pdf')));
+      c.onDragOver(dragEvent());
+      c.onDrop(dragEvent([]));
+      expect(c.selectedFile()!.name).toBe('atual.pdf');
+      expect(c.errorMessage()).toBeNull();
+      expect(c.isDragging()).toBeFalse();
+    });
+
+    it('onDrop sem dataTransfer não lança e é no-op', () => {
+      expect(() => c.onDrop(dragEvent())).not.toThrow();
+      expect(c.selectedFile()).toBeNull();
+    });
   });
 });
