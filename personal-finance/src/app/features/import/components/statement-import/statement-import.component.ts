@@ -1,6 +1,7 @@
 import { Component, DestroyRef, computed, inject, signal, OnInit } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { ApiService } from '../../../../core/services/api.service';
 import { CategoryResponse, ConfirmStatementImportResult } from '../../../../core/models/models';
 
@@ -32,6 +33,7 @@ export type StatementImportState = 'empty' | 'proc' | 'preview' | 'done' | 'err'
 export class StatementImportComponent implements OnInit {
   private readonly api = inject(ApiService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly router = inject(Router);
   private tickerId: ReturnType<typeof setInterval> | null = null;
 
   readonly selectedFile   = signal<File | null>(null);
@@ -46,6 +48,8 @@ export class StatementImportComponent implements OnInit {
   readonly saving         = signal(false);
   readonly previewed      = signal(false);
   readonly isDragging     = signal(false);
+  // Após "Importar outro extrato": exibe mensagem de tela pronta até novo arquivo
+  readonly resetDone      = signal(false);
 
   // Progresso cosmético: o back-end é request/response único, sem progresso real
   readonly simulatedProgress = signal(0);
@@ -87,6 +91,22 @@ export class StatementImportComponent implements OnInit {
     return m ? `${m[3]}/${m[2]}/${m[1]}` : '';
   });
 
+  // Período(s) de destino: Ano+Mês+quinzena (Day <= 15 = 1ª), igual ao backend. Sem Date (fuso)
+  readonly targetPeriodLabel = computed(() => {
+    const keys = new Set<string>();
+    for (const i of this.items()) {
+      const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(i.date);
+      if (!m) continue;
+      keys.add(`${m[1]}-${m[2]}-${+m[3] <= 15 ? 1 : 2}`);
+    }
+    const labels = [...keys].sort().map(k => {
+      const [y, mo, f] = k.split('-');
+      return `${mo}/${y} (${f}ª quinzena)`;
+    });
+    if (labels.length === 0) return '';
+    return labels.length === 1 ? labels[0] : `${labels.length} períodos: ${labels.join(", ")}`;
+  });
+
   constructor() {
     this.destroyRef.onDestroy(() => this.clearTicker());
   }
@@ -122,6 +142,7 @@ export class StatementImportComponent implements OnInit {
   // Validação comum entre seleção por input e drag-and-drop
   private acceptFile(file: File | undefined): void {
     if (!file) return;
+    this.resetDone.set(false);
 
     if (!file.name.toLowerCase().endsWith('.pdf')) {
       this.reject('Apenas arquivos .pdf são aceitos.');
@@ -144,6 +165,7 @@ export class StatementImportComponent implements OnInit {
     const file = this.selectedFile();
     if (!file) return;
 
+    this.resetDone.set(false);
     this.loading.set(true);
     this.startTicker();
     this.errorMessage.set(null);
@@ -228,6 +250,23 @@ export class StatementImportComponent implements OnInit {
         this.saving.set(false);
       },
     });
+  }
+
+  goTo(url: string): void {
+    this.router.navigateByUrl(url);
+  }
+
+  // Volta ao estado inicial para um novo import
+  importAnother(): void {
+    this.clearTicker();
+    this.resetDone.set(true);
+    this.result.set(null);
+    this.items.set([]);
+    this.selectedFile.set(null);
+    this.previewed.set(false);
+    this.discardedCount.set(0);
+    this.errorMessage.set(null);
+    this.simulatedProgress.set(0);
   }
 
   // Zera e inicia o ticker; cancela o anterior para nunca haver dois ativos

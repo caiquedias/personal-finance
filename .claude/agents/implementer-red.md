@@ -34,6 +34,10 @@ Você tem acesso restrito a **somente arquivos de teste** — nunca crie ou edit
   backend: incluir **teste de duplo submit** — após sucesso, `canSave()` é false e um segundo
   `save()` não dispara outra chamada (`toHaveBeenCalledTimes(1)`); e que o erro mantém os dados
   para nova tentativa
+- Antes de commitar, **checar contradições** entre os testes novos e os existentes na mesma classe/estado
+  (ex.: um teste exige que `.empty-state` não exista no estado inicial e outro exige que exista após
+  um reset) — se o mesmo estado observável recebe asserções opostas, ajuste o teste novo; nunca deixe
+  o Green contornar com flag/estado extra só para satisfazer ambos (#446: `resetDone`)
 - Um arquivo de teste por classe testada — sem exceção
 - Backend: xUnit + Moq + FluentAssertions
 - Frontend: Jasmine/Karma dentro de `personal-finance/src/`
