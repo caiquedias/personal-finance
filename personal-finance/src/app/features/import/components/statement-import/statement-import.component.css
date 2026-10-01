@@ -1,6 +1,5 @@
 .statement-import { display: flex; flex-direction: column; gap: 20px; }
 
-.form-row { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; }
 .field { display: flex; flex-direction: column; gap: 6px; font-size: 0.85rem; }
 
 .alert-error {
@@ -28,3 +27,50 @@
 
 .summary { margin-top: 16px; padding: 12px; border-radius: var(--radius); border: 1px solid var(--border); }
 .actions { margin-top: 16px; display: flex; justify-content: flex-end; }
+
+.pdf-intro { display: flex; flex-direction: column; gap: 16px; max-width: 700px; }
+.pdf-file-input { display: none; }
+
+.pdf-dropzone {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 44px 24px; text-align: center; cursor: pointer;
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-xl);
+  background: transparent;
+  transition: border-color var(--transition), background var(--transition);
+}
+.pdf-dropzone:hover, .pdf-dropzone:focus-visible, .pdf-dropzone.dragging {
+  border-color: var(--terracotta);
+  background: color-mix(in srgb, var(--terracotta) 8%, transparent);
+  outline: none;
+}
+.pdf-dropzone.has-error {
+  border-color: var(--color-danger);
+  background: color-mix(in srgb, var(--color-danger) 6%, transparent);
+}
+.pdf-dropzone-title { margin: 8px 0 0; font-size: 1rem; font-weight: 600; color: var(--text); }
+.pdf-dropzone-sub { margin: 0; font-size: 0.85rem; color: var(--text-muted); }
+.pdf-dropzone-hint { margin: 0 0 8px; font-size: 0.75rem; color: var(--ink3); }
+
+.pdf-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 38px; height: 38px; flex-shrink: 0;
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--terracotta) 14%, transparent);
+  color: var(--terracotta);
+}
+.pdf-icon-lg { width: 56px; height: 56px; border-radius: var(--radius-xl); }
+
+.pdf-file-card {
+  display: flex; align-items: center; gap: 14px; padding: 16px 20px;
+  background: var(--surface-raised);
+  border: 1px solid var(--terracotta);
+  border-radius: var(--radius-lg);
+}
+.pdf-file-card.has-error { border-color: var(--color-danger); }
+.pdf-file-info { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.pdf-file-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); font-weight: 600; }
+.pdf-file-meta { font-size: 0.8rem; color: var(--text-muted); }
+
+.pdf-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+.pdf-preview-btn { align-self: flex-start; }

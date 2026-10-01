@@ -3,21 +3,51 @@
     <div class="alert-error" role="alert">{{ errorMessage() }}</div>
   }
 
-  <div class="form-row">
-    <label class="field">
-      <span>Extrato (.pdf, até 10 MB)</span>
-      <input type="file" accept=".pdf,application/pdf" (change)="onFileSelected($event)" />
-    </label>
-    <label class="field">
-      <span>Senha (opcional)</span>
-      <input type="password" autocomplete="off" [ngModel]="password()" (ngModelChange)="password.set($event)" />
-    </label>
-    <label class="field">
-      <span>Data de início (opcional)</span>
-      <input type="date" [ngModel]="fromDate()" (ngModelChange)="fromDate.set($event)" />
-    </label>
-    <button type="button" class="btn btn-primary" [disabled]="!selectedFile() || loading()" (click)="preview()">
-      {{ loading() ? 'Processando...' : 'Pré-visualizar' }}
+  @let hasError = !!errorMessage() && items().length === 0 && !result();
+
+  <div class="pdf-intro">
+    <input #fileInput type="file" class="pdf-file-input" accept=".pdf,application/pdf" (change)="onFileSelected($event)" />
+
+    @if (selectedFile(); as file) {
+      <div class="pdf-file-card" [class.has-error]="hasError">
+        <span class="pdf-icon" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>
+        </span>
+        <div class="pdf-file-info">
+          <strong class="pdf-file-name">{{ file.name }}</strong>
+          <span class="pdf-file-meta">{{ file.size / 1024 | number:'1.0-0' }} KB</span>
+        </div>
+        <button type="button" class="btn btn-secondary btn-sm" (click)="fileInput.click()">Trocar arquivo</button>
+      </div>
+    } @else {
+      <div class="pdf-dropzone" [class.dragging]="isDragging()" [class.has-error]="hasError"
+           role="button" tabindex="0"
+           (click)="fileInput.click()" (keydown.enter)="fileInput.click()" (keydown.space)="fileInput.click(); $event.preventDefault()"
+           (dragover)="onDragOver($event)" (dragleave)="onDragLeave($event)" (drop)="onDrop($event)">
+        <span class="pdf-icon pdf-icon-lg" aria-hidden="true">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="M7 9l5-5 5 5"/><path d="M5 20h14"/></svg>
+        </span>
+        <p class="pdf-dropzone-title">Arraste o extrato aqui</p>
+        <p class="pdf-dropzone-sub">ou clique para selecionar</p>
+        <p class="pdf-dropzone-hint">Apenas .pdf · máximo 10 MB</p>
+        <span class="btn btn-secondary">Selecionar arquivo</span>
+      </div>
+    }
+
+    <div class="pdf-fields">
+      <label class="field">
+        <span>Senha (opcional)</span>
+        <input class="input" [class.error]="hasError" type="password" autocomplete="off"
+               [ngModel]="password()" (ngModelChange)="password.set($event)" />
+      </label>
+      <label class="field">
+        <span>Data de início (opcional)</span>
+        <input class="input" type="date" [ngModel]="fromDate()" (ngModelChange)="fromDate.set($event)" />
+      </label>
+    </div>
+
+    <button type="button" class="btn btn-primary pdf-preview-btn" [disabled]="!selectedFile() || loading()" (click)="preview()">
+      {{ loading() ? 'Processando...' : (hasError && selectedFile() ? 'Tentar novamente' : 'Pré-visualizar') }}
     </button>
   </div>
 
