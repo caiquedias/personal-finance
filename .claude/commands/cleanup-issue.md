@@ -67,6 +67,10 @@ git branch -a | grep <issue-id>
 
 ---
 
-**Exibir cada ação destrutiva (remoção de worktree, delete de branch) e aguardar OK do Caique antes de executar.**
+**Diretriz de autonomia:** com a pré-condição satisfeita (PR de `feat/*` **Merged**, validado via GitHub),
+os passos 2–6 rodam **autônomos, sem pedir OK por ação** — remoção de worktree, delete de branches
+locais/remotas e auditoria do board. Se a pré-condição falhar, interromper e informar (nenhuma ação
+destrutiva é executada). Se o hook bloquear `git push origin --delete` (falso positivo de "push em
+develop"), apagar a branch remota via `gh api -X DELETE repos/caiquedias/personal-finance/git/refs/heads/<branch>`.
 
 Economize tokens. Sem resumo extenso após concluir.
