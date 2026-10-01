@@ -28,6 +28,7 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 | #421 | [Import] Preview de importação — classificação e duplicatas | 2026-09-28 | [421.md](421.md) |
 | #422 | [Import] Confirmação de importação — persistência multi-período | 2026-09-29 | [422.md](422.md) |
 | #423 | [Import] Frontend — upload e tela de revisão | 2026-09-29 | [423.md](423.md) |
+| #443 | Redesign Extrato PDF (1/5): casca visual — dropzone e estados vazio/erro | 2026-10-01 | [443.md](443.md) |
 
 ---
 
@@ -40,7 +41,7 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 | Login / Auth UI | #387 | 2026-07-04 |
 | Segurança / JWT | #389 | 2026-07-04 |
 | Import (Income) | #419 | 2026-09-28 |
-| Import (Extrato C6 PDF) | #420, #421, #422, #423 | 2026-09-29 |
+| Import (Extrato C6 PDF) | #420, #421, #422, #423, #443 | 2026-10-01 |
 
 ---
 
@@ -89,7 +90,7 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 - **Sidebar:** item "Expurgo" com ícone `archive` e rota `/purge`
 - **Auth:** authInterceptor injeta token automaticamente
 - **Login:** `LoginComponent` sem seção de cadastro — link `/register` e `RouterLink` removidos (#387)
-- **Import (Extrato PDF, #423):** `/import` com abas "Legado | Extrato PDF" (`ImportComponent.activeTab`/`setTab`); `StatementImportComponent` (`features/import/components/statement-import/`) — upload .pdf ≤10 MB + senha + data de início nativa, tabela editável, badges de transferência interna/duplicata (só sinalizam), `save()` limpa `items` após sucesso. `ApiService.previewStatementImport`/`confirmStatementImport`; models `StatementPreviewItem`, `StatementPreviewResult`, `ConfirmStatementItemRequest`, `ConfirmStatementImportRequest`, `ConfirmStatementImportResult`
+- **Import (Extrato PDF, #423):** `/import` com abas "Legado | Extrato PDF" (`ImportComponent.activeTab`/`setTab`); `StatementImportComponent` (`features/import/components/statement-import/`) — upload .pdf ≤10 MB + senha + data de início nativa, tabela editável, badges de transferência interna/duplicata (só sinalizam), `save()` limpa `items` após sucesso. **#443:** casca visual dos estados vazio/erro — dropzone `.pdf-dropzone` com arraste (`isDragging`, `onDragOver`/`onDragLeave`/`onDrop`, validação comum em `acceptFile`), card `.pdf-file-card`, estado `.has-error` derivado (`errorMessage() && items().length === 0 && !result()`). `ApiService.previewStatementImport`/`confirmStatementImport`; models `StatementPreviewItem`, `StatementPreviewResult`, `ConfirmStatementItemRequest`, `ConfirmStatementImportRequest`, `ConfirmStatementImportResult`
 
 ### Banco de dados
 - **Lookup tables seeded:** Role, PaymentStatus, SourceType, FortnightType

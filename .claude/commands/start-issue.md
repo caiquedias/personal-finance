@@ -20,7 +20,7 @@ _(formato esperado: `<issue-number>` ou `<issue-url>`)_
    3. **Red** — escrever testes falhando para: `<tasks da issue>`
    4. **Green (task a task)** — implementar: `<tasks da issue>`
    5. **QA** → **UX Validator** (se frontend) → **Reviewer**
-   6. Push + PR `claude/` → `feat/` + mover issue para **In Review**
+   6. Push + PR `claude/` → `feat/` (vinculado ao projeto) + mover issue **e PR** para **In Review**
 5. **Aguarde confirmação do Caique antes de avançar**
 
 ---
@@ -190,6 +190,13 @@ EOF
 Mova a issue para **In Review**:
 ```bash
 gh project item-edit --project-id PVT_kwHOAOhFlc4BUMJ_ --id <ITEM_ID> --field-id PVTSSF_lAHOAOhFlc4BUMJ_zhBWAHQ --single-select-option-id df73e18b
+```
+
+**Vincule também o PR ao projeto e coloque-o em In Review** (logo após `gh pr create`; o item do PR
+é distinto do item da issue):
+```bash
+PR_ITEM_ID=$(gh project item-add 2 --owner caiquedias --url <PR_URL> --format json --jq '.id')
+gh project item-edit --project-id PVT_kwHOAOhFlc4BUMJ_ --id "$PR_ITEM_ID" --field-id PVTSSF_lAHOAOhFlc4BUMJ_zhBWAHQ --single-select-option-id df73e18b
 ```
 
 ---
