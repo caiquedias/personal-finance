@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { provideRouter, Router } from '@angular/router';
 import { of, Subject, throwError } from 'rxjs';
 import { StatementImportComponent } from './statement-import.component';
 import { ApiService } from '../../../../core/services/api.service';
@@ -50,7 +51,7 @@ describe('StatementImportComponent', () => {
 
     await TestBed.configureTestingModule({
       imports: [StatementImportComponent],
-      providers: [{ provide: ApiService, useValue: api }],
+      providers: [{ provide: ApiService, useValue: api }, provideRouter([])],
     }).compileComponents();
 
     fixture = TestBed.createComponent(StatementImportComponent);
@@ -973,6 +974,278 @@ describe('StatementImportComponent', () => {
         fixture.detectChanges();
         await fixture.whenStable();
         expect(s().expenseSum()).toBe(250);
+      });
+    });
+  });
+
+  // ---- Issue #446: barra de ação fixa + tela de sucesso ----
+  describe('barra de ação e tela de sucesso (#446)', () => {
+    // Contrato novo (ainda inexistente no componente)
+    interface ActionApi {
+      targetPeriodLabel(): string;
+      importAnother(): void;
+    }
+    const a = () => c as unknown as ActionApi;
+    const el = () => fixture.nativeElement as HTMLElement;
+    const setDates = (...dates: string[]) =>
+      dates.forEach((d, i) => c.updateItem(i, { date: d }));
+
+    describe('targetPeriodLabel', () => {
+      it('lista vazia retorna texto vazio', () => {
+        expect(a().targetPeriodLabel()).toBe('');
+      });
+
+      it('mesmo mês e mesma quinzena: período único (01/2026, 1ª quinzena)', () => {
+        loadPreview(); // 10, 11, 12/01
+        const label = a().targetPeriodLabel();
+        expect(label).toContain('01/2026');
+        expect(label).toContain('1ª quinzena');
+        expect(label).not.toMatch(/\d+ períodos/);
+      });
+
+      it('dia 15 é primeira quinzena', () => {
+        loadPreview();
+        setDates('2026-01-15', '2026-01-15', '2026-01-15');
+        expect(a().targetPeriodLabel()).toContain('1ª quinzena');
+        expect(a().targetPeriodLabel()).not.toMatch(/\d+ períodos/);
+      });
+
+      it('dia 16 é segunda quinzena', () => {
+        loadPreview();
+        setDates('2026-01-16', '2026-01-16', '2026-01-16');
+        const label = a().targetPeriodLabel();
+        expect(label).toContain('2ª quinzena');
+        expect(label).not.toContain('1ª quinzena');
+      });
+
+      it('virada 15/16 no mesmo mês conta 2 períodos', () => {
+        loadPreview();
+        setDates('2026-01-15', '2026-01-16', '2026-01-16');
+        expect(a().targetPeriodLabel()).toMatch(/^2 períodos/);
+      });
+
+      it('meses distintos: "N períodos"', () => {
+        loadPreview();
+        setDates('2026-01-10', '2026-02-10', '2026-03-10');
+        const label = a().targetPeriodLabel();
+        expect(label).toMatch(/^3 períodos/);
+        expect(label).toContain('01/2026');
+        expect(label).toContain('02/2026');
+        expect(label).toContain('03/2026');
+      });
+
+      it('virada de ano não desloca data (31/12 e 01/01)', () => {
+        loadPreview();
+        setDates('2025-12-31', '2026-01-01', '2026-01-01');
+        const label = a().targetPeriodLabel();
+        expect(label).toMatch(/^2 períodos/);
+        expect(label).toContain('12/2025');
+        expect(label).toContain('01/2026');
+      });
+
+      it('recalcula após updateItem de data', () => {
+        loadPreview();
+        expect(a().targetPeriodLabel()).not.toMatch(/\d+ períodos/);
+        c.updateItem(0, { date: '2026-02-20' });
+        expect(a().targetPeriodLabel()).toMatch(/^2 períodos/);
+      });
+
+      it('recalcula após removeItem', () => {
+        loadPreview();
+        c.updateItem(0, { date: '2026-02-20' });
+        expect(a().targetPeriodLabel()).toMatch(/^2 períodos/);
+        c.removeItem(0);
+        expect(a().targetPeriodLabel()).not.toMatch(/\d+ períodos/);
+        expect(a().targetPeriodLabel()).toContain('01/2026');
+      });
+
+      it('data inválida/vazia não gera Invalid Date nem NaN', () => {
+        loadPreview();
+        c.updateItem(0, { date: '' });
+        expect(a().targetPeriodLabel()).not.toContain('Invalid');
+        expect(a().targetPeriodLabel()).not.toContain('NaN');
+      });
+    });
+
+    describe('barra de ação fixa — DOM', () => {
+      it('não renderiza sem itens (empty)', () => {
+        expect(el().querySelector('.action-bar')).toBeNull();
+      });
+
+      it('renderiza com itens em preview e exibe o período de destino', () => {
+        loadPreview();
+        const bar = el().querySelector('.action-bar');
+        expect(bar).not.toBeNull();
+        expect(bar!.textContent).toContain('01/2026');
+      });
+
+      it('botão exibe "Importar N lançamentos" ao vivo', () => {
+        loadPreview();
+        const btn = () => el().querySelector('.action-bar button.btn-primary') as HTMLButtonElement;
+        expect(btn().textContent).toContain('Importar 3 lançamentos');
+        c.removeItem(2);
+        fixture.detectChanges();
+        expect(btn().textContent).toContain('Importar 2 lançamentos');
+      });
+
+      it('mostra "N sem categoria" e botão desabilitado enquanto há pendentes', () => {
+        loadPreview();
+        const bar = el().querySelector('.action-bar') as HTMLElement;
+        expect(bar.textContent).toContain('1 sem categoria');
+        expect((bar.querySelector('button.btn-primary') as HTMLButtonElement).disabled).toBeTrue();
+      });
+
+      it('sem pendentes: botão habilitado e sem aviso de sem categoria', () => {
+        loadPreview();
+        c.updateItem(2, { categoryId: 'cat-2' });
+        fixture.detectChanges();
+        const bar = el().querySelector('.action-bar') as HTMLElement;
+        expect(bar.textContent).not.toContain('sem categoria');
+        expect((bar.querySelector('button.btn-primary') as HTMLButtonElement).disabled).toBeFalse();
+      });
+
+      it('clique no botão chama save() uma vez com payload sem campo novo', () => {
+        loadPreview();
+        c.updateItem(2, { categoryId: 'cat-2' });
+        fixture.detectChanges();
+        (el().querySelector('.action-bar button.btn-primary') as HTMLButtonElement).click();
+        expect(api.confirmStatementImport).toHaveBeenCalledTimes(1);
+        const req = api.confirmStatementImport.calls.mostRecent().args[0];
+        expect(Object.keys(req)).toEqual(['items']);
+        expect(Object.keys(req.items[0]).sort()).toEqual(
+          ['amount', 'categoryId', 'date', 'description', 'kind', 'sourceType']);
+      });
+
+      it('duplo clique não dispara segundo POST', () => {
+        loadPreview();
+        c.updateItem(2, { categoryId: 'cat-2' });
+        fixture.detectChanges();
+        const btn = el().querySelector('.action-bar button.btn-primary') as HTMLButtonElement;
+        btn.click();
+        fixture.detectChanges();
+        el().querySelector<HTMLButtonElement>('.action-bar button.btn-primary')?.click();
+        c.save();
+        expect(api.confirmStatementImport).toHaveBeenCalledTimes(1);
+      });
+
+      it('erro no save mantém barra e itens para nova tentativa', () => {
+        api.confirmStatementImport.and.returnValue(
+          throwError(() => ({ status: 500, error: { message: 'Falha' } })));
+        loadPreview();
+        c.updateItem(2, { categoryId: 'cat-2' });
+        c.save();
+        fixture.detectChanges();
+        expect(c.items().length).toBe(3);
+        expect(el().querySelector('.action-bar')).not.toBeNull();
+        expect(c.canSave()).toBeTrue();
+      });
+
+      it('barra some em done', () => {
+        loadPreview();
+        c.updateItem(2, { categoryId: 'cat-2' });
+        c.save();
+        fixture.detectChanges();
+        expect(c.state()).toBe('done');
+        expect(el().querySelector('.action-bar')).toBeNull();
+      });
+
+      it('barra some em proc (saving)', () => {
+        loadPreview();
+        c.saving.set(true);
+        fixture.detectChanges();
+        expect(c.state()).toBe('proc');
+        expect(el().querySelector('.action-bar')).toBeNull();
+      });
+    });
+
+    describe('tela de sucesso — DOM', () => {
+      const doSave = () => {
+        loadPreview();
+        c.updateItem(2, { categoryId: 'cat-2' });
+        c.save();
+        fixture.detectChanges();
+      };
+      const card = (k: string) =>
+        el().querySelector(`.success-card[data-card="${k}"] .success-card-value`)?.textContent?.trim();
+      const navTarget = (action: string) => {
+        const router = TestBed.inject(Router);
+        const nav = spyOn(router, 'navigateByUrl').and.resolveTo(true);
+        const navigate = spyOn(router, 'navigate').and.resolveTo(true);
+        el().querySelector<HTMLElement>(`[data-action="${action}"]`)!.click();
+        return nav.calls.count() ? String(nav.calls.mostRecent().args[0])
+                                 : JSON.stringify(navigate.calls.mostRecent()?.args[0]);
+      };
+
+      it('renderiza tela de sucesso com role="status" e 3 cards', () => {
+        doSave();
+        expect(el().querySelector('.success-screen[role="status"]')).not.toBeNull();
+        expect(el().querySelectorAll('.success-card').length).toBe(3);
+      });
+
+      it('exibe totais corretos do resultado', () => {
+        doSave();
+        expect(card('expenses')).toBe('2');
+        expect(card('incomes')).toBe('1');
+        const periods = el().querySelector('.success-card[data-card="periods"]')!.textContent!;
+        expect(periods).toContain('1');
+        expect(periods).toContain('2');
+      });
+
+      it('não exibe mais o bloco .summary antigo nem a tabela', () => {
+        doSave();
+        expect(el().querySelector('.summary')).toBeNull();
+        expect(el().querySelector('.review-table')).toBeNull();
+      });
+
+      it('exibe as 3 ações', () => {
+        doSave();
+        expect(el().querySelector('[data-action="view-period"]')).not.toBeNull();
+        expect(el().querySelector('[data-action="view-expenses"]')).not.toBeNull();
+        expect(el().querySelector('[data-action="import-another"]')).not.toBeNull();
+      });
+
+      it('"Ver período" navega para /periods', () => {
+        doSave();
+        expect(navTarget('view-period')).toContain('/periods');
+      });
+
+      it('"Ver despesas" navega para /expenses', () => {
+        doSave();
+        expect(navTarget('view-expenses')).toContain('/expenses');
+      });
+
+      it('"Importar outro extrato" reseta tudo e volta a empty', () => {
+        doSave();
+        c.errorMessage.set('resíduo');
+        el().querySelector<HTMLElement>('[data-action="import-another"]')!.click();
+        fixture.detectChanges();
+        expect(c.result()).toBeNull();
+        expect(c.items().length).toBe(0);
+        expect(c.selectedFile()).toBeNull();
+        expect(c.previewed()).toBeFalse();
+        expect(c.discardedCount()).toBe(0);
+        expect(c.errorMessage()).toBeNull();
+        expect(c.simulatedProgress()).toBe(0);
+        expect(c.state()).toBe('empty');
+        expect(el().querySelector('.empty-state')).not.toBeNull();
+        expect(el().querySelector('.success-screen')).toBeNull();
+        expect(el().querySelector('.action-bar')).toBeNull();
+      });
+
+      it('importAnother() via método também reseta o estado', () => {
+        doSave();
+        a().importAnother();
+        expect(c.state()).toBe('empty');
+        expect(c.result()).toBeNull();
+      });
+
+      it('após reset é possível novo preview e save (novo POST)', () => {
+        doSave();
+        a().importAnother();
+        loadPreview();
+        c.updateItem(2, { categoryId: 'cat-2' });
+        c.save();
+        expect(api.confirmStatementImport).toHaveBeenCalledTimes(2);
       });
     });
   });
