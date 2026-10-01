@@ -503,7 +503,7 @@ describe('StatementImportComponent', () => {
       expect(c.state()).toBe('preview');
       expect(el().querySelector('[role="alert"]')?.textContent).toContain('Data futura não permitida.');
       expect(el().querySelector('.has-error')).toBeNull();
-      expect(el().querySelectorAll('.review-table tbody tr').length).toBe(3);
+      expect(el().querySelectorAll('.table tbody tr').length).toBe(3);
     });
 
     it('arquivo rejeitado: err, com dropzone e campos visíveis', () => {
@@ -930,7 +930,7 @@ describe('StatementImportComponent', () => {
 
       it('select de Categoria tem classe de pendente só em Expense sem categoria', () => {
         loadPreview();
-        const rows = el().querySelectorAll('.review-table tbody tr');
+        const rows = el().querySelectorAll('.table tbody tr');
         expect(rows[0].querySelector('select.select-pending')).toBeNull();      // Expense com categoria
         expect(rows[1].querySelector('select.select-pending')).toBeNull();      // Income sem categoria
         expect(rows[2].querySelector('select.select-pending')).not.toBeNull();  // Expense sem categoria
@@ -943,9 +943,54 @@ describe('StatementImportComponent', () => {
         expect(el().querySelector('select.select-pending')).toBeNull();
       });
 
+      it('grid usa o padrão de Despesas: .table-wrap.card envolvendo table.table', () => {
+        loadPreview();
+        const wrap = el().querySelector('.table-wrap.card');
+        expect(wrap).not.toBeNull();
+        expect(wrap!.querySelector('table.table')).not.toBeNull();
+      });
+
+      it('classes legadas .review-table e .table-wrapper não existem no DOM', () => {
+        loadPreview();
+        expect(el().querySelector('.review-table')).toBeNull();
+        expect(el().querySelector('.table-wrapper')).toBeNull();
+      });
+
+      it('colunas Data e Avisos têm col-hide-mobile no th e em todos os td', () => {
+        loadPreview();
+        const ths = el().querySelectorAll('.table thead th');
+        const idx = (label: string) => Array.from(ths).findIndex(t => t.textContent?.trim() === label);
+        const rows = el().querySelectorAll('.table tbody tr');
+        expect(rows.length).toBeGreaterThan(0);
+        for (const label of ['Data', 'Avisos']) {
+          const i = idx(label);
+          expect(i).toBeGreaterThanOrEqual(0);
+          expect(ths[i].classList.contains('col-hide-mobile')).withContext(`th ${label}`).toBeTrue();
+          rows.forEach(r => {
+            expect(r.querySelectorAll('td')[i].classList.contains('col-hide-mobile'))
+              .withContext(`td ${label}`).toBeTrue();
+          });
+        }
+      });
+
+      it('colunas Descrição, Tipo, Categoria, Valor e Remover nunca têm col-hide-mobile', () => {
+        loadPreview();
+        const ths = el().querySelectorAll('.table thead th');
+        const rows = el().querySelectorAll('.table tbody tr');
+        const hideable = ['Data', 'Avisos'];
+        ths.forEach((th, i) => {
+          if (hideable.includes(th.textContent?.trim() ?? '')) return;
+          expect(th.classList.contains('col-hide-mobile')).withContext(`th ${i}`).toBeFalse();
+          rows.forEach(r => {
+            expect(r.querySelectorAll('td')[i].classList.contains('col-hide-mobile'))
+              .withContext(`td ${i}`).toBeFalse();
+          });
+        });
+      });
+
       it('pills de Avisos exibem textos esperados', () => {
         loadPreview();
-        const row = el().querySelectorAll('.review-table tbody tr')[2];
+        const row = el().querySelectorAll('.table tbody tr')[2];
         expect(row.textContent).toContain('Transferência interna');
         expect(row.textContent).toContain('Possível duplicado');
       });
@@ -954,7 +999,7 @@ describe('StatementImportComponent', () => {
         loadPreview();
         c.updateItem(2, { categoryId: 'cat-1' });
         expect(c.canSave()).toBeTrue();
-        const input = el().querySelectorAll('.review-table tbody tr')[0]
+        const input = el().querySelectorAll('.table tbody tr')[0]
           .querySelector('input[type="number"]') as HTMLInputElement;
         input.value = '0';
         input.dispatchEvent(new Event('input'));
@@ -967,7 +1012,7 @@ describe('StatementImportComponent', () => {
 
       it('input de valor atualiza soma do card de despesas', async () => {
         loadPreview();
-        const input = el().querySelectorAll('.review-table tbody tr')[0]
+        const input = el().querySelectorAll('.table tbody tr')[0]
           .querySelector('input[type="number"]') as HTMLInputElement;
         input.value = '200';
         input.dispatchEvent(new Event('input'));
@@ -1194,7 +1239,7 @@ describe('StatementImportComponent', () => {
       it('não exibe mais o bloco .summary antigo nem a tabela', () => {
         doSave();
         expect(el().querySelector('.summary')).toBeNull();
-        expect(el().querySelector('.review-table')).toBeNull();
+        expect(el().querySelector('.table')).toBeNull();
       });
 
       it('exibe as 3 ações', () => {
