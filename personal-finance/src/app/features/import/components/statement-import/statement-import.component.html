@@ -124,18 +124,24 @@
       </div>
     </div>
 
-    <div class="table-wrapper">
-      <table class="review-table">
+    <div class="table-wrap card">
+      <table class="table">
         <thead>
           <tr>
-            <th>Data</th><th>Descrição</th><th>Tipo</th><th>Categoria</th><th>Valor</th><th>Avisos</th><th></th>
+            <th class="col-hide-mobile">Data</th>
+            <th>Descrição</th>
+            <th>Tipo</th>
+            <th>Categoria</th>
+            <th>Valor</th>
+            <th class="col-hide-mobile">Avisos</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
           @for (item of items(); track $index; let i = $index) {
             <tr [class.row-warning]="item.isLikelyInternalTransfer || item.isLikelyDuplicate"
                 [class.row-invalid]="!isItemValid(item)">
-              <td>
+              <td class="col-hide-mobile">
                 <input class="cell-input" type="date" [ngModel]="item.date" (ngModelChange)="updateItem(i, { date: $event })" />
               </td>
               <td>
@@ -165,7 +171,7 @@
                        (ngModelChange)="updateItem(i, { amount: +$event })" />
                 <small class="muted">R$ {{ item.amount | number:'1.2-2' }}</small>
               </td>
-              <td>
+              <td class="col-hide-mobile">
                 @if (item.isLikelyInternalTransfer) {
                   <span class="pill pill-warn" title="Possível transferência entre contas próprias">Transferência interna</span>
                 }
