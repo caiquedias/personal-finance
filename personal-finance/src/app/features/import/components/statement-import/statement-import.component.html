@@ -1,0 +1,233 @@
+<div class="statement-import">
+  @if (errorMessage()) {
+    <div class="alert-error" role="alert">{{ errorMessage() }}</div>
+  }
+
+  @let hasError = state() === 'err';
+  @let isSaveFlow = saving() || state() === 'done';
+
+  <ol class="stepper" aria-label="Etapas da importação">
+    <li class="step" [class.active]="state() === 'empty' || state() === 'err' || (state() === 'proc' && !isSaveFlow)"
+        [class.complete]="state() === 'preview' || isSaveFlow">
+      <span class="step-dot">1</span><span class="step-label">Arquivo</span>
+    </li>
+    <li class="step" [class.active]="state() === 'preview'" [class.complete]="isSaveFlow">
+      <span class="step-dot">2</span><span class="step-label">Revisar lançamentos</span>
+    </li>
+    <li class="step" [class.active]="isSaveFlow" [class.complete]="state() === 'done'">
+      <span class="step-dot">3</span><span class="step-label">Importar</span>
+    </li>
+  </ol>
+
+  <div class="pdf-intro">
+    <input #fileInput type="file" class="pdf-file-input" accept=".pdf,application/pdf" (change)="onFileSelected($event)" />
+
+    @if (selectedFile(); as file) {
+      <div class="pdf-file-card" [class.has-error]="hasError">
+        <span class="pdf-icon" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>
+        </span>
+        <div class="pdf-file-info">
+          <strong class="pdf-file-name">{{ file.name }}</strong>
+          <span class="pdf-file-meta">{{ file.size / 1024 | number:'1.0-0' }} KB</span>
+        </div>
+        <button type="button" class="btn btn-secondary btn-sm" (click)="fileInput.click()">Trocar arquivo</button>
+      </div>
+    } @else {
+      <div class="pdf-dropzone" [class.dragging]="isDragging()" [class.has-error]="hasError"
+           role="button" tabindex="0"
+           (click)="fileInput.click()" (keydown.enter)="fileInput.click()" (keydown.space)="fileInput.click(); $event.preventDefault()"
+           (dragover)="onDragOver($event)" (dragleave)="onDragLeave($event)" (drop)="onDrop($event)">
+        <span class="pdf-icon pdf-icon-lg" aria-hidden="true">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="M7 9l5-5 5 5"/><path d="M5 20h14"/></svg>
+        </span>
+        <p class="pdf-dropzone-title">Arraste o extrato aqui</p>
+        <p class="pdf-dropzone-sub">ou clique para selecionar</p>
+        <p class="pdf-dropzone-hint">Apenas .pdf · máximo 10 MB</p>
+        <span class="btn btn-secondary">Selecionar arquivo</span>
+      </div>
+    }
+
+    <div class="pdf-fields">
+      <label class="field">
+        <span>Senha (opcional)</span>
+        <input class="input" [class.error]="hasError" type="password" autocomplete="off"
+               [ngModel]="password()" (ngModelChange)="password.set($event)" />
+      </label>
+      <label class="field">
+        <span>Data de início (opcional)</span>
+        <input class="input" type="date" [ngModel]="fromDate()" (ngModelChange)="fromDate.set($event)" />
+      </label>
+    </div>
+
+    <button type="button" class="btn btn-primary pdf-preview-btn" [disabled]="!selectedFile() || loading()" (click)="preview()">
+      {{ loading() ? 'Processando...' : (hasError && selectedFile() ? 'Tentar novamente' : 'Pré-visualizar') }}
+    </button>
+  </div>
+
+  @if (state() === 'proc') {
+    <div class="proc-card" role="status" aria-live="polite">
+      <div class="proc-head">
+        <strong>{{ saving() ? 'Importando lançamentos...' : 'Lendo o extrato...' }}</strong>
+        <span class="proc-percent">{{ simulatedProgress() | number:'1.0-0' }}%</span>
+      </div>
+      <div class="proc-bar" aria-hidden="true"><div class="proc-bar-fill" [style.width.%]="simulatedProgress()"></div></div>
+      <ul class="proc-checklist">
+        <li [class.done]="simulatedProgress() >= 10">Arquivo enviado</li>
+        <li [class.done]="simulatedProgress() >= 40">PDF lido</li>
+        <li [class.done]="simulatedProgress() >= 70">Verificando duplicados</li>
+      </ul>
+    </div>
+  }
+
+  @if (previewed() && items().length === 0) {
+    <p class="empty-state" role="status">
+      @if (discardedCount() > 0) {
+        Nenhum lançamento a importar: {{ discardedCount() }} lançamento(s) descartado(s) por estarem antes da data de início.
+      } @else {
+        Nenhum lançamento encontrado no extrato.
+      }
+    </p>
+  }
+
+  @if (resetDone() && state() === 'empty') {
+    <p class="empty-state">Pronto para um novo extrato. Selecione um PDF acima.</p>
+  }
+
+  @if (items().length > 0) {
+    @if (discardedCount() > 0) {
+      <p class="discarded">{{ discardedCount() }} lançamento(s) descartado(s) por estarem antes da data de início.</p>
+    }
+
+    <div class="summary-cards">
+      <div class="summary-card" data-card="total">
+        <span class="summary-card-label">Lançamentos</span>
+        <strong class="summary-card-value">{{ items().length }}</strong>
+        @if (discardedSinceLabel()) {
+          <span class="summary-card-sub">desde {{ discardedSinceLabel() }}</span>
+        }
+      </div>
+      <div class="summary-card" data-card="expense">
+        <span class="summary-card-label">Despesas</span>
+        <strong class="summary-card-value">{{ expenseItems().length }}</strong>
+        <span class="summary-card-sub">R$ {{ expenseSum() | number:'1.2-2' }}</span>
+      </div>
+      <div class="summary-card" data-card="income">
+        <span class="summary-card-label">Receitas</span>
+        <strong class="summary-card-value">{{ incomeItems().length }}</strong>
+        <span class="summary-card-sub">R$ {{ incomeSum() | number:'1.2-2' }}</span>
+      </div>
+      <div class="summary-card" data-card="attention" [class.has-attention]="attentionCount() > 0">
+        <span class="summary-card-label">Precisam de atenção</span>
+        <strong class="summary-card-value">{{ attentionCount() }}</strong>
+        <span class="summary-card-sub">{{ pendingCount() }} sem categoria · {{ warnCount() }} com aviso</span>
+      </div>
+    </div>
+
+    <div class="table-wrap card">
+      <table class="table">
+        <thead>
+          <tr>
+            <th class="col-hide-mobile">Data</th>
+            <th>Descrição</th>
+            <th>Tipo</th>
+            <th>Categoria</th>
+            <th>Valor</th>
+            <th class="col-hide-mobile">Avisos</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of items(); track $index; let i = $index) {
+            <tr [class.row-warning]="item.isLikelyInternalTransfer || item.isLikelyDuplicate"
+                [class.row-invalid]="!isItemValid(item)">
+              <td class="col-hide-mobile">
+                <input class="cell-input" type="date" [ngModel]="item.date" (ngModelChange)="updateItem(i, { date: $event })" />
+              </td>
+              <td>
+                <input class="cell-input" type="text" maxlength="200" [ngModel]="item.description"
+                       (ngModelChange)="updateItem(i, { description: $event })" />
+              </td>
+              <td>
+                <select class="pill pill-select" [class.pill-expense]="item.kind === 'Expense'" [class.pill-income]="item.kind === 'Income'" aria-label="Tipo" [ngModel]="item.kind" (ngModelChange)="updateItem(i, { kind: $event })">
+                  <option value="Expense">Despesa</option>
+                  <option value="Income">Receita</option>
+                </select>
+              </td>
+              <td>
+                @if (item.kind === 'Expense') {
+                  <select class="cell-input" [class.select-pending]="!item.categoryId" [ngModel]="item.categoryId" (ngModelChange)="updateItem(i, { categoryId: $event })">
+                    <option [ngValue]="null">Selecione...</option>
+                    @for (cat of categories(); track cat.id) {
+                      <option [ngValue]="cat.id">{{ cat.name }}</option>
+                    }
+                  </select>
+                } @else {
+                  <span class="muted">—</span>
+                }
+              </td>
+              <td>
+                <input class="cell-input" type="number" step="0.01" min="0" [ngModel]="item.amount"
+                       (ngModelChange)="updateItem(i, { amount: +$event })" />
+                <small class="muted">R$ {{ item.amount | number:'1.2-2' }}</small>
+              </td>
+              <td class="col-hide-mobile">
+                @if (item.isLikelyInternalTransfer) {
+                  <span class="pill pill-warn" title="Possível transferência entre contas próprias">Transferência interna</span>
+                }
+                @if (item.isLikelyDuplicate) {
+                  <span class="pill pill-dup" title="Possível lançamento já existente">Possível duplicado</span>
+                }
+              </td>
+              <td>
+                <button type="button" class="btn-remove" aria-label="Remover linha" (click)="removeItem(i)">✕</button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @if (state() === 'preview') {
+      <div class="action-bar">
+        <div class="action-bar-info">
+          <span class="action-bar-period">Destino: {{ targetPeriodLabel() }}</span>
+          @if (pendingCount() > 0) {
+            <span class="action-bar-pending">{{ pendingCount() }} sem categoria — defina antes de importar</span>
+          }
+        </div>
+        <button type="button" class="btn btn-primary" [disabled]="!canSave()" (click)="save()">
+          Importar {{ items().length }} lançamentos
+        </button>
+      </div>
+    }
+  }
+
+  @if (result(); as r) {
+    <div class="success-screen" role="status">
+      <div class="success-banner">
+        <strong>Importação concluída.</strong>
+      </div>
+      <div class="success-cards">
+        <div class="success-card" data-card="expenses">
+          <span class="success-card-label">Despesas</span>
+          <strong class="success-card-value">{{ r.expensesCreated }}</strong>
+        </div>
+        <div class="success-card" data-card="incomes">
+          <span class="success-card-label">Receitas</span>
+          <strong class="success-card-value">{{ r.incomesCreated }}</strong>
+        </div>
+        <div class="success-card" data-card="periods">
+          <span class="success-card-label">Períodos</span>
+          <strong class="success-card-value">{{ r.periodsCreated + r.periodsReused }}</strong>
+          <span class="success-card-sub">{{ r.periodsCreated }} criado(s) · {{ r.periodsReused }} reaproveitado(s)</span>
+        </div>
+      </div>
+      <div class="success-actions">
+        <button type="button" class="btn btn-primary" data-action="view-period" (click)="goTo('/periods')">Ver período</button>
+        <button type="button" class="btn btn-secondary" data-action="view-expenses" (click)="goTo('/expenses')">Ver despesas</button>
+        <button type="button" class="btn btn-ghost" data-action="import-another" (click)="importAnother()">Importar outro extrato</button>
+      </div>
+    </div>
+  }
+</div>

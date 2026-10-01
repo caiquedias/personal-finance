@@ -51,6 +51,21 @@ Executado pelo sub-agente **Reviewer** ao final de cada issue, antes do PR.
 - [ ] Endpoints sensíveis com `[Authorize]` — `AuthController` explicitamente `[AllowAnonymous]`
 - [ ] Admin endpoints com `[Authorize(Roles="Admin")]`
 
+## Nunca limitar a quantidade de achados
+
+Reportar **todos** os achados reais, ranqueados por severidade — nunca impor um teto numérico. Se o
+volume for grande demais para o ciclo atual, a resposta é registrar em
+`docs/sprint-planning.md` → "Débitos de tooling identificados em review", não parar de procurar.
+
+## Falsos-positivos recorrentes — checar antes de reportar
+
+Mantenha aqui os findings já investigados e rejeitados, com o motivo — sem isso, o mesmo
+falso-positivo volta a cada issue.
+
+| O que o Reviewer aponta | Por que não é bug neste projeto | Origem |
+|---|---|---|
+| — | — | — |
+
 ## Severidade e ação
 
 | Severidade | Critério | Ação |

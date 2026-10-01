@@ -235,6 +235,14 @@ export interface CreateIncomeRequest {
   notes?:        string;
 }
 
+export interface UpdateIncomeRequest {
+  fortnightType: FortnightType;
+  description:   string;
+  amount:        number;
+  receivedAt:    string;
+  notes?:        string;
+}
+
 // ── Admin ─────────────────────────────────────────────────────────────────────
 
 export interface AdminUserFilterParams {
@@ -336,4 +344,41 @@ export interface ExpensesReport {
   year:  number;
   month: number | null;
   items: ExpenseByCategoryItem[];
+}
+
+// Import de extrato PDF
+export interface StatementPreviewItem {
+  date:                     string; // yyyy-MM-dd
+  description:              string;
+  amount:                   number;
+  kind:                     'Income' | 'Expense';
+  suggestedCategoryId:      string | null;
+  isLikelyInternalTransfer: boolean;
+  isLikelyDuplicate:        boolean;
+  duplicateOfId:            string | null;
+}
+
+export interface StatementPreviewResult {
+  items:                StatementPreviewItem[];
+  discardedByDateCount: number;
+}
+
+export interface ConfirmStatementItemRequest {
+  date:        string; // yyyy-MM-dd
+  description: string;
+  amount:      number;
+  kind:        'Income' | 'Expense';
+  categoryId:  string | null;
+  sourceType:  string | null;
+}
+
+export interface ConfirmStatementImportRequest {
+  items: ConfirmStatementItemRequest[];
+}
+
+export interface ConfirmStatementImportResult {
+  periodsCreated:  number;
+  periodsReused:   number;
+  expensesCreated: number;
+  incomesCreated:  number;
 }

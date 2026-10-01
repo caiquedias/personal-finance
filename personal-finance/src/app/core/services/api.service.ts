@@ -8,7 +8,7 @@ import {
   ExpenseResponse, CreateExpenseRequest, UpdateExpenseRequest, MarkAsPaidRequest, ExpenseOrderItem,
   BatchExpenseItemRequest, CreateExpensesBatchRequest,
   PagedResult, ExpenseFilterParams, IncomeFilterParams,
-  IncomeResponse, CreateIncomeRequest,
+  IncomeResponse, CreateIncomeRequest, UpdateIncomeRequest,
   LookupItem,
   CreatePaymentStatusRequest, CreateSourceTypeRequest, CreateFortnightTypeRequest,
   UpdatePaymentStatusRequest, UpdateSourceTypeRequest, UpdateFortnightTypeRequest,
@@ -16,6 +16,7 @@ import {
   CreateUserByAdminRequest, UpdateUserByAdminRequest,
   ExpensesReport,
   EligiblePeriodResponse, PurgeResultResponse, PurgeRecordResponse,
+  StatementPreviewResult, ConfirmStatementImportRequest, ConfirmStatementImportResult,
 } from '../models/models';
 
 @Injectable({ providedIn: 'root' })
@@ -162,6 +163,10 @@ export class ApiService {
     return this.http.post<IncomeResponse>(`${this.base}/incomes`, data);
   }
 
+  updateIncome(id: string, data: UpdateIncomeRequest): Observable<void> {
+    return this.http.put<void>(`${this.base}/incomes/${id}`, data);
+  }
+
   deleteIncome(id: string): Observable<void> {
     return this.http.delete<void>(`${this.base}/incomes/${id}`);
   }
@@ -280,5 +285,17 @@ export class ApiService {
 
   deletePurgeRecord(id: string): Observable<void> {
     return this.http.delete<void>(`${this.base}/purge/records/${id}`);
+  }
+
+  previewStatementImport(file: File, password?: string, fromDate?: string): Observable<StatementPreviewResult> {
+    const form = new FormData();
+    form.append('file', file);
+    if (password) form.append('password', password);
+    if (fromDate) form.append('fromDate', fromDate);
+    return this.http.post<StatementPreviewResult>(`${this.base}/import/statement/preview`, form);
+  }
+
+  confirmStatementImport(req: ConfirmStatementImportRequest): Observable<ConfirmStatementImportResult> {
+    return this.http.post<ConfirmStatementImportResult>(`${this.base}/import/statement/confirm`, req);
   }
 }
