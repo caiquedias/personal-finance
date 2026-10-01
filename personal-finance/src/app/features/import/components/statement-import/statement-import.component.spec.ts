@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testin
 import { of, Subject, throwError } from 'rxjs';
 import { StatementImportComponent } from './statement-import.component';
 import { ApiService } from '../../../../core/services/api.service';
+import { CategoryResponse, ConfirmStatementImportResult, StatementPreviewResult } from '../../../../core/models/models';
 
 function makeFile(name: string, size = 1024): File {
   return new File([new Uint8Array(size)], name, { type: 'application/pdf' });
@@ -10,12 +11,12 @@ function fileEvent(file: File): Event {
   return { target: { files: [file], value: '' } } as unknown as Event;
 }
 
-const CATS = [
+const CATS: CategoryResponse[] = [
   { id: 'cat-1', name: 'Mercado', color: '#fff', icon: null, userId: null, isGlobal: true, isActive: true },
   { id: 'cat-2', name: 'Lazer',   color: '#000', icon: null, userId: null, isGlobal: true, isActive: true },
 ];
 
-const PREVIEW = {
+const PREVIEW: StatementPreviewResult = {
   discardedByDateCount: 3,
   items: [
     { date: '2026-01-10', description: 'Supermercado', amount: 100, kind: 'Expense', suggestedCategoryId: 'cat-1',
@@ -36,16 +37,16 @@ const PREVIEW = {
  */
 describe('StatementImportComponent', () => {
   let fixture: ComponentFixture<StatementImportComponent>;
-  let c: any;
+  let c: StatementImportComponent;
   let api: jasmine.SpyObj<ApiService>;
 
   beforeEach(async () => {
     api = jasmine.createSpyObj<ApiService>('ApiService',
       ['getCategories', 'previewStatementImport', 'confirmStatementImport']);
-    api.getCategories.and.returnValue(of(CATS as any));
-    api.previewStatementImport.and.returnValue(of(PREVIEW as any));
+    api.getCategories.and.returnValue(of(CATS));
+    api.previewStatementImport.and.returnValue(of(PREVIEW));
     api.confirmStatementImport.and.returnValue(of({
-      periodsCreated: 1, periodsReused: 2, expensesCreated: 2, incomesCreated: 1 } as any));
+      periodsCreated: 1, periodsReused: 2, expensesCreated: 2, incomesCreated: 1 }));
 
     await TestBed.configureTestingModule({
       imports: [StatementImportComponent],
@@ -127,7 +128,7 @@ describe('StatementImportComponent', () => {
     });
 
     it('exibe estado vazio quando o extrato não tem lançamentos', () => {
-      api.previewStatementImport.and.returnValue(of({ items: [], discardedByDateCount: 0 } as any));
+      api.previewStatementImport.and.returnValue(of({ items: [], discardedByDateCount: 0 }));
       c.onFileSelected(fileEvent(makeFile('e.pdf')));
       c.preview();
       fixture.detectChanges();
@@ -135,7 +136,7 @@ describe('StatementImportComponent', () => {
     });
 
     it('estado vazio informa descartados pela data de início', () => {
-      api.previewStatementImport.and.returnValue(of({ items: [], discardedByDateCount: 4 } as any));
+      api.previewStatementImport.and.returnValue(of({ items: [], discardedByDateCount: 4 }));
       c.onFileSelected(fileEvent(makeFile('e.pdf')));
       c.preview();
       fixture.detectChanges();
@@ -243,7 +244,7 @@ describe('StatementImportComponent', () => {
 
     it('envia payload com kind string, data yyyy-MM-dd e sourceType padrão', () => {
       c.save();
-      const req = api.confirmStatementImport.calls.mostRecent().args[0] as any;
+      const req = api.confirmStatementImport.calls.mostRecent().args[0];
       expect(req.items.length).toBe(3);
       const exp = req.items[0];
       expect(exp.kind).toBe('Expense');
@@ -450,7 +451,7 @@ describe('StatementImportComponent', () => {
     });
 
     it('preview em voo: proc', () => {
-      api.previewStatementImport.and.returnValue(new Subject<any>());
+      api.previewStatementImport.and.returnValue(new Subject<StatementPreviewResult>());
       c.onFileSelected(fileEvent(makeFile('extrato.pdf')));
       c.preview();
       expect(c.state()).toBe('proc');
@@ -462,7 +463,7 @@ describe('StatementImportComponent', () => {
     });
 
     it('preview ok sem itens: empty e .empty-state visível', () => {
-      api.previewStatementImport.and.returnValue(of({ items: [], discardedByDateCount: 0 } as any));
+      api.previewStatementImport.and.returnValue(of({ items: [], discardedByDateCount: 0 }));
       c.onFileSelected(fileEvent(makeFile('e.pdf')));
       c.preview();
       fixture.detectChanges();
@@ -479,7 +480,7 @@ describe('StatementImportComponent', () => {
     it('save em voo: proc', () => {
       loadPreview();
       c.updateItem(2, { categoryId: 'cat-2' });
-      api.confirmStatementImport.and.returnValue(new Subject<any>());
+      api.confirmStatementImport.and.returnValue(new Subject<ConfirmStatementImportResult>());
       c.save();
       expect(c.state()).toBe('proc');
     });
@@ -523,7 +524,7 @@ describe('StatementImportComponent', () => {
       const f2 = TestBed.createComponent(StatementImportComponent);
       f2.detectChanges();
       const el2 = f2.nativeElement as HTMLElement;
-      expect((f2.componentInstance as any).state()).toBe('err');
+      expect(f2.componentInstance.state()).toBe('err');
       expect(el2.querySelector('.pdf-dropzone')).not.toBeNull();
       expect(el2.querySelector('input[type="password"]')).not.toBeNull();
     });
@@ -585,7 +586,7 @@ describe('StatementImportComponent', () => {
     it('passo ativo: Importar em proc do save', () => {
       loadPreview();
       c.updateItem(2, { categoryId: 'cat-2' });
-      api.confirmStatementImport.and.returnValue(new Subject<any>());
+      api.confirmStatementImport.and.returnValue(new Subject<ConfirmStatementImportResult>());
       c.save();
       fixture.detectChanges();
       expect(activeStep()).toContain('Importar');
@@ -606,7 +607,7 @@ describe('StatementImportComponent', () => {
     });
 
     it('card "Lendo o extrato..." durante o preview', () => {
-      api.previewStatementImport.and.returnValue(new Subject<any>());
+      api.previewStatementImport.and.returnValue(new Subject<StatementPreviewResult>());
       c.onFileSelected(fileEvent(makeFile('extrato.pdf')));
       c.preview();
       fixture.detectChanges();
@@ -616,14 +617,14 @@ describe('StatementImportComponent', () => {
     it('card "Importando lançamentos..." durante o save', () => {
       loadPreview();
       c.updateItem(2, { categoryId: 'cat-2' });
-      api.confirmStatementImport.and.returnValue(new Subject<any>());
+      api.confirmStatementImport.and.returnValue(new Subject<ConfirmStatementImportResult>());
       c.save();
       fixture.detectChanges();
       expect(el().querySelector('.proc-card')?.textContent).toContain('Importando lançamentos...');
     });
 
     it('card contém checklist cosmético e percentual', () => {
-      api.previewStatementImport.and.returnValue(new Subject<any>());
+      api.previewStatementImport.and.returnValue(new Subject<StatementPreviewResult>());
       c.onFileSelected(fileEvent(makeFile('extrato.pdf')));
       c.preview();
       fixture.detectChanges();
@@ -635,7 +636,7 @@ describe('StatementImportComponent', () => {
     });
 
     it('contrato #443: botão preview segue visível com "Processando..." e desabilitado durante o preview', () => {
-      api.previewStatementImport.and.returnValue(new Subject<any>());
+      api.previewStatementImport.and.returnValue(new Subject<StatementPreviewResult>());
       c.onFileSelected(fileEvent(makeFile('extrato.pdf')));
       c.preview();
       fixture.detectChanges();
@@ -647,7 +648,7 @@ describe('StatementImportComponent', () => {
 
   describe('ticker de progresso simulado', () => {
     it('preview: avança em voo, nunca passa de 90 e salta para 100 no sucesso', fakeAsync(() => {
-      const subj = new Subject<any>();
+      const subj = new Subject<StatementPreviewResult>();
       api.previewStatementImport.and.returnValue(subj);
       c.onFileSelected(fileEvent(makeFile('extrato.pdf')));
       c.preview();
@@ -667,7 +668,7 @@ describe('StatementImportComponent', () => {
     }));
 
     it('preview: salta para 100 também em erro', fakeAsync(() => {
-      const subj = new Subject<any>();
+      const subj = new Subject<StatementPreviewResult>();
       api.previewStatementImport.and.returnValue(subj);
       c.onFileSelected(fileEvent(makeFile('extrato.pdf')));
       c.preview();
@@ -681,7 +682,7 @@ describe('StatementImportComponent', () => {
     it('save: avança em voo até 90 e salta para 100 no sucesso', fakeAsync(() => {
       loadPreview();
       c.updateItem(2, { categoryId: 'cat-2' });
-      const subj = new Subject<any>();
+      const subj = new Subject<ConfirmStatementImportResult>();
       api.confirmStatementImport.and.returnValue(subj);
       c.save();
       expect(c.simulatedProgress()).toBe(0);
@@ -697,7 +698,7 @@ describe('StatementImportComponent', () => {
     it('save: salta para 100 em erro e mantém itens', fakeAsync(() => {
       loadPreview();
       c.updateItem(2, { categoryId: 'cat-2' });
-      const subj = new Subject<any>();
+      const subj = new Subject<ConfirmStatementImportResult>();
       api.confirmStatementImport.and.returnValue(subj);
       c.save();
       tick(2000);
@@ -709,7 +710,7 @@ describe('StatementImportComponent', () => {
     }));
 
     it('zera a cada novo preview()', fakeAsync(() => {
-      const first = new Subject<any>();
+      const first = new Subject<StatementPreviewResult>();
       api.previewStatementImport.and.returnValue(first);
       c.onFileSelected(fileEvent(makeFile('extrato.pdf')));
       c.preview();
@@ -718,7 +719,7 @@ describe('StatementImportComponent', () => {
       first.complete();
       expect(c.simulatedProgress()).toBe(100);
 
-      const second = new Subject<any>();
+      const second = new Subject<StatementPreviewResult>();
       api.previewStatementImport.and.returnValue(second);
       c.preview();
       expect(c.simulatedProgress()).toBe(0);
@@ -729,14 +730,14 @@ describe('StatementImportComponent', () => {
     it('zera a cada novo save()', fakeAsync(() => {
       loadPreview();
       c.updateItem(2, { categoryId: 'cat-2' });
-      const first = new Subject<any>();
+      const first = new Subject<ConfirmStatementImportResult>();
       api.confirmStatementImport.and.returnValue(first);
       c.save();
       tick(5000);
       first.error({ status: 500, error: { message: 'Falha.' } });
       expect(c.simulatedProgress()).toBe(100);
 
-      const second = new Subject<any>();
+      const second = new Subject<ConfirmStatementImportResult>();
       api.confirmStatementImport.and.returnValue(second);
       c.save();
       expect(c.simulatedProgress()).toBe(0);
@@ -744,12 +745,12 @@ describe('StatementImportComponent', () => {
     }));
 
     it('novo preview() em voo cancela o ticker anterior (progresso não acelera)', fakeAsync(() => {
-      const first = new Subject<any>();
+      const first = new Subject<StatementPreviewResult>();
       api.previewStatementImport.and.returnValue(first);
       c.onFileSelected(fileEvent(makeFile('extrato.pdf')));
       c.preview();
       tick(100000);
-      const second = new Subject<any>();
+      const second = new Subject<StatementPreviewResult>();
       api.previewStatementImport.and.returnValue(second);
       c.preview();
       expect(c.simulatedProgress()).toBe(0);
@@ -762,7 +763,7 @@ describe('StatementImportComponent', () => {
     }));
 
     it('sem timer pendente após fixture.destroy() com request em voo', fakeAsync(() => {
-      api.previewStatementImport.and.returnValue(new Subject<any>());
+      api.previewStatementImport.and.returnValue(new Subject<StatementPreviewResult>());
       c.onFileSelected(fileEvent(makeFile('extrato.pdf')));
       c.preview();
       tick(1000);
