@@ -36,6 +36,8 @@ public class HttpsSecurityPipelineTests : IDisposable
         var client = CreateClient("Production", configureHttpsPort: false);
         var request = new HttpRequestMessage(HttpMethod.Get, Path);
         request.Headers.Add("X-Forwarded-Proto", "https");
+        // localhost é excluído do HSTS por padrão; usar host público
+        request.Headers.Host = "api.example.com";
 
         var response = await client.SendAsync(request);
 
