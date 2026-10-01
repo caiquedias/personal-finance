@@ -146,3 +146,29 @@ select.select-pending { border-color: var(--color-warning); background: var(--co
 .proc-checklist li::before { content: '○'; margin-right: 8px; }
 .proc-checklist li.done { color: var(--text); }
 .proc-checklist li.done::before { content: '✓'; color: var(--color-success); }
+
+/* Polimento responsivo (<768px) — mesmo breakpoint do restante do app */
+@media (max-width: 767px) {
+  /* Tabela de revisão: largura mínima para rolar horizontalmente em vez de espremer colunas */
+  .table-wrapper { -webkit-overflow-scrolling: touch; }
+  .review-table { min-width: 680px; }
+
+  /* Barra de ação: empilhada, botões em largura total */
+  .action-bar { flex-direction: column; align-items: stretch; gap: 10px; padding: 10px 12px; }
+  .action-bar .btn { width: 100%; }
+
+  /* Cards de resumo: 2 colunas, compactos, sem cortar sub-texto */
+  .summary-cards, .success-cards { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .summary-card, .success-card { min-width: 0; padding: 12px; }
+  .summary-card-value, .success-card-value { font-size: 1.25rem; }
+  .summary-card-sub, .success-card-sub { white-space: normal; overflow-wrap: anywhere; }
+
+  /* Stepper: passos podem encolher e o rótulo quebra de linha */
+  .stepper { gap: 4px; }
+  .step { min-width: 0; gap: 6px; font-size: 0.75rem; line-height: 1.2; }
+  .step-dot { flex-shrink: 0; }
+
+  /* Card do arquivo: empilha nome e botão; nome mantém ellipsis */
+  .pdf-file-card { flex-wrap: wrap; padding: 12px 14px; gap: 10px; }
+  .pdf-file-card .btn { width: 100%; }
+}
