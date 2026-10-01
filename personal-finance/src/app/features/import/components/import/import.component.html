@@ -1,11 +1,20 @@
 <app-header
   title="Importar Dados"
-  subtitle="Importe o histórico financeiro da planilha legada (.xlsx)"
+  [subtitle]="activeTab() === 'statement' ? 'Importe transações a partir de um extrato bancário (.pdf)' : 'Importe o histórico financeiro da planilha legada (.xlsx)'"
 >
   <a routerLink="/" class="btn btn-secondary btn-sm">← Dashboard</a>
 </app-header>
 
 <div class="page-content">
+
+  <div class="import-tabs" role="tablist">
+    <button type="button" role="tab" class="import-tab" [class.active]="activeTab() === 'legacy'" [attr.aria-selected]="activeTab() === 'legacy'" (click)="setTab('legacy')">Legado</button>
+    <button type="button" role="tab" class="import-tab" [class.active]="activeTab() === 'statement'" [attr.aria-selected]="activeTab() === 'statement'" (click)="setTab('statement')">Extrato PDF</button>
+  </div>
+
+  @if (activeTab() === 'statement') {
+    <app-statement-import />
+  } @else {
 
   <!-- Drop zone -->
   @if (state() === 'idle' || state() === 'error') {
@@ -182,6 +191,8 @@
         elas indicam pagamentos realizados no mês anterior.
       </div>
     </div>
+  }
+
   }
 
 </div>

@@ -3,7 +3,7 @@
   display: flex;
   flex-direction: column;
   gap: 24px;
-  max-width: 760px;
+  flex: 1;
 }
 
 /* ── Drop zone ── */
@@ -118,7 +118,7 @@
 }
 
 @media (max-width: 767px) {
-  .page-content { padding: 16px; gap: 16px; max-width: unset; }
+  .page-content { padding: 16px; gap: 16px; }
 
   .drop-zone { padding: 32px 16px; }
 
@@ -189,3 +189,10 @@
   font-size: 0.8125rem;
   border-left: 3px solid var(--color-warning);
 }
+
+.import-tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+.import-tab {
+  padding: 8px 16px; border: 1px solid var(--border); border-radius: var(--radius);
+  background: transparent; color: inherit; cursor: pointer;
+}
+.import-tab.active { background: var(--terracotta); color: #fff; border-color: transparent; }

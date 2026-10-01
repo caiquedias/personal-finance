@@ -74,13 +74,41 @@ Planejar apenas issues com **Status = Backlog** no board — ignorar as demais.
 
 ### Critério de sizing
 
-| Size | Arquivos criados/alterados |
-|---|---|
-| XS | 1–2 |
-| S | 3–5 |
-| M | 6–10 |
-| L | 11–25 |
-| XL | 25+ |
+Sizing por **nº de arquivos afetados** (contar o arquivo de teste junto com o de produção — 1 teste
+por classe é regra obrigatória, não só a feature).
+
+| Size | Arquivos criados/alterados | Ação de planejamento |
+|---|---|---|
+| XS | 1–2 | — |
+| S | 3–7 | — |
+| M | 8–14 | — |
+| L | 15–25 | **obrigatoriamente dividida em sub-issues** |
+| XL | 25+ | **dividir em mais issues** |
+
+> Size decide divisão de escopo, não estimativa de tempo — ver "Fórmula de Estimativa" abaixo.
+
+---
+
+## Fórmula de Estimativa
+
+> **Última calibração:** 2026-09-28 · n=2 issues com codificação medida
+> **Origem dos números:** sem prior herdado de outro projeto — amostra local ainda pequena (n=2, alvo
+> ~10). Fórmula sugerida pelo script: codificação mediana 5min (p75 6min) + piso de orquestração 2min
+> = 7min por issue; sem correlação calculável entre nº de arquivos e tempo. Tratar como indicativo.
+
+Até a primeira calibração, `Estimativa: Xh` do comentário de planning continua sendo um número
+definido manualmente por Caique/PO — **não** deriva do Size (correlação entre nº de arquivos e
+tempo de codificação costuma ser fraca; Size serve só para disparar divisão em L/XL).
+
+O `/end-issue` mede, a cada issue, duração de codificação e duração de sessão completa
+(`docs/memory/<ISSUE-NUMBER>.md` → "Análise de eficiência da sessão") e chama
+`node scripts/calibrate-estimates.js --check` para avisar quando a amostra local já sustenta
+recalibrar a fórmula (codificação mediana + piso de orquestração). Rodar o script sem `--check`
+mostra o relatório completo (correlações, medianas por bucket, duração por nº de ciclos de
+retrabalho).
+
+**Como registrar uma recalibração:** trocar a linha "Última calibração" acima e deixar rastro em
+"Decisões fechadas fora da spec" (data, valores antes → depois, leitura do desvio).
 
 ---
 
@@ -94,3 +122,45 @@ Planejar apenas issues com **Status = Backlog** no board — ignorar as demais.
 | Estimate | `PVTF_lAHOAOhFlc4BUMJ_zhBWAPU` | número (horas) |
 
 **Project ID:** `PVT_kwHOAOhFlc4BUMJ_`
+
+---
+
+## Armadilhas conhecidas do gerenciador de issues (GitHub)
+
+Seção viva: registrar aqui toda armadilha descoberta em runtime, com como detectar e como prevenir.
+
+- **`gh project item-edit` exige o item ID do projeto (`PVTI_...`), não o número da issue** — obter
+  via GraphQL (`gh api graphql`) antes de qualquer update de campo do board.
+
+---
+
+## Decisões técnicas pendentes / débitos conhecidos
+
+Nenhuma delas vira issue autônoma no board — são task/comentário da feature correspondente, quando
+ela for planejada.
+
+| Issue | Decisão | Motivo | Bloqueia |
+|---|---|---|---|
+| — | — | — | — |
+
+---
+
+## Débitos de tooling identificados em review
+
+Achados não-bloqueantes do Reviewer que ainda não têm feature relacionada para virar task — ficam
+aqui até que uma issue de tooling/infra justifique abrir work item.
+
+| Data | Achado | Origem | Ação sugerida / status |
+|---|---|---|---|
+| — | — | — | — |
+
+---
+
+## Decisões fechadas fora da spec
+
+Registro auditável do que foi decidido em rodada de planning ou implementação e não está na
+especificação — inclusive as recalibrações da fórmula de estimativa.
+
+| Data | Decisão | Onde está documentada |
+|---|---|---|
+| — | — | — |

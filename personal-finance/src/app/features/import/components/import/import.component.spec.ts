@@ -138,4 +138,41 @@ describe('ImportComponent', () => {
       expect(inputEl.value).toBe('');
     });
   });
+
+  describe('largura do .page-content', () => {
+    // Regras de nível superior (fora de @media) que definem max-width em .page-content do componente.
+    // Independe da largura do viewport do Karma (o @media 767px já aplica max-width: unset).
+    function topLevelMaxWidths(): string[] {
+      const values: string[] = [];
+      for (const sheet of Array.from(document.styleSheets)) {
+        let rules: CSSRuleList;
+        try { rules = sheet.cssRules; } catch { continue; }
+        for (const rule of Array.from(rules)) {
+          if (rule instanceof CSSStyleRule && /\.page-content(?![\w-])/.test(rule.selectorText)
+              && rule.style.maxWidth) {
+            values.push(rule.style.maxWidth);
+          }
+        }
+      }
+      return values;
+    }
+
+    function expectUnbounded(): void {
+      const el = fixture.nativeElement.querySelector('.page-content') as HTMLElement;
+      expect(el).not.toBeNull();
+      expect(getComputedStyle(el).maxWidth).toBe('none');
+      expect(topLevelMaxWidths().filter(v => v !== 'none' && v !== 'unset')).toEqual([]);
+    }
+
+    it('não limita a largura máxima na aba Legado', () => {
+      expectUnbounded();
+    });
+
+    it('não limita a largura máxima na aba Extrato PDF', () => {
+      component.setTab('statement');
+      fixture.detectChanges();
+      httpMock.match(() => true).forEach(r => r.flush([]));
+      expectUnbounded();
+    });
+  });
 });

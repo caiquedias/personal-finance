@@ -75,10 +75,14 @@ public static class ApplicationExtensions
         services.AddScoped<GetIncomesByPeriodUseCase>();
         services.AddScoped<GetIncomeByIdUseCase>();
         services.AddScoped<CreateIncomeUseCase>();
+        services.AddScoped<UpdateIncomeUseCase>();
         services.AddScoped<DeleteIncomeUseCase>();
 
         // ── Import ────────────────────────────────────────────────────────────────────
         services.AddScoped<ImportLegacyDataUseCase>();
+        services.AddScoped<StatementEntryClassifier>();
+        services.AddScoped<PreviewStatementImportUseCase>();
+        services.AddScoped<ConfirmStatementImportUseCase>();
 
         // ── Reports ───────────────────────────────────────────────────────────
         services.AddScoped<GetExpensesReportUseCase>();

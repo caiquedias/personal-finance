@@ -114,6 +114,15 @@ select option {
 
 .input::placeholder { color: var(--ink4); }
 
+.input:disabled,
+select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: var(--surface-raised);
+  color: var(--ink);
+  border-color: var(--border);
+}
+
 /* ── Botões ──────────────────────────────────────────────────────────────── */
 .btn {
   display: inline-flex;
