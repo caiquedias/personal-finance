@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, DestroyRef, computed, inject, signal, OnInit } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../../core/services/api.service';
@@ -17,6 +17,10 @@ export interface StatementReviewItem {
 
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
 const MAX_DESCRIPTION = 200;
+const PROGRESS_CEILING = 90;
+const TICK_MS = 200;
+
+export type StatementImportState = 'empty' | 'proc' | 'preview' | 'done' | 'err';
 
 @Component({
   selector: 'app-statement-import',
@@ -27,6 +31,8 @@ const MAX_DESCRIPTION = 200;
 })
 export class StatementImportComponent implements OnInit {
   private readonly api = inject(ApiService);
+  private readonly destroyRef = inject(DestroyRef);
+  private tickerId: ReturnType<typeof setInterval> | null = null;
 
   readonly selectedFile   = signal<File | null>(null);
   readonly password       = signal('');
@@ -40,6 +46,22 @@ export class StatementImportComponent implements OnInit {
   readonly saving         = signal(false);
   readonly previewed      = signal(false);
   readonly isDragging     = signal(false);
+
+  // Progresso cosmético: o back-end é request/response único, sem progresso real
+  readonly simulatedProgress = signal(0);
+
+  // Precedência: proc > done > err > preview > empty
+  readonly state = computed<StatementImportState>(() => {
+    if (this.loading() || this.saving()) return 'proc';
+    if (this.result()) return 'done';
+    if (this.errorMessage() && this.items().length === 0) return 'err';
+    if (this.items().length > 0) return 'preview';
+    return 'empty';
+  });
+
+  constructor() {
+    this.destroyRef.onDestroy(() => this.clearTicker());
+  }
 
   ngOnInit(): void {
     this.api.getCategories().subscribe({
@@ -95,6 +117,7 @@ export class StatementImportComponent implements OnInit {
     if (!file) return;
 
     this.loading.set(true);
+    this.startTicker();
     this.errorMessage.set(null);
     this.result.set(null);
     this.previewed.set(false);
@@ -112,11 +135,13 @@ export class StatementImportComponent implements OnInit {
         })));
         this.discardedCount.set(res.discardedByDateCount);
         this.previewed.set(true);
+        this.finishTicker();
         this.loading.set(false);
       },
       error: err => {
         this.items.set([]);
         this.errorMessage.set(err?.error?.message ?? 'Erro ao processar o extrato.');
+        this.finishTicker();
         this.loading.set(false);
       },
     });
@@ -149,6 +174,7 @@ export class StatementImportComponent implements OnInit {
     if (!this.canSave()) return;
 
     this.saving.set(true);
+    this.startTicker();
     this.errorMessage.set(null);
     const request = {
       items: this.items().map(i => ({
@@ -165,13 +191,37 @@ export class StatementImportComponent implements OnInit {
         this.result.set(res);
         this.items.set([]);
         this.selectedFile.set(null);
+        this.finishTicker();
         this.saving.set(false);
       },
       error: err => {
         this.errorMessage.set(err?.error?.message ?? 'Erro ao salvar o extrato.');
+        this.finishTicker();
         this.saving.set(false);
       },
     });
+  }
+
+  // Zera e inicia o ticker; cancela o anterior para nunca haver dois ativos
+  private startTicker(): void {
+    this.clearTicker();
+    this.simulatedProgress.set(0);
+    this.tickerId = setInterval(() => {
+      this.simulatedProgress.update(p => Math.min(PROGRESS_CEILING, p + (PROGRESS_CEILING - p) * 0.08 + 0.5));
+    }, TICK_MS);
+  }
+
+  // Fim da request (sucesso ou erro): para o ticker e salta para 100%
+  private finishTicker(): void {
+    this.clearTicker();
+    this.simulatedProgress.set(100);
+  }
+
+  private clearTicker(): void {
+    if (this.tickerId !== null) {
+      clearInterval(this.tickerId);
+      this.tickerId = null;
+    }
   }
 
   // Data local yyyy-MM-dd (sem toISOString, que converte para UTC)

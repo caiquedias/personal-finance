@@ -3,7 +3,21 @@
     <div class="alert-error" role="alert">{{ errorMessage() }}</div>
   }
 
-  @let hasError = !!errorMessage() && items().length === 0 && !result();
+  @let hasError = state() === 'err';
+  @let isSaveFlow = saving() || state() === 'done';
+
+  <ol class="stepper" aria-label="Etapas da importação">
+    <li class="step" [class.active]="state() === 'empty' || state() === 'err' || (state() === 'proc' && !isSaveFlow)"
+        [class.complete]="state() === 'preview' || isSaveFlow">
+      <span class="step-dot">1</span><span class="step-label">Arquivo</span>
+    </li>
+    <li class="step" [class.active]="state() === 'preview'" [class.complete]="isSaveFlow">
+      <span class="step-dot">2</span><span class="step-label">Revisar lançamentos</span>
+    </li>
+    <li class="step" [class.active]="isSaveFlow" [class.complete]="state() === 'done'">
+      <span class="step-dot">3</span><span class="step-label">Importar</span>
+    </li>
+  </ol>
 
   <div class="pdf-intro">
     <input #fileInput type="file" class="pdf-file-input" accept=".pdf,application/pdf" (change)="onFileSelected($event)" />
@@ -50,6 +64,21 @@
       {{ loading() ? 'Processando...' : (hasError && selectedFile() ? 'Tentar novamente' : 'Pré-visualizar') }}
     </button>
   </div>
+
+  @if (state() === 'proc') {
+    <div class="proc-card" role="status" aria-live="polite">
+      <div class="proc-head">
+        <strong>{{ saving() ? 'Importando lançamentos...' : 'Lendo o extrato...' }}</strong>
+        <span class="proc-percent">{{ simulatedProgress() | number:'1.0-0' }}%</span>
+      </div>
+      <div class="proc-bar" aria-hidden="true"><div class="proc-bar-fill" [style.width.%]="simulatedProgress()"></div></div>
+      <ul class="proc-checklist">
+        <li [class.done]="simulatedProgress() >= 10">Arquivo enviado</li>
+        <li [class.done]="simulatedProgress() >= 40">PDF lido</li>
+        <li [class.done]="simulatedProgress() >= 70">Verificando duplicados</li>
+      </ul>
+    </div>
+  }
 
   @if (previewed() && items().length === 0) {
     <p class="empty-state" role="status">
