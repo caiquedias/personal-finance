@@ -106,5 +106,6 @@ Todos os testes devem passar antes de reportar GREEN CONCLUÍDO.
 - FE: <N> passed, 0 failed
 ```
 
+- O relatório acima deve ser o **conteúdo integral** da mensagem final/hand-back, com hash do commit e contagem de testes preenchidos. Nunca devolver texto-placeholder ou resumo vazio (ocorrido na #464: o Macro precisou reconstituir o estado via `git log`)
 - **GREEN CONCLUÍDO** → Macro move task → Done e spawna próxima task (ou QA se última)
 - **TESTES FALHANDO** → reportar ao Macro com detalhe — não avançar
