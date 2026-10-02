@@ -38,6 +38,13 @@ namespace PersonalFinance.Application.UseCases.Admin
         /// <summary>Máximo de tentativas ao persistir o contador em caso de conflito de concorrência.</summary>
         private const int MaxConcurrencyAttempts = 3;
 
+        /// <summary>
+        /// Hash Argon2id dummy no formato Base64(salt):Base64(hash) do Argon2PasswordHasher (salt 16B, hash 32B).
+        /// Usado para equalizar o tempo de resposta quando não há senha real a verificar.
+        /// </summary>
+        private const string DummyPasswordHash =
+            "AAECAwQFBgcICQoLDA0ODw==:AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=";
+
         public async Task<DTOs.Auth.LoginResponseDto> ExecuteAsync(
             DTOs.Auth.LoginDto dto, CancellationToken ct = default)
         {
@@ -50,17 +57,24 @@ namespace PersonalFinance.Application.UseCases.Admin
             {
                 var user = await _userRepository.GetByEmailAsync(email, ct);
 
+                // E-mail inexistente: Verify contra hash dummy para equalizar o tempo (anti-enumeração)
                 if (user is null)
+                {
+                    _passwordHasher.Verify(dto.Password, DummyPasswordHash);
                     throw new DomainException(InvalidCredentials);
+                }
 
                 if (!user.IsActive || user.IsDeleted)
-                    throw new DomainException("Usuário inativo.");
+                    throw new DomainException(InvalidCredentials);
 
                 var now = DateTime.UtcNow;
 
-                // Conta bloqueada: falha antes do Verify, com mensagem genérica (sem enumeração)
+                // Conta bloqueada: nunca verifica a senha real; Verify dummy equaliza o tempo e o resultado é descartado
                 if (user.IsLockedOut(now))
+                {
+                    _passwordHasher.Verify(dto.Password, DummyPasswordHash);
                     throw new DomainException(InvalidCredentials);
+                }
 
                 try
                 {
