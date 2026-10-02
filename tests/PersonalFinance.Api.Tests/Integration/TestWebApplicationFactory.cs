@@ -42,7 +42,15 @@ public sealed class TestWebApplicationFactory : WebApplicationFactory<Program>
         // Limite alto por padrão: a suíte faz dezenas de logins do mesmo admin (mesmo "IP" nulo).
         // Testes do 429 sobrescrevem via WithWebHostBuilder (ver docs/testing.md, #391).
         Environment.SetEnvironmentVariable("RateLimiting__Login__PermitLimit", "100000");
+
+        // MFA (#393): chave AES-256 de teste (Base64 de 32 bytes) — não é segredo real — e limite alto
+        // para a policy mfa-verify. Testes do 429 sobrescrevem via WithWebHostBuilder.
+        Environment.SetEnvironmentVariable("Auth__Mfa__EncryptionKey", TestMfaEncryptionKey);
+        Environment.SetEnvironmentVariable("RateLimiting__MfaVerify__PermitLimit", "100000");
     }
+
+    // Base64 de 32 bytes (0x00..0x1F) — só para testes
+    private const string TestMfaEncryptionKey = "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=";
 
     protected override void ConfigureWebHost(
         Microsoft.AspNetCore.Hosting.IWebHostBuilder builder)
