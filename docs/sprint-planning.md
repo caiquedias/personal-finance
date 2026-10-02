@@ -141,7 +141,8 @@ ela for planejada.
 
 | Issue | Decisão | Motivo | Bloqueia |
 |---|---|---|---|
-| — | — | — | — |
+| #391 | IP > 45 chars faz `LoginThrottle.Create` lançar `DomainException("IP inválido.")` após senha errada, devolvendo mensagem diferente de "Credenciais inválidas." (oráculo). Mitigação futura: truncar/normalizar o IP no controller | Review do ciclo 3 | Não |
+| #391 | O `Verify` real do Argon2 é refeito a cada tentativa do retry de concorrência (custo de CPU) | Review do ciclo 3 | Não |
 
 ---
 
