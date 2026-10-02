@@ -48,6 +48,13 @@ pode ler o objeto já mutado por código que roda depois. Capturar um **snapshot
 interessam dentro do callback, ou usar matcher avaliado em tempo de chamada
 (`Verify(x => x.Op(It.Is<T>(r => ...)), Times.Once)`).
 
+## Testes de middleware que dependem de host (HSTS, redirect)
+
+O `HttpClient` da `WebApplicationFactory` usa Host `localhost`, e `HstsOptions.ExcludedHosts` exclui
+`localhost`/`127.0.0.1`/`[::1]` por padrão — o header HSTS nunca sai. Em testes que esperam
+`Strict-Transport-Security`, enviar `Host: api.example.com` na request; não limpar `ExcludedHosts`
+(enfraqueceria o teste e a config). (#390)
+
 ## Isolamento de falha por item
 
 Se a regra é "falha em 1 registro não aborta o lote", o teste deve provar que, com 1 registro

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -98,10 +99,27 @@ builder.Services.AddCors(options =>
               .AllowAnyMethod());
 });
 
+// ── Forwarded headers (TLS termina no proxy; Kestrel recebe HTTP) ─────────────
+builder.Services.Configure<ForwardedHeadersOptions>(o =>
+{
+    o.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    // IP do proxy é dinâmico — confia em qualquer proxy
+    o.KnownNetworks.Clear();
+    o.KnownProxies.Clear();
+});
+
 var app = builder.Build();
 
 // ── Middleware pipeline ───────────────────────────────────────────────────────
+app.UseForwardedHeaders();
 app.UseMiddleware<ExceptionMiddleware>();
+
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHsts();
+}
+
+app.UseHttpsRedirection();
 
 if (app.Environment.IsDevelopment())
 {
