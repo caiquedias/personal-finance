@@ -26,7 +26,7 @@ describe('AdminUsersComponent', () => {
   beforeEach(async () => {
     apiSpy = jasmine.createSpyObj('ApiService', [
       'getAdminUsers', 'createAdminUser', 'updateAdminUser',
-      'toggleUserActive', 'assignRole', 'removeRole', 'resetUserPassword',
+      'toggleUserActive', 'assignRole', 'removeRole', 'resetUserPassword', 'resetUserMfa',
     ]);
     apiSpy.getAdminUsers.and.returnValue(of(PAGE_RESULT));
 
@@ -118,6 +118,38 @@ describe('AdminUsersComponent', () => {
       component.toggleActive(USER);
       tick();
       expect(component.users()[0].isActive).toBeFalse();
+    }));
+  });
+
+  describe('resetMfa()', () => {
+    beforeEach(fakeAsync(() => {
+      fixture.detectChanges(); tick();
+      spyOn(window, 'confirm').and.returnValue(true);
+    }));
+
+    it('chama resetUserMfa após confirmação e sinaliza sucesso', fakeAsync(() => {
+      apiSpy.resetUserMfa.and.returnValue(of(void 0));
+      component.resetMfa(USER);
+      tick();
+      expect(apiSpy.resetUserMfa).toHaveBeenCalledOnceWith(USER.id);
+      expect(component.actionMessage()).toBeTruthy();
+      expect(component.actionError()).toBeNull();
+      expect(component.loadingAction()).toBeFalse();
+    }));
+
+    it('não chama resetUserMfa quando a confirmação é cancelada', () => {
+      (window.confirm as jasmine.Spy).and.returnValue(false);
+      component.resetMfa(USER);
+      expect(apiSpy.resetUserMfa).not.toHaveBeenCalled();
+    });
+
+    it('exibe a mensagem do backend em caso de erro', fakeAsync(() => {
+      apiSpy.resetUserMfa.and.returnValue(throwError(() => ({ error: { message: 'O MFA não está ativo.' } })));
+      component.resetMfa(USER);
+      tick();
+      expect(component.actionError()).toBe('O MFA não está ativo.');
+      expect(component.actionMessage()).toBeNull();
+      expect(component.loadingAction()).toBeFalse();
     }));
   });
 
