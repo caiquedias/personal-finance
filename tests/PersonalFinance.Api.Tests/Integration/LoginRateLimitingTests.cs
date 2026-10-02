@@ -56,6 +56,26 @@ public class LoginRateLimitingTests : IDisposable
         body.TryGetProperty("traceId", out _).Should().BeTrue();
     }
 
+    [Fact(DisplayName = "429 deve enviar Retry-After e mensagem com os segundos de espera")]
+    public async Task Login_ExceedingPermitLimit_ShouldSendRetryAfterAndSecondsInMessage()
+    {
+        var client = CreateLimitedClient();
+        var payload = new { email = $"rl_{Guid.NewGuid():N}@x.com", password = "Errada" };
+        await client.PostAsJsonAsync(LoginPath, payload);
+        await client.PostAsJsonAsync(LoginPath, payload);
+
+        var r = await client.PostAsJsonAsync(LoginPath, payload);
+
+        r.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
+        r.Headers.RetryAfter.Should().NotBeNull();
+        var seconds = (int)r.Headers.RetryAfter!.Delta!.Value.TotalSeconds;
+        seconds.Should().BeInRange(1, 60);
+        var body = await r.Content.ReadFromJsonAsync<JsonElement>();
+        body.GetProperty("message").GetString().Should()
+            .MatchRegex(@"Tente novamente em \d+ segundos")
+            .And.Contain($"{seconds} segundos");
+    }
+
     [Fact(DisplayName = "Rate limiter de login não deve afetar outros endpoints")]
     public async Task OtherEndpoints_ShouldNotBeRateLimited()
     {

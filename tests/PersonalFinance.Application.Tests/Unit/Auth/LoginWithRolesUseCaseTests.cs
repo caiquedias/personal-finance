@@ -98,7 +98,7 @@ public class LoginWithRolesUseCaseTests
 
         var act = () => _sut.ExecuteAsync(new LoginDto("caique@monkeybomb.com", "Senha@123"));
 
-        await act.Should().ThrowAsync<DomainException>().WithMessage("*inativo*");
+        await act.Should().ThrowAsync<DomainException>().WithMessage("Credenciais inválidas.");
     }
 
     [Fact(DisplayName = "Não deve gerar token se senha for inválida")]
@@ -156,7 +156,7 @@ public class LoginWithRolesUseCaseTests
         _uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    [Fact(DisplayName = "Conta bloqueada deve falhar mesmo com senha correta, sem Verify nem Generate")]
+    [Fact(DisplayName = "Conta bloqueada deve falhar mesmo com senha correta, sem Verify do hash real nem Generate")]
     public async Task Execute_WithLockedAccount_ShouldFailWithoutVerifyOrGenerate()
     {
         var user = LockedUser();
@@ -166,7 +166,7 @@ public class LoginWithRolesUseCaseTests
         var act = () => _sut.ExecuteAsync(new LoginDto("caique@monkeybomb.com", "Senha@123"));
 
         await act.Should().ThrowAsync<DomainException>().WithMessage("Credenciais inválidas.");
-        _hasher.Verify(h => h.Verify(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+        _hasher.Verify(h => h.Verify(It.IsAny<string>(), "hashed_password"), Times.Never);
         _tokenSvc.Verify(t => t.Generate(
             It.IsAny<User>(), It.IsAny<IEnumerable<string>>()), Times.Never);
     }
@@ -236,5 +236,128 @@ public class LoginWithRolesUseCaseTests
 
         result.Token.Should().Be("jwt_token");
         user.FailedLoginCount.Should().Be(0);
+    }
+
+    // ── Ciclo 2 (#391): D2 concorrência, D3 timing/enumeração ─────────────────
+
+    private const string DummyHashPlaceholder = "hashed_password";
+
+    // ConcurrencyConflictException ainda não existe (Domain) — resolvida por reflexão
+    // para o Red falhar por comportamento ausente e não por erro de compilação.
+    private static Exception NewConcurrencyConflict()
+    {
+        var type = Type.GetType(
+            "PersonalFinance.Domain.Exceptions.ConcurrencyConflictException, PersonalFinance.Domain");
+        if (type is null)
+            throw new InvalidOperationException(
+                "PersonalFinance.Domain.Exceptions.ConcurrencyConflictException não existe.");
+        return (Exception)Activator.CreateInstance(type)!;
+    }
+
+    [Fact(DisplayName = "Conta bloqueada com senha correta deve verificar hash dummy, nunca o hash real")]
+    public async Task Execute_WithLockedAccount_ShouldVerifyDummyHashOnly()
+    {
+        var user = LockedUser();
+        SetupUser(user);
+        _hasher.Setup(h => h.Verify(It.IsAny<string>(), It.IsAny<string>())).Returns(true);
+
+        var act = () => _sut.ExecuteAsync(new LoginDto("caique@monkeybomb.com", "Senha@123"));
+
+        await act.Should().ThrowAsync<DomainException>().WithMessage("Credenciais inválidas.");
+        _hasher.Verify(h => h.Verify("Senha@123", DummyHashPlaceholder), Times.Never);
+        _hasher.Verify(h => h.Verify("Senha@123",
+            It.Is<string>(x => !string.IsNullOrEmpty(x) && x != DummyHashPlaceholder)), Times.Once);
+        _tokenSvc.Verify(t => t.Generate(
+            It.IsAny<User>(), It.IsAny<IEnumerable<string>>()), Times.Never);
+    }
+
+    [Fact(DisplayName = "E-mail inexistente deve executar Verify contra hash dummy")]
+    public async Task Execute_WithUnknownEmail_ShouldVerifyDummyHash()
+    {
+        _userRepo.Setup(r => r.GetByEmailAsync(It.IsAny<string>(), default))
+                 .ReturnsAsync((User?)null);
+        _hasher.Setup(h => h.Verify(It.IsAny<string>(), It.IsAny<string>())).Returns(true);
+
+        var act = () => _sut.ExecuteAsync(new LoginDto("x@x.com", "Senha@123"));
+
+        await act.Should().ThrowAsync<DomainException>().WithMessage("Credenciais inválidas.");
+        _hasher.Verify(h => h.Verify("Senha@123",
+            It.Is<string>(x => !string.IsNullOrEmpty(x))), Times.Once);
+    }
+
+    [Fact(DisplayName = "Usuário inativo deve falhar com mensagem genérica")]
+    public async Task Execute_WithInactiveUser_ShouldUseGenericMessage()
+    {
+        var user = FakeUser();
+        user.SoftDelete();
+        SetupUser(user);
+
+        var act = () => _sut.ExecuteAsync(new LoginDto("caique@monkeybomb.com", "Senha@123"));
+
+        var ex = await act.Should().ThrowAsync<DomainException>();
+        ex.Which.Message.Should().Be("Credenciais inválidas.");
+        ex.Which.Message.Should().NotContain("inativo");
+    }
+
+    [Fact(DisplayName = "Conflito de concorrência na falha de senha deve recarregar o usuário e reaplicar na 2ª tentativa")]
+    public async Task Execute_WrongPassword_ConflictThenSuccess_ShouldReloadAndRetry()
+    {
+        var stale = FakeUser();
+        var fresh = FakeUser();
+        _userRepo.SetupSequence(r => r.GetByEmailAsync("caique@monkeybomb.com", default))
+                 .ReturnsAsync(stale)
+                 .ReturnsAsync(fresh);
+        _hasher.Setup(h => h.Verify(It.IsAny<string>(), It.IsAny<string>())).Returns(false);
+        _uow.SetupSequence(u => u.CommitAsync(It.IsAny<CancellationToken>()))
+            .ThrowsAsync(NewConcurrencyConflict())
+            .Returns(Task.CompletedTask);
+
+        var act = () => _sut.ExecuteAsync(new LoginDto("caique@monkeybomb.com", "Errada"));
+
+        await act.Should().ThrowAsync<DomainException>().WithMessage("Credenciais inválidas.");
+        _userRepo.Verify(r => r.GetByEmailAsync("caique@monkeybomb.com", default), Times.Exactly(2));
+        _uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Exactly(2));
+        fresh.FailedLoginCount.Should().Be(1);
+    }
+
+    [Fact(DisplayName = "Conflito persistente deve esgotar 3 tentativas e lançar DomainException sem vazar o conflito")]
+    public async Task Execute_WrongPassword_PersistentConflict_ShouldStopAfterThreeAttempts()
+    {
+        _userRepo.Setup(r => r.GetByEmailAsync("caique@monkeybomb.com", default))
+                 .ReturnsAsync(() => FakeUser());
+        _hasher.Setup(h => h.Verify(It.IsAny<string>(), It.IsAny<string>())).Returns(false);
+        _uow.Setup(u => u.CommitAsync(It.IsAny<CancellationToken>()))
+            .ThrowsAsync(NewConcurrencyConflict());
+
+        var act = () => _sut.ExecuteAsync(new LoginDto("caique@monkeybomb.com", "Errada"));
+
+        var ex = await act.Should().ThrowAsync<DomainException>();
+        ex.Which.Message.Should().Be("Credenciais inválidas.");
+        _uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Exactly(3));
+    }
+
+    [Fact(DisplayName = "Conflito ao zerar contador no sucesso deve tentar de novo e retornar token")]
+    public async Task Execute_SuccessResetConflict_ShouldRetryAndReturnToken()
+    {
+        var roles = new[] { "User" };
+        var stale = FakeUser();
+        stale.RegisterFailedLogin(5, TimeSpan.FromMinutes(15), DateTime.UtcNow);
+        var fresh = FakeUser();
+        fresh.RegisterFailedLogin(5, TimeSpan.FromMinutes(15), DateTime.UtcNow);
+        _userRepo.SetupSequence(r => r.GetByEmailAsync("caique@monkeybomb.com", default))
+                 .ReturnsAsync(stale)
+                 .ReturnsAsync(fresh);
+        _hasher.Setup(h => h.Verify("Senha@123", "hashed_password")).Returns(true);
+        _roleRepo.Setup(r => r.GetRoleNamesByUserIdAsync(It.IsAny<Guid>(), default)).ReturnsAsync(roles);
+        _tokenSvc.Setup(t => t.Generate(It.IsAny<User>(), roles)).Returns("jwt_token");
+        _uow.SetupSequence(u => u.CommitAsync(It.IsAny<CancellationToken>()))
+            .ThrowsAsync(NewConcurrencyConflict())
+            .Returns(Task.CompletedTask);
+
+        var result = await _sut.ExecuteAsync(new LoginDto("caique@monkeybomb.com", "Senha@123"));
+
+        result.Token.Should().Be("jwt_token");
+        fresh.FailedLoginCount.Should().Be(0);
+        _uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Exactly(2));
     }
 }

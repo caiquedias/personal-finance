@@ -101,7 +101,7 @@ namespace PersonalFinance.Application.Tests.Unit.Auth
                 new LoginDto("caique@monkeybomb.com", "SenhaForte@123"));
 
             await act.Should().ThrowAsync<DomainException>()
-                     .WithMessage("*inativo*");
+                     .WithMessage("Credenciais inválidas.");
         }
 
         // ── Token não deve ser gerado antes da verificação da senha ───────────────
