@@ -55,6 +55,13 @@ O `HttpClient` da `WebApplicationFactory` usa Host `localhost`, e `HstsOptions.E
 `Strict-Transport-Security`, enviar `Host: api.example.com` na request; não limpar `ExcludedHosts`
 (enfraqueceria o teste e a config). (#390)
 
+O rate limiter do login (`RateLimiting:Login:PermitLimit`/`WindowSeconds`, default 10/60s por IP) usaria
+o mesmo "IP" nulo (`unknown`) para toda a suíte — `GetAdminAuthenticatedClientAsync()` loga dezenas de
+vezes. Por isso o construtor estático da `TestWebApplicationFactory` seta
+`RateLimiting__Login__PermitLimit=100000` via variável de ambiente. Para testar o 429, usar
+`factory.WithWebHostBuilder(b => b.UseSetting("RateLimiting:Login:PermitLimit", "2"))` — o limiter lê a
+config de forma lazy (ao criar a partição), então o override vale. Não baixar o limite global da factory. (#391)
+
 ## Isolamento de falha por item
 
 Se a regra é "falha em 1 registro não aborta o lote", o teste deve provar que, com 1 registro
@@ -78,3 +85,30 @@ texto colado).
 
 **O que o Red NÃO pode receber:** implementações existentes similares; arquivos de teste existentes
 como modelo; qualquer detalhe de como a implementação será feita.
+
+## InMemory não suporta rowversion
+
+O provider InMemory do EF Core não gera nem valida `rowversion`: conflitos de concorrência otimista
+por token (`User.RowVersion`, #391) não são reproduzíveis em testes de integração. Cobrir o retry
+com unit test do use case (mock de `IUnitOfWork` lançando `ConcurrencyConflictException`) e a
+tradução `DbUpdateConcurrencyException` → `ConcurrencyConflictException` no `UnitOfWorkTests`
+(conflito simulado por remoção da linha). O comportamento real do rowversion só é validável em SQL Server.
+
+## InMemory não valida índice único
+
+O InMemory também ignora índices únicos: a violação do índice (UserId, IpAddress) de `LoginThrottle`
+em inserts concorrentes do mesmo par não é reproduzível em testes de integração. O `UnitOfWork`
+converte a violação de índice único (SQL Server 2601/2627) em `ConcurrencyConflictException`, que
+entra no retry do `LoginWithRolesUseCase`; essa conversão só é validável em SQL Server. O retry em si
+é coberto por unit test do use case (mock do `IUnitOfWork`).
+
+## Falha suspeita de ser pré-existente
+
+Antes de classificar uma falha como pré-existente, confirmar na base com worktree descartável (limpeza
+garantida, sem resíduo em `.claude/worktrees/`):
+
+```bash
+bash scripts/run-test-on-base.sh tests/<Projeto>.Tests "FullyQualifiedName~<NomeDoTeste>" [origin/develop]
+```
+
+Exit code = o do `dotnet test` na base (≠ 0 → a falha existe na base).

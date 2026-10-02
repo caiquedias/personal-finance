@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PersonalFinance.Infrastructure.Persistence.Context;
 
@@ -11,9 +12,11 @@ using PersonalFinance.Infrastructure.Persistence.Context;
 namespace PersonalFinance.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20261002005058_AddUserLockoutFields")]
+    partial class AddUserLockoutFields
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,46 +24,6 @@ namespace PersonalFinance.Infrastructure.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
-
-            modelBuilder.Entity("PersonalFinance.Domain.Entities.Auth.LoginThrottle", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int>("FailedCount")
-                        .HasColumnType("int");
-
-                    b.Property<string>("IpAddress")
-                        .IsRequired()
-                        .HasMaxLength(45)
-                        .HasColumnType("nvarchar(45)");
-
-                    b.Property<DateTime?>("LockedUntil")
-                        .HasColumnType("datetime2(7)");
-
-                    b.Property<byte[]>("RowVersion")
-                        .IsConcurrencyToken()
-                        .IsRequired()
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("rowversion");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("WindowStart")
-                        .HasColumnType("datetime2(7)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("WindowStart")
-                        .HasDatabaseName("IX_LoginThrottle_WindowStart");
-
-                    b.HasIndex("UserId", "IpAddress")
-                        .IsUnique()
-                        .HasDatabaseName("IX_LoginThrottle_UserId_IpAddress");
-
-                    b.ToTable("LoginThrottle", (string)null);
-                });
 
             modelBuilder.Entity("PersonalFinance.Domain.Entities.Auth.User", b =>
                 {
@@ -106,13 +69,6 @@ namespace PersonalFinance.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(512)")
                         .HasColumnName("PasswordHash");
-
-                    b.Property<byte[]>("RowVersion")
-                        .IsConcurrencyToken()
-                        .IsRequired()
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("rowversion")
-                        .HasColumnName("RowVersion");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2(7)")
@@ -698,15 +654,6 @@ namespace PersonalFinance.Infrastructure.Migrations
                             Id = 2,
                             Name = "Personal"
                         });
-                });
-
-            modelBuilder.Entity("PersonalFinance.Domain.Entities.Auth.LoginThrottle", b =>
-                {
-                    b.HasOne("PersonalFinance.Domain.Entities.Auth.User", null)
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("PersonalFinance.Domain.Entities.Auth.UserRole", b =>

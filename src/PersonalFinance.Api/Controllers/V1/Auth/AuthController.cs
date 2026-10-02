@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using PersonalFinance.Application.DTOs.Auth;
 using PersonalFinance.Application.UseCases.Admin;
 using PersonalFinance.Application.UseCases.Auth;
@@ -36,12 +37,14 @@ public sealed class AuthController(
     /// Use o token em endpoints com [Authorize(Roles = "Admin")].
     /// </summary>
     [HttpPost("login")]
+    [EnableRateLimiting("login")]
     [ProducesResponseType(typeof(LoginResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Login(
         [FromBody] LoginDto dto, CancellationToken ct)
     {
-        var result = await _loginUseCase.ExecuteAsync(dto, ct);
+        var result = await _loginUseCase.ExecuteAsync(
+            dto, HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown", ct);
         return Ok(result);
     }
 }

@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Options;
+using PersonalFinance.Application.Options;
 using PersonalFinance.Application.UseCases.Admin;
 using PersonalFinance.Application.UseCases.Auth;
 using PersonalFinance.Application.UseCases.Config;
@@ -13,9 +15,23 @@ namespace PersonalFinance.Api.Extensions;
 public static class ApplicationExtensions
 {
     public static IServiceCollection AddApplicationUseCases(
-        this IServiceCollection services)
+        this IServiceCollection services,
+        IConfiguration configuration)
     {
         // ── Auth ──────────────────────────────────────────────────────────────
+        // Lockout de login: valores de Auth:LoginLockout, com defaults 5 tentativas / 15 min
+        // Validado no startup (ValidateOnStart): config inválida falha ao subir, com mensagem clara
+        services.AddOptions<LoginLockoutOptions>()
+            .Bind(configuration.GetSection("Auth:LoginLockout"))
+            .Validate(o => o.MaxFailedAttempts >= 1,
+                "Auth:LoginLockout:MaxFailedAttempts deve ser >= 1.")
+            .Validate(o => o.LockoutMinutes >= 1,
+                "Auth:LoginLockout:LockoutMinutes deve ser >= 1.")
+            .Validate(o => o.GlobalMaxFailedAttempts >= o.MaxFailedAttempts,
+                "Auth:LoginLockout:GlobalMaxFailedAttempts deve ser >= MaxFailedAttempts.")
+            .ValidateOnStart();
+        services.AddSingleton(sp => sp.GetRequiredService<IOptions<LoginLockoutOptions>>().Value);
+
         services.AddScoped<RegisterUserUseCase>();
         services.AddScoped<LoginWithRolesUseCase>(); // substitui LoginUseCase
 

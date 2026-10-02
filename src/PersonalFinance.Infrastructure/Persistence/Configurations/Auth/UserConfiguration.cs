@@ -34,6 +34,21 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
                .HasColumnType("nvarchar(512)")
                .IsRequired();
 
+        builder.Property(u => u.FailedLoginCount)
+               .HasColumnName("FailedLoginCount")
+               .HasColumnType("int")
+               .HasDefaultValue(0)
+               .IsRequired();
+
+        builder.Property(u => u.LockedUntil)
+               .HasColumnName("LockedUntil")
+               .HasColumnType("datetime2(7)");
+
+        // Concorrência otimista: evita perda de incremento do contador em logins simultâneos
+        builder.Property(u => u.RowVersion)
+               .HasColumnName("RowVersion")
+               .IsRowVersion();
+
         // Unique constraint em Email — filtrado por DeletedAt IS NULL no DDL
         builder.HasIndex(u => u.Email)
                .IsUnique()
