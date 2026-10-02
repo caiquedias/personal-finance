@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Extensions.Options;
+using PersonalFinance.Api.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using PersonalFinance.Api.Converters;
@@ -114,17 +116,24 @@ builder.Services.Configure<ForwardedHeadersOptions>(o =>
 });
 
 // ── Rate limiting (login — fixed window por IP) ───────────────────────────────
+// Validado no startup: PermitLimit/WindowSeconds <= 0 falham ao subir (sem fallback silencioso)
+builder.Services.AddOptions<LoginRateLimitOptions>()
+    .Bind(builder.Configuration.GetSection("RateLimiting:Login"))
+    .Validate(o => o.PermitLimit > 0, "RateLimiting:Login:PermitLimit deve ser > 0.")
+    .Validate(o => o.WindowSeconds > 0, "RateLimiting:Login:WindowSeconds deve ser > 0.")
+    .ValidateOnStart();
+
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 
     options.AddPolicy("login", httpContext =>
     {
-        // Config lida de forma lazy (na criação da partição) para que overrides de teste valham
-        var section = httpContext.RequestServices
-            .GetRequiredService<IConfiguration>().GetSection("RateLimiting:Login");
-        var permitLimit = int.TryParse(section["PermitLimit"], out var p) && p > 0 ? p : 10;
-        var windowSeconds = int.TryParse(section["WindowSeconds"], out var w) && w > 0 ? w : 60;
+        // Options resolvidas de forma lazy (já validadas no startup) para que overrides de teste valham
+        var loginOptions = httpContext.RequestServices
+            .GetRequiredService<IOptions<LoginRateLimitOptions>>().Value;
+        var permitLimit = loginOptions.PermitLimit;
+        var windowSeconds = loginOptions.WindowSeconds;
 
         // TestServer não tem RemoteIpAddress — fallback para "unknown"
         var key = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
