@@ -35,50 +35,70 @@ namespace PersonalFinance.Application.UseCases.Admin
             _lockoutOptions = lockoutOptions;
         }
 
+        /// <summary>Máximo de tentativas ao persistir o contador em caso de conflito de concorrência.</summary>
+        private const int MaxConcurrencyAttempts = 3;
+
         public async Task<DTOs.Auth.LoginResponseDto> ExecuteAsync(
             DTOs.Auth.LoginDto dto, CancellationToken ct = default)
         {
             const string InvalidCredentials = "Credenciais inválidas.";
 
-            var user = await _userRepository.GetByEmailAsync(
-                dto.Email.Trim().ToLowerInvariant(), ct);
+            var email = dto.Email.Trim().ToLowerInvariant();
 
-            if (user is null)
-                throw new DomainException(InvalidCredentials);
-
-            if (!user.IsActive || user.IsDeleted)
-                throw new DomainException("Usuário inativo.");
-
-            var now = DateTime.UtcNow;
-
-            // Conta bloqueada: falha antes do Verify, com mensagem genérica (sem enumeração)
-            if (user.IsLockedOut(now))
-                throw new DomainException(InvalidCredentials);
-
-            if (!_passwordHasher.Verify(dto.Password, user.PasswordHash))
+            // Concorrência otimista (rowversion): em conflito recarrega o usuário e reaplica a operação
+            for (var attempt = 1; attempt <= MaxConcurrencyAttempts; attempt++)
             {
-                user.RegisterFailedLogin(
-                    _lockoutOptions.MaxFailedAttempts,
-                    TimeSpan.FromMinutes(_lockoutOptions.LockoutMinutes),
-                    now);
-                await _userRepository.UpdateAsync(user, ct);
-                await _unitOfWork.CommitAsync(ct);
-                throw new DomainException(InvalidCredentials);
+                var user = await _userRepository.GetByEmailAsync(email, ct);
+
+                if (user is null)
+                    throw new DomainException(InvalidCredentials);
+
+                if (!user.IsActive || user.IsDeleted)
+                    throw new DomainException("Usuário inativo.");
+
+                var now = DateTime.UtcNow;
+
+                // Conta bloqueada: falha antes do Verify, com mensagem genérica (sem enumeração)
+                if (user.IsLockedOut(now))
+                    throw new DomainException(InvalidCredentials);
+
+                try
+                {
+                    if (!_passwordHasher.Verify(dto.Password, user.PasswordHash))
+                    {
+                        user.RegisterFailedLogin(
+                            _lockoutOptions.MaxFailedAttempts,
+                            TimeSpan.FromMinutes(_lockoutOptions.LockoutMinutes),
+                            now);
+                        await _userRepository.UpdateAsync(user, ct);
+                        await _unitOfWork.CommitAsync(ct);
+                        throw new DomainException(InvalidCredentials);
+                    }
+
+                    // Sucesso: zera contador/bloqueio expirado somente se houver algo a limpar
+                    if (user.FailedLoginCount > 0 || user.LockedUntil is not null)
+                    {
+                        user.ResetFailedLogins();
+                        await _userRepository.UpdateAsync(user, ct);
+                        await _unitOfWork.CommitAsync(ct);
+                    }
+                }
+                catch (ConcurrencyConflictException)
+                {
+                    if (attempt == MaxConcurrencyAttempts)
+                        throw new DomainException(InvalidCredentials);
+                    continue;
+                }
+
+                // Busca roles para incluir como claims no JWT
+                var roles = await _roleRepository.GetRoleNamesByUserIdAsync(user.Id, ct);
+                var token = _tokenService.Generate(user, roles);
+
+                return new DTOs.Auth.LoginResponseDto(token, user.Name, user.Email);
             }
 
-            // Sucesso: zera contador/bloqueio expirado somente se houver algo a limpar
-            if (user.FailedLoginCount > 0 || user.LockedUntil is not null)
-            {
-                user.ResetFailedLogins();
-                await _userRepository.UpdateAsync(user, ct);
-                await _unitOfWork.CommitAsync(ct);
-            }
-
-            // Busca roles para incluir como claims no JWT
-            var roles = await _roleRepository.GetRoleNamesByUserIdAsync(user.Id, ct);
-            var token = _tokenService.Generate(user, roles);
-
-            return new DTOs.Auth.LoginResponseDto(token, user.Name, user.Email);
+            // Inalcançável: o laço sempre retorna ou lança
+            throw new DomainException(InvalidCredentials);
         }
     }
 }

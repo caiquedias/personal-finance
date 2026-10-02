@@ -1,3 +1,5 @@
+using Microsoft.EntityFrameworkCore;
+using PersonalFinance.Domain.Exceptions;
 using PersonalFinance.Domain.Interfaces.Repositories;
 using PersonalFinance.Infrastructure.Persistence.Context;
 
@@ -15,5 +17,15 @@ public sealed class UnitOfWork : IUnitOfWork
     public UnitOfWork(AppDbContext context) => _context = context;
 
     public async Task CommitAsync(CancellationToken ct = default)
-        => await _context.SaveChangesAsync(ct);
+    {
+        try
+        {
+            await _context.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            // Traduz para exceção de domínio — Application não conhece o EF Core
+            throw new ConcurrencyConflictException(ex);
+        }
+    }
 }

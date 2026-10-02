@@ -85,3 +85,11 @@ texto colado).
 
 **O que o Red NÃO pode receber:** implementações existentes similares; arquivos de teste existentes
 como modelo; qualquer detalhe de como a implementação será feita.
+
+## InMemory não suporta rowversion
+
+O provider InMemory do EF Core não gera nem valida `rowversion`: conflitos de concorrência otimista
+por token (`User.RowVersion`, #391) não são reproduzíveis em testes de integração. Cobrir o retry
+com unit test do use case (mock de `IUnitOfWork` lançando `ConcurrencyConflictException`) e a
+tradução `DbUpdateConcurrencyException` → `ConcurrencyConflictException` no `UnitOfWorkTests`
+(conflito simulado por remoção da linha). O comportamento real do rowversion só é validável em SQL Server.
