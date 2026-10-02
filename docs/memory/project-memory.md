@@ -34,6 +34,7 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 | #446 | Redesign Extrato PDF (4/5): barra de ação fixa + tela de sucesso | 2026-10-01 | [446.md](446.md) |
 | #447 | Redesign Extrato PDF (5/5): polimento responsivo (<768px) | 2026-10-01 | [447.md](447.md) |
 | #464 | Redesign grid de revisão — Import Extrato PDF (padrão despesas) | 2026-10-01 | [464.md](464.md) |
+| #390 | [Security] Adicionar HTTPS redirection e HSTS | 2026-10-01 | [390.md](390.md) |
 
 ---
 
@@ -81,6 +82,7 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
   - POST /api/v1/import/statement/preview — multipart (file .pdf ≤10 MB, password?, fromDate?); devolve preview sem persistir; 400 para arquivo ausente/vazio, extensão inválida, senha errada ou PDF inválido (#421)
   - POST /api/v1/import/statement/confirm — body `{ items: [{ date, description, amount, kind, categoryId?, sourceType? }] }`; cria/reaproveita Period por Ano+Mês, grava Expense (Paid) e Income; 200 com contagens; 400 para lista vazia, data futura, categoria ausente/inacessível, Description > 200 (#422)
   - PUT /api/v1/incomes/{id} — update de receita; 204; 400 para amount inválido/ownership/not-found/soft-deleted; PeriodId imutável (#419)
+  - Pipeline (#390): `UseForwardedHeaders` (XFF+XFP, proxies limpos) → ExceptionMiddleware → `UseHsts` (só não-Development, sem Preload/IncludeSubDomains) → `UseHttpsRedirection` → CORS → Auth
 - **Auth:** JWT Bearer; AuthController [AllowAnonymous]; Admin [Authorize(Roles="Admin")]; `JwtSettings:SecretKey` não é mais hardcoded em `appsettings.json` — configurado via User Secrets (dev) / env var `JwtSettings__SecretKey` no Render (homolog/prod) (#389)
 - **Converters:** `FlexibleEnumConverterFactory` registrada globalmente via `AddJsonOptions` — deserializa enums de int, string numérica ou nome; serializa como int
 
