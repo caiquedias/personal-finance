@@ -38,6 +38,10 @@ public sealed class TestWebApplicationFactory : WebApplicationFactory<Program>
     static TestWebApplicationFactory()
     {
         Environment.SetEnvironmentVariable("JwtSettings__SecretKey", TestJwtSecretKey);
+
+        // Limite alto por padrão: a suíte faz dezenas de logins do mesmo admin (mesmo "IP" nulo).
+        // Testes do 429 sobrescrevem via WithWebHostBuilder (ver docs/testing.md, #391).
+        Environment.SetEnvironmentVariable("RateLimiting__Login__PermitLimit", "100000");
     }
 
     protected override void ConfigureWebHost(

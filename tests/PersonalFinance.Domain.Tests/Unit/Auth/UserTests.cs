@@ -139,4 +139,85 @@ public class UserTests
         user.IsDeleted.Should().BeTrue();
         user.DeletedAt.Should().NotBeNull();
     }
+
+    // ── Lockout de login (#391) ───────────────────────────────────────────────
+
+    private static readonly DateTime Now = new(2026, 1, 1, 12, 0, 0, DateTimeKind.Utc);
+    private static readonly TimeSpan Duration = TimeSpan.FromMinutes(15);
+
+    [Fact(DisplayName = "Novo usuário não deve ter falhas nem bloqueio")]
+    public void Create_ShouldStartWithoutFailedLogins()
+    {
+        var user = CreateValid();
+
+        user.FailedLoginCount.Should().Be(0);
+        user.LockedUntil.Should().BeNull();
+        user.IsLockedOut(Now).Should().BeFalse();
+    }
+
+    [Fact(DisplayName = "RegisterFailedLogin deve incrementar o contador sem bloquear abaixo do limite")]
+    public void RegisterFailedLogin_BelowLimit_ShouldIncrementWithoutLocking()
+    {
+        var user = CreateValid();
+
+        user.RegisterFailedLogin(5, Duration, Now);
+        user.RegisterFailedLogin(5, Duration, Now);
+
+        user.FailedLoginCount.Should().Be(2);
+        user.LockedUntil.Should().BeNull();
+        user.IsLockedOut(Now).Should().BeFalse();
+    }
+
+    [Fact(DisplayName = "RegisterFailedLogin deve bloquear ao atingir o limite com LockedUntil = now + duração")]
+    public void RegisterFailedLogin_AtLimit_ShouldLockUntilNowPlusDuration()
+    {
+        var user = CreateValid();
+
+        for (var i = 0; i < 5; i++)
+            user.RegisterFailedLogin(5, Duration, Now);
+
+        user.LockedUntil.Should().Be(Now + Duration);
+        user.IsLockedOut(Now).Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "IsLockedOut deve ser true dentro da janela e false após expirar")]
+    public void IsLockedOut_ShouldDependOnWindow()
+    {
+        var user = CreateValid();
+        for (var i = 0; i < 5; i++)
+            user.RegisterFailedLogin(5, Duration, Now);
+
+        user.IsLockedOut(Now.AddMinutes(14)).Should().BeTrue();
+        user.IsLockedOut(Now.AddMinutes(15)).Should().BeFalse();
+        user.IsLockedOut(Now.AddMinutes(16)).Should().BeFalse();
+    }
+
+    [Fact(DisplayName = "ResetFailedLogins deve zerar contador e LockedUntil")]
+    public void ResetFailedLogins_ShouldClearCounterAndLock()
+    {
+        var user = CreateValid();
+        for (var i = 0; i < 5; i++)
+            user.RegisterFailedLogin(5, Duration, Now);
+
+        user.ResetFailedLogins();
+
+        user.FailedLoginCount.Should().Be(0);
+        user.LockedUntil.Should().BeNull();
+        user.IsLockedOut(Now).Should().BeFalse();
+    }
+
+    [Fact(DisplayName = "Após expirar o lockout o contador deve recomeçar do zero")]
+    public void RegisterFailedLogin_AfterLockoutExpired_ShouldRestartCounter()
+    {
+        var user = CreateValid();
+        for (var i = 0; i < 5; i++)
+            user.RegisterFailedLogin(5, Duration, Now);
+
+        var later = Now.AddMinutes(16);
+        user.RegisterFailedLogin(5, Duration, later);
+
+        user.FailedLoginCount.Should().Be(1);
+        user.LockedUntil.Should().BeNull();
+        user.IsLockedOut(later).Should().BeFalse();
+    }
 }

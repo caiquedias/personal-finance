@@ -1,4 +1,5 @@
-﻿using PersonalFinance.Domain.Exceptions;
+﻿using PersonalFinance.Application.Options;
+using PersonalFinance.Domain.Exceptions;
 using PersonalFinance.Domain.Interfaces.Repositories;
 using PersonalFinance.Domain.Interfaces.Services;
 
@@ -15,17 +16,23 @@ namespace PersonalFinance.Application.UseCases.Admin
         private readonly IUserRoleRepository _roleRepository;
         private readonly IPasswordHasher _passwordHasher;
         private readonly ITokenService _tokenService;
+        private readonly IUnitOfWork _unitOfWork;
+        private readonly LoginLockoutOptions _lockoutOptions;
 
         public LoginWithRolesUseCase(
             IUserRepository userRepository,
             IUserRoleRepository roleRepository,
             IPasswordHasher passwordHasher,
-            ITokenService tokenService)
+            ITokenService tokenService,
+            IUnitOfWork unitOfWork,
+            LoginLockoutOptions lockoutOptions)
         {
             _userRepository = userRepository;
             _roleRepository = roleRepository;
             _passwordHasher = passwordHasher;
             _tokenService = tokenService;
+            _unitOfWork = unitOfWork;
+            _lockoutOptions = lockoutOptions;
         }
 
         public async Task<DTOs.Auth.LoginResponseDto> ExecuteAsync(
@@ -42,8 +49,30 @@ namespace PersonalFinance.Application.UseCases.Admin
             if (!user.IsActive || user.IsDeleted)
                 throw new DomainException("Usuário inativo.");
 
-            if (!_passwordHasher.Verify(dto.Password, user.PasswordHash))
+            var now = DateTime.UtcNow;
+
+            // Conta bloqueada: falha antes do Verify, com mensagem genérica (sem enumeração)
+            if (user.IsLockedOut(now))
                 throw new DomainException(InvalidCredentials);
+
+            if (!_passwordHasher.Verify(dto.Password, user.PasswordHash))
+            {
+                user.RegisterFailedLogin(
+                    _lockoutOptions.MaxFailedAttempts,
+                    TimeSpan.FromMinutes(_lockoutOptions.LockoutMinutes),
+                    now);
+                await _userRepository.UpdateAsync(user, ct);
+                await _unitOfWork.CommitAsync(ct);
+                throw new DomainException(InvalidCredentials);
+            }
+
+            // Sucesso: zera contador/bloqueio expirado somente se houver algo a limpar
+            if (user.FailedLoginCount > 0 || user.LockedUntil is not null)
+            {
+                user.ResetFailedLogins();
+                await _userRepository.UpdateAsync(user, ct);
+                await _unitOfWork.CommitAsync(ct);
+            }
 
             // Busca roles para incluir como claims no JWT
             var roles = await _roleRepository.GetRoleNamesByUserIdAsync(user.Id, ct);

@@ -1,3 +1,4 @@
+using PersonalFinance.Application.Options;
 using PersonalFinance.Application.UseCases.Admin;
 using PersonalFinance.Application.UseCases.Auth;
 using PersonalFinance.Application.UseCases.Config;
@@ -13,9 +14,15 @@ namespace PersonalFinance.Api.Extensions;
 public static class ApplicationExtensions
 {
     public static IServiceCollection AddApplicationUseCases(
-        this IServiceCollection services)
+        this IServiceCollection services,
+        IConfiguration configuration)
     {
         // ── Auth ──────────────────────────────────────────────────────────────
+        // Lockout de login: valores de Auth:LoginLockout, com defaults 5 tentativas / 15 min
+        var lockoutOptions = new LoginLockoutOptions();
+        configuration.GetSection("Auth:LoginLockout").Bind(lockoutOptions);
+        services.AddSingleton(lockoutOptions);
+
         services.AddScoped<RegisterUserUseCase>();
         services.AddScoped<LoginWithRolesUseCase>(); // substitui LoginUseCase
 
