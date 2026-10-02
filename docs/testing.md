@@ -93,3 +93,11 @@ por token (`User.RowVersion`, #391) não são reproduzíveis em testes de integr
 com unit test do use case (mock de `IUnitOfWork` lançando `ConcurrencyConflictException`) e a
 tradução `DbUpdateConcurrencyException` → `ConcurrencyConflictException` no `UnitOfWorkTests`
 (conflito simulado por remoção da linha). O comportamento real do rowversion só é validável em SQL Server.
+
+## InMemory não valida índice único
+
+O InMemory também ignora índices únicos: a violação do índice (UserId, IpAddress) de `LoginThrottle`
+em inserts concorrentes do mesmo par não é reproduzível em testes de integração. O `UnitOfWork`
+converte a violação de índice único (SQL Server 2601/2627) em `ConcurrencyConflictException`, que
+entra no retry do `LoginWithRolesUseCase`; essa conversão só é validável em SQL Server. O retry em si
+é coberto por unit test do use case (mock do `IUnitOfWork`).
