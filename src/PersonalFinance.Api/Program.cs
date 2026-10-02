@@ -106,9 +106,11 @@ builder.Services.AddCors(options =>
 builder.Services.Configure<ForwardedHeadersOptions>(o =>
 {
     o.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-    // IP do proxy é dinâmico — confia em qualquer proxy
-    o.KnownNetworks.Clear();
-    o.KnownProxies.Clear();
+    // Confiar em qualquer origem permitiria forjar X-Forwarded-For e burlar o rate limit por IP.
+    // Confia apenas em proxies de redes privadas (além do loopback, que já vem por padrão) e em 1 salto.
+    o.ForwardLimit = 1;
+    foreach (var (prefix, length) in new[] { ("10.0.0.0", 8), ("172.16.0.0", 12), ("192.168.0.0", 16) })
+        o.KnownNetworks.Add(new Microsoft.AspNetCore.HttpOverrides.IPNetwork(IPAddress.Parse(prefix), length));
 });
 
 // ── Rate limiting (login — fixed window por IP) ───────────────────────────────
