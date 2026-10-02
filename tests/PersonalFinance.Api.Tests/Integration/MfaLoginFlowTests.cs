@@ -159,7 +159,7 @@ public class MfaLoginFlowTests : IDisposable
         var mfa = await CreateMfaUserAsync(_factory);
         var challenge = await GetChallengeTokenAsync(_factory, mfa);
 
-        var response = await VerifyAsync(challenge, ComputeCode(mfa.Secret));
+        var response = await VerifyAsync(challenge, mfa.EnableCode);
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }

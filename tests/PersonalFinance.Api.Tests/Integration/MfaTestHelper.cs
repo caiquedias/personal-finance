@@ -61,7 +61,8 @@ public static class MfaTestHelper
         var setup = await ReadJsonAsync(await authed.PostAsync(SetupPath, null));
         var secret = setup.GetProperty("secret").GetString()!;
 
-        var enableResponse = await authed.PostAsJsonAsync(EnablePath, new { code = ComputeCode(secret) });
+        var enableCode = ComputeCode(secret);
+        var enableResponse = await authed.PostAsJsonAsync(EnablePath, new { code = enableCode });
         enableResponse.EnsureSuccessStatusCode();
         var enable = await ReadJsonAsync(enableResponse);
         var recoveryCodes = enable.GetProperty("recoveryCodes").EnumerateArray().Select(e => e.GetString()!).ToList();
@@ -69,7 +70,7 @@ public static class MfaTestHelper
         var userId = await WithDbAsync(factory, db =>
             db.Users.Where(u => u.Email == email).Select(u => u.Id).SingleAsync());
 
-        return new MfaUserContext(userId, email, Password, secret, recoveryCodes);
+        return new MfaUserContext(userId, email, Password, secret, recoveryCodes, enableCode);
     }
 
     /// <summary>Login com a senha correta de um usuário com MFA (Enforce=true) — devolve o MfaToken.</summary>
