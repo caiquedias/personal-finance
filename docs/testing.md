@@ -112,3 +112,17 @@ bash scripts/run-test-on-base.sh tests/<Projeto>.Tests "FullyQualifiedName~<Nome
 ```
 
 Exit code = o do `dotnet test` na base (≠ 0 → a falha existe na base).
+
+## Testes dependentes de relógio (TOTP e janelas de tempo)
+
+Nunca recalcular um valor derivado de `DateTime.UtcNow` (código TOTP, expiração) depois de um setup
+lento: o fluxo de integração (Argon2, register, login) leva ~20s e cruza a fronteira de 30s do time
+step, fazendo o teste passar ou falhar conforme o instante da execução (#393: replay do enable).
+Guardar o valor usado na etapa anterior (`MfaUserContext.EnableCode`) e reaproveitá-lo; para "step
+seguinte" usar offset +30s, sempre dentro da janela ±1 do servidor. Preferir relógio injetado no unit test.
+
+## Fixtures devem refletir o comportamento real
+
+Antes de asserir sobre dados criados por um helper de fixture (roles, claims, defaults), conferir no
+código de produção o que o caminho usado realmente grava — ex.: `RegisterUserUseCase` não atribui role
+(só `CreateUserByAdminUseCase` atribui "User"), então um JWT de usuário registrado não tem claim de role (#393).
