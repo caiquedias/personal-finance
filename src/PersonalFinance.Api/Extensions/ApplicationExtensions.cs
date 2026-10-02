@@ -27,6 +27,8 @@ public static class ApplicationExtensions
                 "Auth:LoginLockout:MaxFailedAttempts deve ser >= 1.")
             .Validate(o => o.LockoutMinutes >= 1,
                 "Auth:LoginLockout:LockoutMinutes deve ser >= 1.")
+            .Validate(o => o.GlobalMaxFailedAttempts >= o.MaxFailedAttempts,
+                "Auth:LoginLockout:GlobalMaxFailedAttempts deve ser >= MaxFailedAttempts.")
             .ValidateOnStart();
         services.AddSingleton(sp => sp.GetRequiredService<IOptions<LoginLockoutOptions>>().Value);
 

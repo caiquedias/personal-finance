@@ -1,4 +1,5 @@
 ﻿using PersonalFinance.Application.Options;
+using PersonalFinance.Domain.Entities.Auth;
 using PersonalFinance.Domain.Exceptions;
 using PersonalFinance.Domain.Interfaces.Repositories;
 using PersonalFinance.Domain.Interfaces.Services;
@@ -14,6 +15,7 @@ namespace PersonalFinance.Application.UseCases.Admin
     {
         private readonly IUserRepository _userRepository;
         private readonly IUserRoleRepository _roleRepository;
+        private readonly ILoginThrottleRepository _throttleRepository;
         private readonly IPasswordHasher _passwordHasher;
         private readonly ITokenService _tokenService;
         private readonly IUnitOfWork _unitOfWork;
@@ -22,6 +24,7 @@ namespace PersonalFinance.Application.UseCases.Admin
         public LoginWithRolesUseCase(
             IUserRepository userRepository,
             IUserRoleRepository roleRepository,
+            ILoginThrottleRepository throttleRepository,
             IPasswordHasher passwordHasher,
             ITokenService tokenService,
             IUnitOfWork unitOfWork,
@@ -29,6 +32,7 @@ namespace PersonalFinance.Application.UseCases.Admin
         {
             _userRepository = userRepository;
             _roleRepository = roleRepository;
+            _throttleRepository = throttleRepository;
             _passwordHasher = passwordHasher;
             _tokenService = tokenService;
             _unitOfWork = unitOfWork;
@@ -46,7 +50,7 @@ namespace PersonalFinance.Application.UseCases.Admin
             "AAECAwQFBgcICQoLDA0ODw==:AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=";
 
         public async Task<DTOs.Auth.LoginResponseDto> ExecuteAsync(
-            DTOs.Auth.LoginDto dto, CancellationToken ct = default)
+            DTOs.Auth.LoginDto dto, string ipAddress, CancellationToken ct = default)
         {
             const string InvalidCredentials = "Credenciais inválidas.";
 
@@ -64,13 +68,26 @@ namespace PersonalFinance.Application.UseCases.Admin
                     throw new DomainException(InvalidCredentials);
                 }
 
+                // Inativo/deletado: Verify dummy equaliza o tempo; nunca usa o hash real nem grava throttle
                 if (!user.IsActive || user.IsDeleted)
+                {
+                    _passwordHasher.Verify(dto.Password, DummyPasswordHash);
                     throw new DomainException(InvalidCredentials);
+                }
 
                 var now = DateTime.UtcNow;
+                var window = TimeSpan.FromMinutes(_lockoutOptions.LockoutMinutes);
 
-                // Conta bloqueada: nunca verifica a senha real; Verify dummy equaliza o tempo e o resultado é descartado
+                // Teto global da conta (qualquer IP): nunca verifica a senha real; Verify dummy equaliza o tempo
                 if (user.IsLockedOut(now))
+                {
+                    _passwordHasher.Verify(dto.Password, DummyPasswordHash);
+                    throw new DomainException(InvalidCredentials);
+                }
+
+                // Bloqueio do par (conta, IP): mesma resposta genérica, sem Verify da senha real
+                var throttle = await _throttleRepository.GetAsync(user.Id, ipAddress, ct);
+                if (throttle is not null && throttle.IsLockedOut(now))
                 {
                     _passwordHasher.Verify(dto.Password, DummyPasswordHash);
                     throw new DomainException(InvalidCredentials);
@@ -80,22 +97,47 @@ namespace PersonalFinance.Application.UseCases.Admin
                 {
                     if (!_passwordHasher.Verify(dto.Password, user.PasswordHash))
                     {
-                        user.RegisterFailedLogin(
-                            _lockoutOptions.MaxFailedAttempts,
-                            TimeSpan.FromMinutes(_lockoutOptions.LockoutMinutes),
-                            now);
+                        // Contador global do usuário usa o teto mais alto (cobre ataque distribuído)
+                        user.RegisterFailedLogin(_lockoutOptions.GlobalMaxFailedAttempts, window, now);
+
+                        if (throttle is not null)
+                        {
+                            throttle.RegisterFailure(_lockoutOptions.MaxFailedAttempts, window, now);
+                            await _throttleRepository.UpdateAsync(throttle, ct);
+                        }
+                        else
+                        {
+                            var created = LoginThrottle.Create(user.Id, ipAddress, now);
+                            created.RegisterFailure(_lockoutOptions.MaxFailedAttempts, window, now);
+                            // false = tabela cheia de bloqueios ativos: segue só com o teto global (fail-open)
+                            await _throttleRepository.TryAddAsync(
+                                created, now, window,
+                                _lockoutOptions.ThrottleMaxRows,
+                                _lockoutOptions.ThrottleCleanupBatchSize, ct);
+                        }
+
                         await _userRepository.UpdateAsync(user, ct);
                         await _unitOfWork.CommitAsync(ct);
                         throw new DomainException(InvalidCredentials);
                     }
 
-                    // Sucesso: zera contador/bloqueio expirado somente se houver algo a limpar
+                    // Sucesso: zera contadores somente se houver algo a limpar
+                    var hasChanges = false;
                     if (user.FailedLoginCount > 0 || user.LockedUntil is not null)
                     {
                         user.ResetFailedLogins();
                         await _userRepository.UpdateAsync(user, ct);
-                        await _unitOfWork.CommitAsync(ct);
+                        hasChanges = true;
                     }
+
+                    if (throttle is not null)
+                    {
+                        await _throttleRepository.RemoveAsync(throttle, ct);
+                        hasChanges = true;
+                    }
+
+                    if (hasChanges)
+                        await _unitOfWork.CommitAsync(ct);
                 }
                 catch (ConcurrencyConflictException)
                 {

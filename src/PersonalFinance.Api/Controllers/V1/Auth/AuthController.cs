@@ -43,7 +43,8 @@ public sealed class AuthController(
     public async Task<IActionResult> Login(
         [FromBody] LoginDto dto, CancellationToken ct)
     {
-        var result = await _loginUseCase.ExecuteAsync(dto, ct);
+        var result = await _loginUseCase.ExecuteAsync(
+            dto, HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown", ct);
         return Ok(result);
     }
 }
