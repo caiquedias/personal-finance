@@ -91,10 +91,11 @@ por classe é regra obrigatória, não só a feature).
 
 ## Fórmula de Estimativa
 
-> **Última calibração:** 2026-09-28 · n=2 issues com codificação medida
-> **Origem dos números:** sem prior herdado de outro projeto — amostra local ainda pequena (n=2, alvo
-> ~10). Fórmula sugerida pelo script: codificação mediana 5min (p75 6min) + piso de orquestração 2min
-> = 7min por issue; sem correlação calculável entre nº de arquivos e tempo. Tratar como indicativo.
+> **Última calibração:** 2026-10-02 · n=12 issues com codificação medida
+> **Origem dos números:** amostra local (n=12, 10 issues novas desde 2026-09-28). Fórmula sugerida pelo
+> script: codificação mediana 4min (p75 6min, p90 6min) + piso de orquestração 4min = 8min por issue;
+> sem correlação entre nº de arquivos e tempo (Pearson −0,015; Spearman 0,231) — Size segue só para
+> divisão de escopo. Maioria das issues com 0 ciclos de retrabalho (8 de 12). Tratar como indicativo.
 
 Até a primeira calibração, `Estimativa: Xh` do comentário de planning continua sendo um número
 definido manualmente por Caique/PO — **não** deriva do Size (correlação entre nº de arquivos e
@@ -167,4 +168,4 @@ especificação — inclusive as recalibrações da fórmula de estimativa.
 
 | Data | Decisão | Onde está documentada |
 |---|---|---|
-| — | — | — |
+| 2026-10-02 | Recalibração da fórmula de estimativa: codificação mediana 5min → 4min, piso de orquestração 2min → 4min, total 7min → 8min por issue (n=2 → 12); correlação nº de arquivos × tempo continua inexistente | `Fórmula de Estimativa` (acima) e `node scripts/calibrate-estimates.js` |
