@@ -63,5 +63,39 @@ namespace PersonalFinance.Api.Tests.Integration
                 new { email, password = "Errada" });
             r.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         }
+
+        [Fact(DisplayName = "POST /login deve recusar senha correta após 5 falhas seguidas (lockout)")]
+        public async Task Login_AfterFiveFailures_ShouldRejectCorrectPassword()
+        {
+            // E-mail único para não bloquear o admin seed usado por outros testes
+            var email = $"lock_{Guid.NewGuid():N}@x.com";
+            await Client.PostAsJsonAsync("/api/v1/auth/register",
+                new { name = "Lock", email, password = "Senha@123" });
+
+            for (var i = 0; i < 5; i++)
+                await Client.PostAsJsonAsync("/api/v1/auth/login", new { email, password = "Errada" });
+
+            var r = await Client.PostAsJsonAsync("/api/v1/auth/login",
+                new { email, password = "Senha@123" });
+
+            r.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+            (await r.Content.ReadAsStringAsync()).Should().Contain("Credenciais inválidas.");
+        }
+
+        [Fact(DisplayName = "POST /login com menos de 5 falhas deve continuar aceitando a senha correta")]
+        public async Task Login_AfterFourFailures_ShouldStillAcceptCorrectPassword()
+        {
+            var email = $"four_{Guid.NewGuid():N}@x.com";
+            await Client.PostAsJsonAsync("/api/v1/auth/register",
+                new { name = "Four", email, password = "Senha@123" });
+
+            for (var i = 0; i < 4; i++)
+                await Client.PostAsJsonAsync("/api/v1/auth/login", new { email, password = "Errada" });
+
+            var r = await Client.PostAsJsonAsync("/api/v1/auth/login",
+                new { email, password = "Senha@123" });
+
+            r.StatusCode.Should().Be(HttpStatusCode.OK);
+        }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using FluentAssertions;
 using Moq;
 using PersonalFinance.Application.DTOs.Auth;
+using PersonalFinance.Application.Options;
 using PersonalFinance.Application.UseCases.Admin;
 using PersonalFinance.Domain.Entities.Auth;
 using PersonalFinance.Domain.Exceptions;
@@ -16,13 +17,15 @@ namespace PersonalFinance.Application.Tests.Unit.Auth
         private readonly Mock<IUserRoleRepository> _roleRepo = new();
         private readonly Mock<IPasswordHasher> _hasher = new();
         private readonly Mock<ITokenService> _tokenSvc = new();
+        private readonly Mock<IUnitOfWork> _uow = new();
         private readonly LoginWithRolesUseCase _sut;
 
         public LoginUseCaseTests()
         {
             _sut = new LoginWithRolesUseCase(
                 _userRepo.Object, _roleRepo.Object,
-                _hasher.Object, _tokenSvc.Object);
+                _hasher.Object, _tokenSvc.Object,
+            _uow.Object, new LoginLockoutOptions());
         }
 
         private static User FakeUser() =>
