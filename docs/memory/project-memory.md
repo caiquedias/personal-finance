@@ -38,6 +38,7 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 | #391 | [Security] Rate limiting e lockout de conta no login | 2026-10-02 | [391.md](391.md) |
 | #393 | [Security][MFA] Backend — TOTP setup, enable, verify, disable | 2026-10-02 | [393.md](393.md) |
 | #394 | [Security][MFA] Frontend — setup e verificação | 2026-10-02 | [394.md](394.md) |
+| #488 | [Security][Auth] Infra de invalidação de sessões JWT (SecurityStamp) | 2026-10-02 | [488.md](488.md) |
 
 ---
 
@@ -48,7 +49,7 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 | Expurgo (Purge) | #329, #330, #331, #332, #356, #369, #367, #368, #377, #376, #378, #384 | 2026-07-05 |
 | Batch Expenses / Serialização | #355 | 2026-06-26 |
 | Login / Auth UI | #387, #394 | 2026-10-02 |
-| Segurança / JWT | #389, #391, #393, #394 | 2026-10-02 |
+| Segurança / JWT | #389, #391, #393, #394, #488 | 2026-10-02 |
 | Import (Income) | #419 | 2026-09-28 |
 | Import (Extrato C6 PDF) | #420, #421, #422, #423, #443, #444, #445, #446, #447, #464 | 2026-10-01 |
 
@@ -57,7 +58,7 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 ## Estado atual por layer
 
 ### Domain
-- **Entidades:** User (#391 — `FailedLoginCount`, `LockedUntil`, `RowVersion`; #393 — `MfaEnabled`, `MfaSecretEncrypted`, `MfaEnabledAt`, `LastUsedTotpStep`), MfaRecoveryCode (#393 — hash Argon2, uso único), Category, Period, Expense, Income, PurgeRecord, LoginThrottle (#391 — par conta+IP; fora do EntityBase, exclusão física)
+- **Entidades:** User (#488 — `SecurityStamp` + `RotateSecurityStamp()`; #391 — `FailedLoginCount`, `LockedUntil`, `RowVersion`; #393 — `MfaEnabled`, `MfaSecretEncrypted`, `MfaEnabledAt`, `LastUsedTotpStep`), MfaRecoveryCode (#393 — hash Argon2, uso único), Category, Period, Expense, Income, PurgeRecord, LoginThrottle (#391 — par conta+IP; fora do EntityBase, exclusão física)
 - **Value objects / enums:** PaymentStatus, SourceType, FortnightType, Role
 - **Regras notáveis:** soft-delete universal (DeletedAt; exceção deliberada: `LoginThrottle`, #391), PKs via Guid.NewGuid(); lockout com `now` injetado (`User.RegisterFailedLogin`, `IsLockedOut`; `LoginThrottle.RegisterFailure`)
 - **Interfaces:** IPurgeRepository, ICsvExportService (Application layer), ILoginThrottleRepository (#391)
@@ -77,7 +78,7 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 - **Repositórios:** PurgeRepository, LoginThrottleRepository (#391 — `TryAddAsync`: limpeza de expiradas em lote, teto duro de 2.000 linhas, fail-open)
 - **UnitOfWork (#391):** traduz `DbUpdateConcurrencyException` e violação de índice único (2601/2627) em `ConcurrencyConflictException` e limpa o `ChangeTracker` antes de lançar
 - **Serviços:** Argon2PasswordHasher, JwtTokenService, ExcelParserService, C6StatementPdfParserService (#420 — PdfPig por coordenadas x/y, DomainException para senha/PDF/linha inválida; sem consumidor ainda), DatabaseInitializer, CsvExportService
-- **Migrations aplicadas:** AddPurgeModule (2026-06-26); #391 (a aplicar em release/produção): AddUserLockoutFields, AddUserRowVersion, AddLoginThrottle; #393 (a aplicar): AddMfa
+- **Migrations aplicadas:** AddPurgeModule (2026-06-26); #391 (a aplicar em release/produção): AddUserLockoutFields, AddUserRowVersion, AddLoginThrottle; #393 (a aplicar): AddMfa; #488 (a aplicar): AddSecurityStamp
 - **Views:** vw_PeriodSummary (criada pelo DatabaseInitializer no startup)
 
 ### Api
@@ -94,7 +95,7 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
   - POST /api/v1/auth/mfa/setup|enable|disable — `[Authorize]`; POST /api/v1/auth/mfa/verify — esquema `MfaChallenge` (aud `pf-mfa`), rate limit `mfa-verify`; login devolve `mfaRequired`/`mfaToken` com `Auth:Mfa:Enforce=true` (#393)
   - Qualquer endpoint: `ConcurrencyConflictException` → 409 "O registro foi alterado por outra operação. Tente novamente." (#391)
   - Pipeline (#390, #391): `UseForwardedHeaders` (XFF+XFP, só redes privadas 10/8, 172.16/12, 192.168/16 + loopback, `ForwardLimit=1`) → ExceptionMiddleware → `UseHsts` (só não-Development, sem Preload/IncludeSubDomains) → `UseHttpsRedirection` → CORS → `UseRateLimiter` (#391) → Auth
-- **Auth:** JWT Bearer; AuthController [AllowAnonymous]; Admin [Authorize(Roles="Admin")]; `JwtSettings:SecretKey` não é mais hardcoded em `appsettings.json` — configurado via User Secrets (dev) / env var `JwtSettings__SecretKey` no Render (homolog/prod) (#389)
+- **Auth:** JWT Bearer (#488 — claim `stamp` validada no `OnTokenValidated` do esquema principal via `SecurityStampValidator`; ausente/divergente/usuário inativo → 401, sem cache; challenge MFA fora); AuthController [AllowAnonymous]; Admin [Authorize(Roles="Admin")]; `JwtSettings:SecretKey` não é mais hardcoded em `appsettings.json` — configurado via User Secrets (dev) / env var `JwtSettings__SecretKey` no Render (homolog/prod) (#389)
 - **Converters:** `FlexibleEnumConverterFactory` registrada globalmente via `AddJsonOptions` — deserializa enums de int, string numérica ou nome; serializa como int
 
 ### Frontend (Angular 21)
