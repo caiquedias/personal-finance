@@ -152,11 +152,19 @@ builder.Services.AddRateLimiter(options =>
         response.StatusCode = StatusCodes.Status429TooManyRequests;
         response.ContentType = "application/json";
 
+        // Segundos de espera: metadata do lease; fallback = janela configurada
+        var retryAfterSeconds = context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter)
+            ? (int)Math.Ceiling(retryAfter.TotalSeconds)
+            : context.HttpContext.RequestServices
+                .GetRequiredService<IOptions<LoginRateLimitOptions>>().Value.WindowSeconds;
+        retryAfterSeconds = Math.Max(1, retryAfterSeconds);
+        response.Headers.RetryAfter = retryAfterSeconds.ToString(System.Globalization.CultureInfo.InvariantCulture);
+
         var payload = JsonSerializer.Serialize(new
         {
             status = StatusCodes.Status429TooManyRequests,
             error = nameof(HttpStatusCode.TooManyRequests),
-            message = "Muitas tentativas. Tente novamente em instantes.",
+            message = $"Muitas tentativas. Tente novamente em {retryAfterSeconds} segundos.",
             traceId = context.HttpContext.TraceIdentifier
         });
         await response.WriteAsync(payload, ct);
