@@ -49,6 +49,10 @@ Gerar um secret forte: `openssl rand -base64 32`.
 
 > **Segurança:** rotacionar o secret invalida todas as sessões JWT ativas — coordenar janela de deploy.
 
+**MFA (TOTP):** `Auth:Mfa:EncryptionKey` (Base64 de exatamente 32 bytes — `openssl rand -base64 32`) cifra o secret TOTP em repouso (AES-256-GCM) e é validada no startup (a aplicação não sobe sem ela). Dev: `dotnet user-secrets set "Auth:Mfa:EncryptionKey" "<base64-32-bytes>" --project src/PersonalFinance.Api`; Render: variável `Auth__Mfa__EncryptionKey`. A flag `Auth:Mfa:Enforce` (default `false`) controla se o login exige o 2º fator.
+
+> **Segurança:** trocar a `EncryptionKey` torna ilegíveis os secrets TOTP já gravados — os usuários precisariam refazer o setup do MFA.
+
 ## Documentação
 
 Ver `PersonalFinance_Contexto.md` para contexto técnico completo.

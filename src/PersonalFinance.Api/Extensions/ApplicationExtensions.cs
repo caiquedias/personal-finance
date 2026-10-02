@@ -9,6 +9,7 @@ using PersonalFinance.Application.UseCases.Financial.Periods;
 using PersonalFinance.Application.UseCases.Financial.Purge;
 using PersonalFinance.Application.UseCases.Import;
 using PersonalFinance.Application.UseCases.Reports;
+using PersonalFinance.Infrastructure.Auth;
 
 namespace PersonalFinance.Api.Extensions;
 
@@ -32,8 +33,21 @@ public static class ApplicationExtensions
             .ValidateOnStart();
         services.AddSingleton(sp => sp.GetRequiredService<IOptions<LoginLockoutOptions>>().Value);
 
+        // MFA/TOTP (#393): Auth:Mfa. A EncryptionKey é validada SEMPRE no startup (independente de Enforce);
+        // a mensagem nunca inclui o valor da chave.
+        services.AddOptions<MfaOptions>()
+            .Bind(configuration.GetSection("Auth:Mfa"))
+            .Validate(o => AesGcmSecretProtector.TryParseKey(o.EncryptionKey, out _),
+                "Auth:Mfa:EncryptionKey é obrigatória e deve ser Base64 de exatamente 32 bytes.")
+            .ValidateOnStart();
+        services.AddSingleton(sp => sp.GetRequiredService<IOptions<MfaOptions>>().Value);
+
         services.AddScoped<RegisterUserUseCase>();
         services.AddScoped<LoginWithRolesUseCase>(); // substitui LoginUseCase
+        services.AddScoped<SetupMfaUseCase>();
+        services.AddScoped<EnableMfaUseCase>();
+        services.AddScoped<DisableMfaUseCase>();
+        services.AddScoped<VerifyMfaUseCase>();
 
         // ── Config — Categories ───────────────────────────────────────────────
         services.AddScoped<GetCategoriesUseCase>();

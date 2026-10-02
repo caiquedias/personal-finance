@@ -20,6 +20,7 @@ namespace PersonalFinance.Application.UseCases.Admin
         private readonly ITokenService _tokenService;
         private readonly IUnitOfWork _unitOfWork;
         private readonly LoginLockoutOptions _lockoutOptions;
+        private readonly MfaOptions _mfaOptions;
 
         public LoginWithRolesUseCase(
             IUserRepository userRepository,
@@ -28,7 +29,8 @@ namespace PersonalFinance.Application.UseCases.Admin
             IPasswordHasher passwordHasher,
             ITokenService tokenService,
             IUnitOfWork unitOfWork,
-            LoginLockoutOptions lockoutOptions)
+            LoginLockoutOptions lockoutOptions,
+            MfaOptions mfaOptions)
         {
             _userRepository = userRepository;
             _roleRepository = roleRepository;
@@ -37,6 +39,7 @@ namespace PersonalFinance.Application.UseCases.Admin
             _tokenService = tokenService;
             _unitOfWork = unitOfWork;
             _lockoutOptions = lockoutOptions;
+            _mfaOptions = mfaOptions;
         }
 
         /// <summary>Máximo de tentativas ao persistir o contador em caso de conflito de concorrência.</summary>
