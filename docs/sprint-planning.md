@@ -158,6 +158,12 @@ aqui até que uma issue de tooling/infra justifique abrir work item.
 | 2026-10-02 | Risco residual: atacante com MUITOS IPs ainda pode atingir o teto global (`GlobalMaxFailedAttempts`, default 50) e bloquear a conta da vítima por `LockoutMinutes` | #391 | Aceito; mitigação futura: CAPTCHA/notificação ao usuário |
 | 2026-10-02 | Risco residual: contador global do `User` sem coluna de janela — zera só no sucesso ou após expirar o lockout | #391 | Aceito |
 | 2026-10-02 | Risco residual: tabela de throttle cheia de bloqueios ativos → rastreio por (conta, IP) em fail-open (só teto global) | #391 | Aceito (fail-closed permitiria negar login a todos) |
+| 2026-10-02 | `/mfa/disable` e `/mfa/enable` sem rate limit nem contagem de falhas no lockout — token completo roubado pode tentar senha sem limite (disable ainda exige senha E código) | #393 | Média — policy de rate limit + contagem de falhas |
+| 2026-10-02 | `code` sem limite de tamanho antes do Argon2 em Verify/Disable (até 10 verificações por falha) | #393 | Baixa — rejeitar `code` > 16 chars antes de hashear |
+| 2026-10-02 | `Unprotect` com chave rotacionada/secret corrompido vira 500 no verify/disable | #393 | Baixa — erro controlado + procedimento de reset (#479) |
+| 2026-10-02 | Respostas de `/mfa/setup` e `/mfa/enable` sem `Cache-Control: no-store` | #393 | Baixa |
+| 2026-10-02 | `Program.cs` importa namespace do controller só para ler `MfaVerifyController.ChallengeScheme` | #393 | Baixa (cosmético) |
+| 2026-10-02 | Deploy: sem `Auth__Mfa__EncryptionKey` a app não sobe em nenhum ambiente — criar a variável no Render antes do merge em `master` | #393 | Lembrete |
 
 ---
 

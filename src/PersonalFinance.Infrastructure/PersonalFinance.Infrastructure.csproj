@@ -23,6 +23,9 @@
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.25" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.4.0" />
 
+    <!-- TOTP RFC 6238 para o MFA (MIT license) -->
+    <PackageReference Include="Otp.NET" Version="1.4.0" />
+
     <!-- Leitura de Excel com suporte a cores de célula (MIT license) -->
     <PackageReference Include="ClosedXML" Version="0.104.1" />
 

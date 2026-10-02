@@ -220,4 +220,131 @@ public class UserTests
         user.LockedUntil.Should().BeNull();
         user.IsLockedOut(later).Should().BeFalse();
     }
+
+    // ── MFA / TOTP (#393) ─────────────────────────────────────────────────────
+
+    private static readonly DateTime MfaNow = new(2026, 1, 1, 12, 0, 0, DateTimeKind.Utc);
+
+    [Fact(DisplayName = "Usuário novo deve nascer sem MFA e sem secret")]
+    public void Create_ShouldStartWithMfaDisabled()
+    {
+        var user = CreateValid();
+
+        user.MfaEnabled.Should().BeFalse();
+        user.MfaSecretEncrypted.Should().BeNull();
+        user.MfaEnabledAt.Should().BeNull();
+        user.LastUsedTotpStep.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "SetPendingMfaSecret deve guardar o secret cifrado sem ativar o MFA")]
+    public void SetPendingMfaSecret_ShouldStoreSecretWithoutEnabling()
+    {
+        var user = CreateValid();
+
+        user.SetPendingMfaSecret("cipher-blob");
+
+        user.MfaSecretEncrypted.Should().Be("cipher-blob");
+        user.MfaEnabled.Should().BeFalse();
+        user.MfaEnabledAt.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "SetPendingMfaSecret repetido antes de ativar deve substituir o secret pendente")]
+    public void SetPendingMfaSecret_WhenPending_ShouldReplaceSecret()
+    {
+        var user = CreateValid();
+        user.SetPendingMfaSecret("first");
+
+        user.SetPendingMfaSecret("second");
+
+        user.MfaSecretEncrypted.Should().Be("second");
+    }
+
+    [Theory(DisplayName = "SetPendingMfaSecret deve rejeitar secret vazio")]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void SetPendingMfaSecret_WithBlankSecret_ShouldThrow(string? secret)
+    {
+        var user = CreateValid();
+
+        var act = () => user.SetPendingMfaSecret(secret!);
+
+        act.Should().Throw<DomainException>();
+    }
+
+    [Fact(DisplayName = "SetPendingMfaSecret com MFA já ativo não deve sobrescrever o secret")]
+    public void SetPendingMfaSecret_WhenMfaEnabled_ShouldThrowAndKeepSecret()
+    {
+        var user = CreateValid();
+        user.SetPendingMfaSecret("active-secret");
+        user.EnableMfa(MfaNow);
+
+        var act = () => user.SetPendingMfaSecret("new-secret");
+
+        act.Should().Throw<DomainException>();
+        user.MfaSecretEncrypted.Should().Be("active-secret");
+    }
+
+    [Fact(DisplayName = "EnableMfa deve ativar e registrar MfaEnabledAt")]
+    public void EnableMfa_WithPendingSecret_ShouldEnable()
+    {
+        var user = CreateValid();
+        user.SetPendingMfaSecret("cipher-blob");
+
+        user.EnableMfa(MfaNow);
+
+        user.MfaEnabled.Should().BeTrue();
+        user.MfaEnabledAt.Should().Be(MfaNow);
+    }
+
+    [Fact(DisplayName = "EnableMfa sem setup prévio deve lançar DomainException e não ativar")]
+    public void EnableMfa_WithoutSecret_ShouldThrow()
+    {
+        var user = CreateValid();
+
+        var act = () => user.EnableMfa(MfaNow);
+
+        act.Should().Throw<DomainException>();
+        user.MfaEnabled.Should().BeFalse();
+    }
+
+    [Fact(DisplayName = "DisableMfa deve limpar secret, flags e último step")]
+    public void DisableMfa_ShouldClearEverything()
+    {
+        var user = CreateValid();
+        user.SetPendingMfaSecret("cipher-blob");
+        user.EnableMfa(MfaNow);
+        user.RegisterTotpStep(100);
+
+        user.DisableMfa();
+
+        user.MfaEnabled.Should().BeFalse();
+        user.MfaSecretEncrypted.Should().BeNull();
+        user.MfaEnabledAt.Should().BeNull();
+        user.LastUsedTotpStep.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "RegisterTotpStep deve aceitar step maior que o último e guardá-lo")]
+    public void RegisterTotpStep_WithNewerStep_ShouldAcceptAndStore()
+    {
+        var user = CreateValid();
+
+        user.RegisterTotpStep(100).Should().BeTrue();
+        user.RegisterTotpStep(101).Should().BeTrue();
+
+        user.LastUsedTotpStep.Should().Be(101);
+    }
+
+    [Theory(DisplayName = "RegisterTotpStep deve rejeitar step igual ou anterior (anti-replay)")]
+    [InlineData(100)]
+    [InlineData(99)]
+    public void RegisterTotpStep_WithSameOrOlderStep_ShouldRejectAndKeepLast(long step)
+    {
+        var user = CreateValid();
+        user.RegisterTotpStep(100);
+
+        user.RegisterTotpStep(step).Should().BeFalse();
+
+        user.LastUsedTotpStep.Should().Be(100);
+    }
 }

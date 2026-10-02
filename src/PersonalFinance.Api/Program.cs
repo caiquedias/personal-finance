@@ -6,7 +6,9 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using PersonalFinance.Api.Converters;
 using PersonalFinance.Api.Extensions;
+using PersonalFinance.Api.Controllers.V1;
 using PersonalFinance.Api.Middleware;
+using PersonalFinance.Infrastructure.Auth;
 using PersonalFinance.Infrastructure.Extensions;
 using System.Net;
 using System.Text;
@@ -47,6 +49,23 @@ builder.Services.AddAuthentication(options =>
         ValidIssuer = jwtSection["Issuer"],
         ValidateAudience = true,
         ValidAudience = jwtSection["Audience"],
+        ValidateLifetime = true,
+        ClockSkew = TimeSpan.Zero,
+    };
+})
+// Esquema do token intermediário do 2º fator (MFA): audience própria, usado só em /auth/mfa/verify.
+// O esquema padrão (audience do token completo) rejeita o challenge em qualquer [Authorize].
+.AddJwtBearer(MfaVerifyController.ChallengeScheme, options =>
+{
+    options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
+        ValidateIssuer = true,
+        ValidIssuer = jwtSection["Issuer"],
+        ValidateAudience = true,
+        ValidAudience = JwtTokenService.MfaChallengeAudience,
         ValidateLifetime = true,
         ClockSkew = TimeSpan.Zero,
     };
@@ -123,9 +142,34 @@ builder.Services.AddOptions<LoginRateLimitOptions>()
     .Validate(o => o.WindowSeconds > 0, "RateLimiting:Login:WindowSeconds deve ser > 0.")
     .ValidateOnStart();
 
+// Rate limit do 2º fator (mfa-verify) — mesma validação de startup do login
+builder.Services.AddOptions<MfaVerifyRateLimitOptions>()
+    .Bind(builder.Configuration.GetSection("RateLimiting:MfaVerify"))
+    .Validate(o => o.PermitLimit > 0, "RateLimiting:MfaVerify:PermitLimit deve ser > 0.")
+    .Validate(o => o.WindowSeconds > 0, "RateLimiting:MfaVerify:WindowSeconds deve ser > 0.")
+    .ValidateOnStart();
+
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    options.AddPolicy("mfa-verify", httpContext =>
+    {
+        var verifyOptions = httpContext.RequestServices
+            .GetRequiredService<IOptions<MfaVerifyRateLimitOptions>>().Value;
+        var permitLimit = verifyOptions.PermitLimit;
+        var windowSeconds = verifyOptions.WindowSeconds;
+
+        // Partição própria (prefixo) para não dividir contador com a policy do login
+        var key = "mfa-verify:" + (httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown");
+
+        return RateLimitPartition.GetFixedWindowLimiter(key, _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = permitLimit,
+            Window = TimeSpan.FromSeconds(windowSeconds),
+            QueueLimit = 0
+        });
+    });
 
     options.AddPolicy("login", httpContext =>
     {

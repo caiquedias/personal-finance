@@ -49,6 +49,27 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
                .HasColumnName("RowVersion")
                .IsRowVersion();
 
+        // MFA/TOTP (#393): default false mantém os usuários existentes sem MFA
+        builder.Property(u => u.MfaEnabled)
+               .HasColumnName("MfaEnabled")
+               .HasColumnType("bit")
+               .HasDefaultValue(false)
+               .IsRequired();
+
+        // Blob cifrado "nonce|cipher|tag" em Base64 — nunca o secret em claro
+        builder.Property(u => u.MfaSecretEncrypted)
+               .HasColumnName("MfaSecretEncrypted")
+               .HasColumnType("nvarchar(256)")
+               .HasMaxLength(256);
+
+        builder.Property(u => u.MfaEnabledAt)
+               .HasColumnName("MfaEnabledAt")
+               .HasColumnType("datetime2(7)");
+
+        builder.Property(u => u.LastUsedTotpStep)
+               .HasColumnName("LastUsedTotpStep")
+               .HasColumnType("bigint");
+
         // Unique constraint em Email — filtrado por DeletedAt IS NULL no DDL
         builder.HasIndex(u => u.Email)
                .IsUnique()

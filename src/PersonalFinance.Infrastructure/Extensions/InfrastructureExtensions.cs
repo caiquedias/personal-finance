@@ -57,6 +57,12 @@ public static class InfrastructureExtensions
         services.AddScoped<IPasswordHasher, Argon2PasswordHasher>();
         services.AddScoped<ITokenService, JwtTokenService>();
 
+        // MFA/TOTP (#393): cifra do secret (AES-256-GCM) e serviço TOTP. As options Auth:Mfa
+        // (com validação no startup) são registradas em AddApplicationUseCases.
+        services.AddScoped<IMfaRecoveryCodeRepository, MfaRecoveryCodeRepository>();
+        services.AddSingleton<ITotpService, TotpService>();
+        services.AddSingleton<ISecretProtector, AesGcmSecretProtector>();
+
         // ── Import (legado Excel) ─────────────────────────────────────────────────────
         services.AddScoped<IExcelParserService, ExcelParserService>();
         services.AddScoped<IStatementParserService, C6StatementPdfParserService>();
