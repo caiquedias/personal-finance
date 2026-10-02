@@ -26,6 +26,12 @@ public sealed class User : EntityBase
     /// <summary>Hash Argon2id da senha. Nunca exposto em DTOs de resposta.</summary>
     public string PasswordHash { get; private set; } = default!;
 
+    /// <summary>Quantidade de falhas de login consecutivas.</summary>
+    public int FailedLoginCount { get; private set; }
+
+    /// <summary>Fim do bloqueio de login (UTC). Null quando não bloqueado.</summary>
+    public DateTime? LockedUntil { get; private set; }
+
     // ── EF Core ───────────────────────────────────────────────────────────────
     private User() { }
 
@@ -67,6 +73,37 @@ public sealed class User : EntityBase
     {
         ValidatePasswordHash(passwordHash);
         PasswordHash = passwordHash;
+        SetUpdatedAt();
+    }
+
+    /// <summary>Indica se a conta está bloqueada em <paramref name="now"/> (expira quando now >= LockedUntil).</summary>
+    public bool IsLockedOut(DateTime now) => LockedUntil.HasValue && now < LockedUntil.Value;
+
+    /// <summary>
+    /// Registra falha de login. Se um bloqueio anterior já expirou, o contador reinicia antes de incrementar.
+    /// Ao atingir o limite, bloqueia até now + duração.
+    /// </summary>
+    public void RegisterFailedLogin(int maxAttempts, TimeSpan lockoutDuration, DateTime now)
+    {
+        if (LockedUntil.HasValue && now >= LockedUntil.Value)
+        {
+            FailedLoginCount = 0;
+            LockedUntil = null;
+        }
+
+        FailedLoginCount++;
+
+        if (FailedLoginCount >= maxAttempts)
+            LockedUntil = now + lockoutDuration;
+
+        SetUpdatedAt();
+    }
+
+    /// <summary>Zera o contador de falhas e remove o bloqueio.</summary>
+    public void ResetFailedLogins()
+    {
+        FailedLoginCount = 0;
+        LockedUntil = null;
         SetUpdatedAt();
     }
 
