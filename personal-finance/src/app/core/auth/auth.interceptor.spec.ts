@@ -72,4 +72,14 @@ describe('authInterceptor', () => {
 
     expect(authSpy.logout).not.toHaveBeenCalled();
   });
+
+  it('não sobrescreve Authorization já presente (verify com challenge) mesmo com token salvo', () => {
+    setup('saved-token');
+
+    http.post('/verify', {}, { headers: { Authorization: 'Bearer challenge' } }).subscribe();
+
+    const req = httpMock.expectOne('/verify');
+    expect(req.request.headers.get('Authorization')).toBe('Bearer challenge');
+    req.flush({});
+  });
 });

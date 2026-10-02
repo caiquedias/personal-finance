@@ -12,9 +12,24 @@ export interface LoginRequest {
 }
 
 export interface LoginResponse {
-  token: string;
+  token: string | null;
   name:  string;
   email: string;
+  mfaRequired?: boolean;
+  mfaToken?: string | null;
+}
+
+export interface MfaVerifyRequest {
+  code: string;
+}
+
+export interface MfaSetupResponse {
+  secret:     string;
+  otpAuthUri: string;
+}
+
+export interface EnableMfaResponse {
+  recoveryCodes: string[];
 }
 
 export interface UserResponse {

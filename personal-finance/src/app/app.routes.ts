@@ -87,6 +87,12 @@ export const routes: Routes = [
         ]
       },
       {
+        path: 'account/security',
+        loadComponent: () =>
+          import('./features/auth/components/mfa-setup/mfa-setup.component')
+            .then(m => m.MfaSetupComponent)
+      },
+      {
         path: 'admin/users',
         canActivate: [adminGuard],
         loadComponent: () =>
