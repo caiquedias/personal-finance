@@ -116,4 +116,15 @@ describe('SidebarComponent', () => {
       expect(svg).toBe('');
     });
   });
+
+  describe('item Segurança (MFA) no sidebar', () => {
+    it('link para /account/security visível para usuário normal e não adminOnly', async () => {
+      setupWithAuth(false);
+      await compile();
+      const item = component.visibleItems().find((i: any) => i.route === '/account/security');
+      expect(item).toBeDefined();
+      expect(item?.adminOnly).toBeFalsy();
+      expect(item?.icon).toBeTruthy();
+    });
+  });
 });

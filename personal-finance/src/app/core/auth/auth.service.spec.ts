@@ -177,4 +177,124 @@ describe('AuthService', () => {
       req.flush({ id: '1', name: 'N', email: 'e@e.com', isActive: true });
     });
   });
+
+  // Nota Red: métodos MFA ainda não existem em AuthService — acessados via `any`
+  describe('login() com MFA', () => {
+    const URL = 'https://localhost:51841/api/v1/auth';
+
+    beforeEach(() => {
+      localStorage.clear();
+      setup();
+    });
+
+    it('mfaRequired=true: não persiste token/usuário, não autentica e guarda challenge em memória', () => {
+      service.login({ email: 'a@b.com', password: '123' }).subscribe();
+      httpMock.expectOne(`${URL}/login`).flush(
+        { token: null, name: 'Teste', email: 'a@b.com', mfaRequired: true, mfaToken: 'chal' });
+
+      expect(service.isAuthenticated()).toBeFalse();
+      expect(service.currentUser()).toBeNull();
+      expect(localStorage.getItem(TOKEN_KEY)).toBeNull();
+      expect(localStorage.getItem(USER_KEY)).toBeNull();
+      expect((service as any).mfaChallenge()).toBe('chal');
+      // challenge nunca vai para o localStorage
+      expect(Object.keys(localStorage).some(k => localStorage.getItem(k) === 'chal')).toBeFalse();
+    });
+
+    it('sem MFA: token persistido e nenhum challenge pendente', () => {
+      const jwt = makeJwt({ [ROLE_CLAIM]: 'User' });
+      service.login({ email: 'a@b.com', password: '123' }).subscribe();
+      httpMock.expectOne(`${URL}/login`).flush(
+        { token: jwt, name: 'Teste', email: 'a@b.com', mfaRequired: false, mfaToken: null });
+
+      expect(localStorage.getItem(TOKEN_KEY)).toBe(jwt);
+      expect((service as any).mfaChallenge()).toBeNull();
+    });
+
+    it('verifyMfa: POST /auth/mfa/verify com Bearer do challenge e body {code}', () => {
+      service.login({ email: 'a@b.com', password: '123' }).subscribe();
+      httpMock.expectOne(`${URL}/login`).flush(
+        { token: null, name: 'Teste', email: 'a@b.com', mfaRequired: true, mfaToken: 'chal' });
+
+      (service as any).verifyMfa('123456').subscribe();
+
+      const req = httpMock.expectOne(`${URL}/mfa/verify`);
+      expect(req.request.method).toBe('POST');
+      expect(req.request.headers.get('Authorization')).toBe('Bearer chal');
+      expect(req.request.body).toEqual({ code: '123456' });
+      req.flush({ token: 'x', name: 'Teste', email: 'a@b.com', mfaRequired: false, mfaToken: null });
+    });
+
+    it('verifyMfa 200: persiste token completo + usuário e limpa challenge', () => {
+      const jwt = makeJwt({ [ROLE_CLAIM]: 'User' });
+      service.login({ email: 'a@b.com', password: '123' }).subscribe();
+      httpMock.expectOne(`${URL}/login`).flush(
+        { token: null, name: 'Teste', email: 'a@b.com', mfaRequired: true, mfaToken: 'chal' });
+
+      (service as any).verifyMfa('123456').subscribe();
+      httpMock.expectOne(`${URL}/mfa/verify`).flush(
+        { token: jwt, name: 'Teste', email: 'a@b.com', mfaRequired: false, mfaToken: null });
+
+      expect(service.isAuthenticated()).toBeTrue();
+      expect(localStorage.getItem(TOKEN_KEY)).toBe(jwt);
+      expect(service.currentUser()).toEqual({ name: 'Teste', email: 'a@b.com' });
+      expect((service as any).mfaChallenge()).toBeNull();
+    });
+
+    it('verifyMfa 400: mantém challenge para nova tentativa e não autentica', () => {
+      service.login({ email: 'a@b.com', password: '123' }).subscribe();
+      httpMock.expectOne(`${URL}/login`).flush(
+        { token: null, name: 'Teste', email: 'a@b.com', mfaRequired: true, mfaToken: 'chal' });
+
+      (service as any).verifyMfa('000000').subscribe({ error: () => {} });
+      httpMock.expectOne(`${URL}/mfa/verify`).flush(
+        { message: 'Código inválido.' }, { status: 400, statusText: 'Bad Request' });
+
+      expect((service as any).mfaChallenge()).toBe('chal');
+      expect(service.isAuthenticated()).toBeFalse();
+    });
+
+    it('clearMfaChallenge: zera o challenge', () => {
+      service.login({ email: 'a@b.com', password: '123' }).subscribe();
+      httpMock.expectOne(`${URL}/login`).flush(
+        { token: null, name: 'Teste', email: 'a@b.com', mfaRequired: true, mfaToken: 'chal' });
+
+      (service as any).clearMfaChallenge();
+
+      expect((service as any).mfaChallenge()).toBeNull();
+    });
+
+    it('logout: limpa challenge pendente', () => {
+      service.login({ email: 'a@b.com', password: '123' }).subscribe();
+      httpMock.expectOne(`${URL}/login`).flush(
+        { token: null, name: 'Teste', email: 'a@b.com', mfaRequired: true, mfaToken: 'chal' });
+
+      service.logout();
+
+      expect((service as any).mfaChallenge()).toBeNull();
+    });
+
+    it('setupMfa: POST /auth/mfa/setup sem body e retorna secret/otpAuthUri', () => {
+      let result: any;
+      (service as any).setupMfa().subscribe((r: any) => result = r);
+
+      const req = httpMock.expectOne(`${URL}/mfa/setup`);
+      expect(req.request.method).toBe('POST');
+      req.flush({ secret: 'ABC', otpAuthUri: 'otpauth://totp/x?secret=ABC' });
+
+      expect(result).toEqual({ secret: 'ABC', otpAuthUri: 'otpauth://totp/x?secret=ABC' });
+    });
+
+    it('enableMfa: POST /auth/mfa/enable com {code} e retorna recoveryCodes', () => {
+      let result: any;
+      (service as any).enableMfa('123456').subscribe((r: any) => result = r);
+
+      const req = httpMock.expectOne(`${URL}/mfa/enable`);
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual({ code: '123456' });
+      req.flush({ recoveryCodes: ['A', 'B'] });
+
+      expect(result).toEqual({ recoveryCodes: ['A', 'B'] });
+    });
+  });
 });

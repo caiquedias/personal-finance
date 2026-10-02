@@ -7,7 +7,8 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const auth  = inject(AuthService);
   const token = auth.token();
 
-  const request = token
+  // Não sobrescreve Authorization explícito (ex.: verify com challenge MFA)
+  const request = token && !req.headers.has('Authorization')
     ? req.clone({ setHeaders: { Authorization: `Bearer ${token}` } })
     : req;
 

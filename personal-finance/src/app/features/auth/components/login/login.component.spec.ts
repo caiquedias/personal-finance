@@ -1,7 +1,7 @@
 import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { ComponentFixture } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
-import { of, throwError } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { AuthService } from '../../../../core/auth/auth.service';
 import { LoginComponent } from './login.component';
 
@@ -10,11 +10,11 @@ const QUOTES_STORAGE_KEY = 'login_quotes_usage';
 describe('LoginComponent', () => {
   let fixture: ComponentFixture<LoginComponent>;
   let component: LoginComponent;
-  let authSpy: jasmine.SpyObj<AuthService>;
+  let authSpy: any; // any: verifyMfa/clearMfaChallenge ainda não existem no AuthService (Red)
   let router: Router;
 
   beforeEach(async () => {
-    authSpy = jasmine.createSpyObj('AuthService', ['login']);
+    authSpy = jasmine.createSpyObj('AuthService', ['login', 'verifyMfa', 'clearMfaChallenge']);
 
     await TestBed.configureTestingModule({
       imports: [LoginComponent],
@@ -195,5 +195,136 @@ describe('LoginComponent', () => {
       component.showPassword.update(v => !v);
       expect(component.showPassword()).toBeTrue();
     });
+  });
+
+  describe('MFA — 2º passo', () => {
+    const mfaResponse = { token: null, name: 'N', email: 'a@b.com', mfaRequired: true, mfaToken: 'chal' };
+
+    function submitCredentials(): void {
+      authSpy.login.and.returnValue(of(mfaResponse));
+      component.form.setValue({ email: 'a@b.com', password: '123456' });
+      component.onSubmit();
+    }
+
+    function submitCode(code = '123456'): void {
+      component.mfaForm.setValue({ code });
+      component.onVerify();
+    }
+
+    it('mfaRequired: exibe 2º passo e não navega', fakeAsync(() => {
+      submitCredentials();
+      tick();
+      fixture.detectChanges();
+
+      expect(component.mfaStep()).toBeTrue();
+      expect(router.navigate).not.toHaveBeenCalled();
+      expect(fixture.nativeElement.querySelector('[data-testid="mfa-code"]')).not.toBeNull();
+      expect(component.loading()).toBeFalse();
+    }));
+
+    it('sem MFA: não entra no 2º passo', fakeAsync(() => {
+      authSpy.login.and.returnValue(of({ token: 'tok', name: 'N', email: 'a@b.com' }));
+      component.form.setValue({ email: 'a@b.com', password: '123456' });
+      component.onSubmit();
+      tick();
+      expect(component.mfaStep()).toBeFalse();
+    }));
+
+    it('verify OK: chama verifyMfa com o código e navega para /', fakeAsync(() => {
+      submitCredentials();
+      tick();
+      authSpy.verifyMfa.and.returnValue(of({ token: 'full', name: 'N', email: 'a@b.com', mfaRequired: false, mfaToken: null }));
+
+      submitCode('654321');
+      tick();
+
+      expect(authSpy.verifyMfa).toHaveBeenCalledOnceWith('654321');
+      expect(router.navigate).toHaveBeenCalledWith(['/']);
+    }));
+
+    it('código vazio: não chama verifyMfa', fakeAsync(() => {
+      submitCredentials();
+      tick();
+      submitCode('');
+      expect(authSpy.verifyMfa).not.toHaveBeenCalled();
+    }));
+
+    it('400: mostra mensagem da API e mantém o passo', fakeAsync(() => {
+      submitCredentials();
+      tick();
+      authSpy.verifyMfa.and.returnValue(throwError(() => ({ status: 400, error: { message: 'Código inválido.' } })));
+
+      submitCode();
+      tick();
+
+      expect(component.apiError()).toBe('Código inválido.');
+      expect(component.mfaStep()).toBeTrue();
+      expect(component.loading()).toBeFalse();
+      expect(router.navigate).not.toHaveBeenCalled();
+    }));
+
+    it('429: mostra mensagem da API', fakeAsync(() => {
+      submitCredentials();
+      tick();
+      authSpy.verifyMfa.and.returnValue(throwError(() => ({ status: 429, error: { message: 'Muitas tentativas. Tente novamente em 60s.' } })));
+
+      submitCode();
+      tick();
+
+      expect(component.apiError()).toBe('Muitas tentativas. Tente novamente em 60s.');
+      expect(component.mfaStep()).toBeTrue();
+    }));
+
+    it('401 (challenge expirado): volta ao passo de credenciais e limpa challenge', fakeAsync(() => {
+      submitCredentials();
+      tick();
+      authSpy.verifyMfa.and.returnValue(throwError(() => ({ status: 401, error: {} })));
+
+      submitCode();
+      tick();
+
+      expect(component.mfaStep()).toBeFalse();
+      expect(authSpy.clearMfaChallenge).toHaveBeenCalled();
+      expect(component.apiError()).toBeTruthy();
+    }));
+
+    it('submit bloqueado durante loading (duplo submit chama verifyMfa uma vez)', fakeAsync(() => {
+      submitCredentials();
+      tick();
+      const pending = new Subject<any>();
+      authSpy.verifyMfa.and.returnValue(pending);
+
+      submitCode();
+      submitCode();
+
+      expect(authSpy.verifyMfa).toHaveBeenCalledTimes(1);
+      expect(component.loading()).toBeTrue();
+      pending.complete();
+    }));
+
+    it('alternar recovery code muda o modo e permite código de recuperação', fakeAsync(() => {
+      submitCredentials();
+      tick();
+      expect(component.useRecoveryCode()).toBeFalse();
+
+      component.toggleRecoveryCode();
+      expect(component.useRecoveryCode()).toBeTrue();
+
+      authSpy.verifyMfa.and.returnValue(of({ token: 'full', name: 'N', email: 'a@b.com' }));
+      submitCode('ABCD-EFGH');
+      tick();
+      expect(authSpy.verifyMfa).toHaveBeenCalledOnceWith('ABCD-EFGH');
+    }));
+
+    it('voltar: limpa challenge, sai do 2º passo e erro anterior', fakeAsync(() => {
+      submitCredentials();
+      tick();
+
+      component.backToCredentials();
+
+      expect(authSpy.clearMfaChallenge).toHaveBeenCalled();
+      expect(component.mfaStep()).toBeFalse();
+      expect(component.apiError()).toBeNull();
+    }));
   });
 });
