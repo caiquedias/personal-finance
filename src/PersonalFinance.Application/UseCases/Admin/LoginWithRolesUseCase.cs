@@ -124,6 +124,15 @@ namespace PersonalFinance.Application.UseCases.Admin
                         throw new DomainException(InvalidCredentials);
                     }
 
+                    // 2º fator exigido: emite apenas o challenge. Contadores/throttle NÃO são zerados aqui —
+                    // o reset ocorre somente após o 2º fator correto (VerifyMfaUseCase).
+                    if (_mfaOptions.Enforce && user.MfaEnabled)
+                    {
+                        var challenge = _tokenService.GenerateMfaChallenge(user);
+                        return new DTOs.Auth.LoginResponseDto(
+                            null, user.Name, user.Email, MfaRequired: true, MfaToken: challenge);
+                    }
+
                     // Sucesso: zera contadores somente se houver algo a limpar
                     var hasChanges = false;
                     if (user.FailedLoginCount > 0 || user.LockedUntil is not null)
