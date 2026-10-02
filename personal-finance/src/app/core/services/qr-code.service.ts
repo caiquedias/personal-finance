@@ -5,6 +5,6 @@ import QRCode from 'qrcode';
 @Injectable({ providedIn: 'root' })
 export class QrCodeService {
   toDataUrl(text: string): Promise<string> {
-    return QRCode.toDataURL(text, { margin: 1, width: 220 });
+    return QRCode.toDataURL(text, { margin: 4, width: 220 });
   }
 }
