@@ -47,6 +47,9 @@ public sealed class User : EntityBase
     /// <summary>Último time step TOTP aceito — anti-replay.</summary>
     public long? LastUsedTotpStep { get; private set; }
 
+    /// <summary>Carimbo de segurança — embutido no JWT; rotacioná-lo invalida as sessões emitidas.</summary>
+    public Guid SecurityStamp { get; private set; }
+
     // ── EF Core ───────────────────────────────────────────────────────────────
     private User() { }
 
@@ -66,7 +69,8 @@ public sealed class User : EntityBase
         {
             Name         = name.Trim(),
             Email        = email.Trim().ToLowerInvariant(),
-            PasswordHash = passwordHash
+            PasswordHash = passwordHash,
+            SecurityStamp = Guid.NewGuid()
         };
     }
 
@@ -173,6 +177,13 @@ public sealed class User : EntityBase
         LastUsedTotpStep = step;
         SetUpdatedAt();
         return true;
+    }
+
+    /// <summary>Gera novo SecurityStamp, invalidando os tokens emitidos anteriormente.</summary>
+    public void RotateSecurityStamp()
+    {
+        SecurityStamp = Guid.NewGuid();
+        SetUpdatedAt();
     }
 
     // ── Validações privadas ───────────────────────────────────────────────────
