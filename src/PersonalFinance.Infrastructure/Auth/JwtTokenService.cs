@@ -28,6 +28,9 @@ public sealed class JwtTokenService : ITokenService
     /// <summary>Claim que marca o token como pendente de 2º fator.</summary>
     public const string MfaPendingClaim = "mfa_pending";
 
+    /// <summary>Claim com o SecurityStamp do usuário; validada a cada request para permitir revogação de sessões.</summary>
+    public const string SecurityStampClaim = "stamp";
+
     private const int MfaChallengeMinutes = 5;
 
     private readonly JwtSettings _settings;
@@ -46,6 +49,7 @@ public sealed class JwtTokenService : ITokenService
             new(JwtRegisteredClaimNames.Email, user.Email),
             new(JwtRegisteredClaimNames.Name,  user.Name),
             new(JwtRegisteredClaimNames.Jti,   Guid.NewGuid().ToString()),
+            new(SecurityStampClaim,            user.SecurityStamp.ToString()),
         };
 
         // Uma claim "role" por role — ASP.NET Core lê automaticamente para [Authorize(Roles)]

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Options;
+using PersonalFinance.Api.Auth;
 using PersonalFinance.Api.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -52,6 +53,8 @@ builder.Services.AddAuthentication(options =>
         ValidateLifetime = true,
         ClockSkew = TimeSpan.Zero,
     };
+    // Invalidação de sessões (#488): só no esquema principal; o do challenge MFA não é afetado.
+    options.Events = new JwtBearerEvents { OnTokenValidated = SecurityStampValidator.ValidateAsync };
 })
 // Esquema do token intermediário do 2º fator (MFA): audience própria, usado só em /auth/mfa/verify.
 // O esquema padrão (audience do token completo) rejeita o challenge em qualquer [Authorize].

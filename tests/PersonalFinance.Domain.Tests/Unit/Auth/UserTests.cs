@@ -347,4 +347,33 @@ public class UserTests
 
         user.LastUsedTotpStep.Should().Be(100);
     }
+
+    // ── SecurityStamp (#488) ──────────────────────────────────────────────────
+
+    [Fact(DisplayName = "Create deve gerar SecurityStamp não vazio")]
+    public void Create_ShouldGenerateSecurityStamp()
+    {
+        CreateValid().SecurityStamp.Should().NotBeEmpty();
+    }
+
+    [Fact(DisplayName = "Dois usuários devem ter SecurityStamps distintos")]
+    public void Create_TwoUsers_ShouldHaveDistinctSecurityStamps()
+    {
+        CreateValid().SecurityStamp.Should().NotBe(CreateValid().SecurityStamp);
+    }
+
+    [Fact(DisplayName = "RotateSecurityStamp deve trocar o stamp e atualizar o UpdatedAt")]
+    public void RotateSecurityStamp_ShouldChangeStampAndTimestamp()
+    {
+        var user = CreateValid();
+        var stamp = user.SecurityStamp;
+        var original = user.UpdatedAt;
+
+        Task.Delay(10).Wait();
+        user.RotateSecurityStamp();
+
+        user.SecurityStamp.Should().NotBeEmpty();
+        user.SecurityStamp.Should().NotBe(stamp);
+        user.UpdatedAt.Should().BeAfter(original);
+    }
 }
