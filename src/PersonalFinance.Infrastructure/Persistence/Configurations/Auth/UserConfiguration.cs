@@ -44,6 +44,11 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
                .HasColumnName("LockedUntil")
                .HasColumnType("datetime2(7)");
 
+        // Concorrência otimista: evita perda de incremento do contador em logins simultâneos
+        builder.Property(u => u.RowVersion)
+               .HasColumnName("RowVersion")
+               .IsRowVersion();
+
         // Unique constraint em Email — filtrado por DeletedAt IS NULL no DDL
         builder.HasIndex(u => u.Email)
                .IsUnique()

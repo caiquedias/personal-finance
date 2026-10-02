@@ -141,7 +141,8 @@ ela for planejada.
 
 | Issue | Decisão | Motivo | Bloqueia |
 |---|---|---|---|
-| — | — | — | — |
+| #391 | IP > 45 chars faz `LoginThrottle.Create` lançar `DomainException("IP inválido.")` após senha errada, devolvendo mensagem diferente de "Credenciais inválidas." (oráculo). Mitigação futura: truncar/normalizar o IP no controller | Review do ciclo 3 | Não |
+| #391 | O `Verify` real do Argon2 é refeito a cada tentativa do retry de concorrência (custo de CPU) | Review do ciclo 3 | Não |
 
 ---
 
@@ -152,7 +153,10 @@ aqui até que uma issue de tooling/infra justifique abrir work item.
 
 | Data | Achado | Origem | Ação sugerida / status |
 |---|---|---|---|
-| — | — | — | — |
+| 2026-10-02 | #391 resolvido no ciclo 2: ForwardedHeaders só de redes privadas, rowversion + retry no contador, Verify dummy (inexistente/bloqueado/inativo), validação das options no startup, Retry-After no 429, lockout por (conta, IP) com teto global | #391 | Resolvido |
+| 2026-10-02 | Risco residual: atacante com MUITOS IPs ainda pode atingir o teto global (`GlobalMaxFailedAttempts`, default 50) e bloquear a conta da vítima por `LockoutMinutes` | #391 | Aceito; mitigação futura: CAPTCHA/notificação ao usuário |
+| 2026-10-02 | Risco residual: contador global do `User` sem coluna de janela — zera só no sucesso ou após expirar o lockout | #391 | Aceito |
+| 2026-10-02 | Risco residual: tabela de throttle cheia de bloqueios ativos → rastreio por (conta, IP) em fail-open (só teto global) | #391 | Aceito (fail-closed permitiria negar login a todos) |
 
 ---
 

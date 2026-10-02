@@ -52,3 +52,14 @@ animations: [
 | `HasData` não popula InMemory | EF Core HasData é SQL only | `SeedLookupData()` manual na factory |
 | Produto cartesiano na `vw_PeriodSummary` | JOIN duplo Income + Expense | Subconsultas separadas por entidade |
 | B4/C4 sem fórmula no parser Excel | Planilha salva sem fórmulas | Fallback via `TryGetValue()` na célula |
+
+## Exceção ao soft-delete: `LoginThrottle` (#391)
+
+`LoginThrottle` (contador de falhas de login por conta + IP) é tabela efêmera: **exclusão física**,
+sem `DeletedAt` nem `HasQueryFilter`. Motivo: soft-delete acumularia linhas indefinidamente e um
+atacante poderia inflar a tabela. Linhas expiradas são removidas em lote antes de inserir um par novo
+(teto duro de 2.000 linhas; lockouts ativos nunca são apagados; tabela cheia de bloqueios ativos →
+fail-open do rastreio por par, seguindo só o teto global da conta).
+
+**LGPD:** o IP é dado pessoal. Retenção = janela do lockout (`LockoutMinutes`); depois disso a linha
+é elegível à remoção física na próxima inserção, e é removida imediatamente no login com sucesso.

@@ -15,6 +15,7 @@ namespace PersonalFinance.Application.Tests.Unit.Auth
     {
         private readonly Mock<IUserRepository> _userRepo = new();
         private readonly Mock<IUserRoleRepository> _roleRepo = new();
+        private readonly Mock<ILoginThrottleRepository> _throttleRepo = new();
         private readonly Mock<IPasswordHasher> _hasher = new();
         private readonly Mock<ITokenService> _tokenSvc = new();
         private readonly Mock<IUnitOfWork> _uow = new();
@@ -23,9 +24,9 @@ namespace PersonalFinance.Application.Tests.Unit.Auth
         public LoginUseCaseTests()
         {
             _sut = new LoginWithRolesUseCase(
-                _userRepo.Object, _roleRepo.Object,
+                _userRepo.Object, _roleRepo.Object, _throttleRepo.Object,
                 _hasher.Object, _tokenSvc.Object,
-            _uow.Object, new LoginLockoutOptions());
+                _uow.Object, new LoginLockoutOptions());
         }
 
         private static User FakeUser() =>
@@ -46,8 +47,7 @@ namespace PersonalFinance.Application.Tests.Unit.Auth
             _tokenSvc.Setup(t => t.Generate(user, It.IsAny<IEnumerable<string>>()))
                      .Returns("jwt_token_string");
 
-            var result = await _sut.ExecuteAsync(
-                new LoginDto("caique@monkeybomb.com", "SenhaForte@123"));
+            var result = await _sut.ExecuteAsync(new LoginDto("caique@monkeybomb.com", "SenhaForte@123"), "1.1.1.1");
 
             result.Token.Should().Be("jwt_token_string");
             result.Email.Should().Be("caique@monkeybomb.com");
@@ -61,8 +61,7 @@ namespace PersonalFinance.Application.Tests.Unit.Auth
             _userRepo.Setup(r => r.GetByEmailAsync(It.IsAny<string>(), default))
                      .ReturnsAsync((User?)null);
 
-            var act = () => _sut.ExecuteAsync(
-                new LoginDto("unknown@x.com", "Senha@123"));
+            var act = () => _sut.ExecuteAsync(new LoginDto("unknown@x.com", "Senha@123"), "1.1.1.1");
 
             await act.Should().ThrowAsync<DomainException>()
                      .WithMessage("*credenciais*");
@@ -79,8 +78,7 @@ namespace PersonalFinance.Application.Tests.Unit.Auth
             _hasher.Setup(h => h.Verify("SenhaErrada", "hashed_password"))
                    .Returns(false);
 
-            var act = () => _sut.ExecuteAsync(
-                new LoginDto("caique@monkeybomb.com", "SenhaErrada"));
+            var act = () => _sut.ExecuteAsync(new LoginDto("caique@monkeybomb.com", "SenhaErrada"), "1.1.1.1");
 
             await act.Should().ThrowAsync<DomainException>()
                      .WithMessage("*credenciais*");
@@ -97,11 +95,10 @@ namespace PersonalFinance.Application.Tests.Unit.Auth
             _userRepo.Setup(r => r.GetByEmailAsync("caique@monkeybomb.com", default))
                      .ReturnsAsync(user);
 
-            var act = () => _sut.ExecuteAsync(
-                new LoginDto("caique@monkeybomb.com", "SenhaForte@123"));
+            var act = () => _sut.ExecuteAsync(new LoginDto("caique@monkeybomb.com", "SenhaForte@123"), "1.1.1.1");
 
             await act.Should().ThrowAsync<DomainException>()
-                     .WithMessage("*inativo*");
+                     .WithMessage("Credenciais inválidas.");
         }
 
         // ── Token não deve ser gerado antes da verificação da senha ───────────────
@@ -115,7 +112,7 @@ namespace PersonalFinance.Application.Tests.Unit.Auth
             _hasher.Setup(h => h.Verify(It.IsAny<string>(), It.IsAny<string>()))
                    .Returns(false);
 
-            try { await _sut.ExecuteAsync(new LoginDto("caique@monkeybomb.com", "Errada")); }
+            try { await _sut.ExecuteAsync(new LoginDto("caique@monkeybomb.com", "Errada"), "1.1.1.1"); }
             catch { /* esperado */ }
 
             _tokenSvc.Verify(t => t.Generate(
@@ -139,8 +136,7 @@ namespace PersonalFinance.Application.Tests.Unit.Auth
             _tokenSvc.Setup(t => t.Generate(user, roles))
                      .Returns("admin_token");
 
-            var result = await _sut.ExecuteAsync(
-                new LoginDto("caique@monkeybomb.com", "SenhaForte@123"));
+            var result = await _sut.ExecuteAsync(new LoginDto("caique@monkeybomb.com", "SenhaForte@123"), "1.1.1.1");
 
             result.Token.Should().Be("admin_token");
             _tokenSvc.Verify(t => t.Generate(user, roles), Times.Once);

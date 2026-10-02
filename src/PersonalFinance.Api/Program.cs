@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Extensions.Options;
+using PersonalFinance.Api.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using PersonalFinance.Api.Converters;
@@ -106,23 +108,32 @@ builder.Services.AddCors(options =>
 builder.Services.Configure<ForwardedHeadersOptions>(o =>
 {
     o.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-    // IP do proxy é dinâmico — confia em qualquer proxy
-    o.KnownNetworks.Clear();
-    o.KnownProxies.Clear();
+    // Confiar em qualquer origem permitiria forjar X-Forwarded-For e burlar o rate limit por IP.
+    // Confia apenas em proxies de redes privadas (além do loopback, que já vem por padrão) e em 1 salto.
+    o.ForwardLimit = 1;
+    foreach (var (prefix, length) in new[] { ("10.0.0.0", 8), ("172.16.0.0", 12), ("192.168.0.0", 16) })
+        o.KnownNetworks.Add(new Microsoft.AspNetCore.HttpOverrides.IPNetwork(IPAddress.Parse(prefix), length));
 });
 
 // ── Rate limiting (login — fixed window por IP) ───────────────────────────────
+// Validado no startup: PermitLimit/WindowSeconds <= 0 falham ao subir (sem fallback silencioso)
+builder.Services.AddOptions<LoginRateLimitOptions>()
+    .Bind(builder.Configuration.GetSection("RateLimiting:Login"))
+    .Validate(o => o.PermitLimit > 0, "RateLimiting:Login:PermitLimit deve ser > 0.")
+    .Validate(o => o.WindowSeconds > 0, "RateLimiting:Login:WindowSeconds deve ser > 0.")
+    .ValidateOnStart();
+
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 
     options.AddPolicy("login", httpContext =>
     {
-        // Config lida de forma lazy (na criação da partição) para que overrides de teste valham
-        var section = httpContext.RequestServices
-            .GetRequiredService<IConfiguration>().GetSection("RateLimiting:Login");
-        var permitLimit = int.TryParse(section["PermitLimit"], out var p) && p > 0 ? p : 10;
-        var windowSeconds = int.TryParse(section["WindowSeconds"], out var w) && w > 0 ? w : 60;
+        // Options resolvidas de forma lazy (já validadas no startup) para que overrides de teste valham
+        var loginOptions = httpContext.RequestServices
+            .GetRequiredService<IOptions<LoginRateLimitOptions>>().Value;
+        var permitLimit = loginOptions.PermitLimit;
+        var windowSeconds = loginOptions.WindowSeconds;
 
         // TestServer não tem RemoteIpAddress — fallback para "unknown"
         var key = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
@@ -141,11 +152,19 @@ builder.Services.AddRateLimiter(options =>
         response.StatusCode = StatusCodes.Status429TooManyRequests;
         response.ContentType = "application/json";
 
+        // Segundos de espera: metadata do lease; fallback = janela configurada
+        var retryAfterSeconds = context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter)
+            ? (int)Math.Ceiling(retryAfter.TotalSeconds)
+            : context.HttpContext.RequestServices
+                .GetRequiredService<IOptions<LoginRateLimitOptions>>().Value.WindowSeconds;
+        retryAfterSeconds = Math.Max(1, retryAfterSeconds);
+        response.Headers.RetryAfter = retryAfterSeconds.ToString(System.Globalization.CultureInfo.InvariantCulture);
+
         var payload = JsonSerializer.Serialize(new
         {
             status = StatusCodes.Status429TooManyRequests,
             error = nameof(HttpStatusCode.TooManyRequests),
-            message = "Muitas tentativas. Tente novamente em instantes.",
+            message = $"Muitas tentativas. Tente novamente em {retryAfterSeconds} segundos.",
             traceId = context.HttpContext.TraceIdentifier
         });
         await response.WriteAsync(payload, ct);
