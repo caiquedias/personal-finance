@@ -123,4 +123,23 @@ public class JwtTokenServiceTests
         token.Claims.Should().Contain(c => c.Type == JwtRegisteredClaimNames.Email);
         token.Claims.Should().NotContain(c => c.Type == "mfa_pending");
     }
+
+    [Fact(DisplayName = "Token completo deve incluir a claim stamp com o SecurityStamp do usuário (#488)")]
+    public void Generate_ShouldIncludeSecurityStampClaim()
+    {
+        var user = FakeUser();
+
+        var token = Read(_sut.Generate(user, new[] { "User" }));
+
+        JwtTokenService.SecurityStampClaim.Should().Be("stamp");
+        token.Claims.Single(c => c.Type == "stamp").Value.Should().Be(user.SecurityStamp.ToString());
+    }
+
+    [Fact(DisplayName = "Challenge MFA não deve conter a claim stamp (#488)")]
+    public void GenerateMfaChallenge_ShouldNotContainSecurityStamp()
+    {
+        var token = Read(_sut.GenerateMfaChallenge(FakeUser()));
+
+        token.Claims.Should().NotContain(c => c.Type == "stamp");
+    }
 }

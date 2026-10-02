@@ -70,6 +70,12 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
                .HasColumnName("LastUsedTotpStep")
                .HasColumnType("bigint");
 
+        // Invalidação de sessões JWT (#488): o default de banco (NEWID) é aplicado só na migration
+        builder.Property(u => u.SecurityStamp)
+               .HasColumnName("SecurityStamp")
+               .HasColumnType("uniqueidentifier")
+               .IsRequired();
+
         // Unique constraint em Email — filtrado por DeletedAt IS NULL no DDL
         builder.HasIndex(u => u.Email)
                .IsUnique()

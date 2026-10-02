@@ -26,6 +26,13 @@ public sealed class UserRepository : IUserRepository
     public async Task<IEnumerable<User>> GetAllAsync(CancellationToken ct = default)
         => _context.Users.AsEnumerable();
 
+    public async Task<Guid?> GetSecurityStampAsync(Guid id, CancellationToken ct = default)
+        => await _context.Users
+               .AsNoTracking()
+               .Where(u => u.Id == id && u.IsActive)
+               .Select(u => (Guid?)u.SecurityStamp)
+               .FirstOrDefaultAsync(ct);
+
     public async Task<bool> ExistsByEmailAsync(string email, CancellationToken ct = default)
         => await _context.Users
                .AnyAsync(u => u.Email == email.ToLowerInvariant(), ct);
