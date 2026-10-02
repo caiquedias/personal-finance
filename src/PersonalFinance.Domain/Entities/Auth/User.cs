@@ -29,10 +29,10 @@ public sealed class User : EntityBase
     /// <summary>Quantidade de falhas de login consecutivas.</summary>
     public int FailedLoginCount { get; private set; }
 
-    /// <summary>Fim do bloqueio de login (UTC). Null quando não bloqueado.</summary>
-
     /// <summary>Token de concorrência otimista (rowversion) — protege o contador de falhas de login.</summary>
     public byte[] RowVersion { get; private set; } = Array.Empty<byte>();
+
+    /// <summary>Fim do bloqueio de login (UTC). Null quando não bloqueado.</summary>
     public DateTime? LockedUntil { get; private set; }
 
     // ── EF Core ───────────────────────────────────────────────────────────────

@@ -32,6 +32,12 @@ public sealed class ExceptionMiddleware(
             _logger.LogWarning("DomainException: {Message}", ex.Message);
             await WriteResponseAsync(context, HttpStatusCode.BadRequest, ex.Message);
         }
+        catch (ConcurrencyConflictException ex)
+        {
+            _logger.LogWarning(ex, "ConcurrencyConflict ao persistir.");
+            await WriteResponseAsync(context, HttpStatusCode.Conflict,
+                "O registro foi alterado por outra operação. Tente novamente.");
+        }
         catch (UnauthorizedAccessException ex)
         {
             _logger.LogWarning("UnauthorizedAccess: {Message}", ex.Message);

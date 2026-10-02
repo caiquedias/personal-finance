@@ -25,12 +25,15 @@ public sealed class UnitOfWork : IUnitOfWork
         }
         catch (DbUpdateConcurrencyException ex)
         {
+            // Descarta entidades stale para o retry reler do banco
+            _context.ChangeTracker.Clear();
             // Traduz para exceção de domínio — Application não conhece o EF Core
             throw new ConcurrencyConflictException(ex);
         }
         catch (DbUpdateException ex) when (IsUniqueViolation(ex))
         {
             // Insert concorrente do mesmo par (LoginThrottle) — tratado como conflito para entrar no retry
+            _context.ChangeTracker.Clear();
             throw new ConcurrencyConflictException(ex);
         }
     }
