@@ -149,7 +149,7 @@ public class MfaLoginFlowTests : IDisposable
         body.GetProperty("email").GetString().Should().Be(mfa.Email);
         var jwt = new JwtSecurityTokenHandler().ReadJwtToken(fullToken);
         jwt.Claims.Should().NotContain(c => c.Type == "mfa_pending");
-        jwt.Claims.Should().Contain(c => c.Type == "role" || c.Type == System.Security.Claims.ClaimTypes.Role);
+        jwt.Claims.Should().Contain(c => c.Type == JwtRegisteredClaimNames.Sub && c.Value == mfa.UserId.ToString());
         (await WithBearer(_factory, fullToken).GetAsync("/api/v1/periods")).StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
