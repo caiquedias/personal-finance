@@ -9,6 +9,9 @@ _(formato esperado: `<issue-number>` ou `<issue-url>`)_
 ## Passo 1 — Ler, analisar e apresentar o plano
 
 1. Leia a issue via `gh issue view <number> --repo caiquedias/personal-finance --json number,title,body,labels`
+   Verifique também se a issue tem comentário de Sprint Planning com a estimativa:
+   `gh issue view <number> --repo caiquedias/personal-finance --json comments --jq '.comments[].body' | grep -i "Estimativa:"`
+   — sem resultado, anote o aviso para o passo 4 (a análise de eficiência do `/end-issue` fica sem base de desvio).
 2. Derive o nome da branch: `feat/<id>-<slug>` (slug em kebab-case do título)
 3. **Spawne o PO em Modo Análise de Impacto** (autônomo — não pedir permissão ao Caique). Passe:
    - Issue number, título e body
@@ -21,6 +24,8 @@ _(formato esperado: `<issue-number>` ou `<issue-url>`)_
    4. **Green (task a task)** — implementar: `<tasks da issue>`
    5. **QA** → **UX Validator** (se frontend) → **Reviewer**
    6. Push + PR `claude/` → `feat/` (vinculado ao projeto) + mover issue **e PR** para **In Review**
+   Logo abaixo do plano, **se não houver `Estimativa:` na issue**, uma linha de aviso (fora dos 6 itens):
+   `⚠️ Issue sem comentário de Sprint Planning com "Estimativa: Xh" — sem base para medir desvio no /end-issue.`
 5. **Aguarde confirmação do Caique antes de avançar**
 
 ---
