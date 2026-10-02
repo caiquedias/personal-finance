@@ -14,7 +14,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddInfrastructure(builder.Configuration);
 
 // ── Application use cases ─────────────────────────────────────────────────────
-builder.Services.AddApplicationUseCases();
+builder.Services.AddApplicationUseCases(builder.Configuration);
 
 // ── Controllers ───────────────────────────────────────────────────────────────
 builder.Services.AddControllers()
