@@ -25,6 +25,7 @@ public sealed class AppDbContext : DbContext
     public DbSet<ExpenseOrder> ExpenseOrders { get; set; } = default!;
     public DbSet<Income> Incomes { get; set; } = default!;
     public DbSet<PurgeRecord> PurgeRecords { get; set; } = default!;
+    public DbSet<LoginThrottle> LoginThrottles { get; set; } = default!;
 
     // ── Lookup tables (seed) ──────────────────────────────────────────────────
     public DbSet<Role> Roles { get; set; } = default!;
