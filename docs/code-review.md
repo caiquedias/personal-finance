@@ -22,6 +22,11 @@ Executado pelo sub-agente **Reviewer** ao final de cada issue, antes do PR.
 - [ ] Soft-delete respeitado: `DeletedAt` + `HasQueryFilter` global
 - [ ] FluentValidation em use cases de escrita
 - [ ] Sem lógica de negócio duplicada entre classes
+- [ ] Concorrência/retry (rowversion, índice único): após falha de `CommitAsync`, o `DbContext` scoped
+  ainda rastreia entidades com `RowVersion` antigo/valores alterados? O retry relê do banco
+  (`ChangeTracker.Clear()` ou `AsNoTracking`) ou reaplica a regra sobre o objeto stale? Testes com mock
+  de `IUnitOfWork` e InMemory **não provam isso** (InMemory não gera conflito de rowversion nem
+  violação de índice único) — verificar por leitura do `UnitOfWork`/repositórios (#391)
 
 ### Código frontend (Angular 21)
 

@@ -101,3 +101,14 @@ em inserts concorrentes do mesmo par não é reproduzível em testes de integra�
 converte a violação de índice único (SQL Server 2601/2627) em `ConcurrencyConflictException`, que
 entra no retry do `LoginWithRolesUseCase`; essa conversão só é validável em SQL Server. O retry em si
 é coberto por unit test do use case (mock do `IUnitOfWork`).
+
+## Falha suspeita de ser pré-existente
+
+Antes de classificar uma falha como pré-existente, confirmar na base com worktree descartável (limpeza
+garantida, sem resíduo em `.claude/worktrees/`):
+
+```bash
+bash scripts/run-test-on-base.sh tests/<Projeto>.Tests "FullyQualifiedName~<NomeDoTeste>" [origin/develop]
+```
+
+Exit code = o do `dotnet test` na base (≠ 0 → a falha existe na base).
