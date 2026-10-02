@@ -6,7 +6,10 @@ using PersonalFinance.Api.Converters;
 using PersonalFinance.Api.Extensions;
 using PersonalFinance.Api.Middleware;
 using PersonalFinance.Infrastructure.Extensions;
+using System.Net;
 using System.Text;
+using System.Text.Json;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -108,6 +111,47 @@ builder.Services.Configure<ForwardedHeadersOptions>(o =>
     o.KnownProxies.Clear();
 });
 
+// ── Rate limiting (login — fixed window por IP) ───────────────────────────────
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    options.AddPolicy("login", httpContext =>
+    {
+        // Config lida de forma lazy (na criação da partição) para que overrides de teste valham
+        var section = httpContext.RequestServices
+            .GetRequiredService<IConfiguration>().GetSection("RateLimiting:Login");
+        var permitLimit = int.TryParse(section["PermitLimit"], out var p) && p > 0 ? p : 10;
+        var windowSeconds = int.TryParse(section["WindowSeconds"], out var w) && w > 0 ? w : 60;
+
+        // TestServer não tem RemoteIpAddress — fallback para "unknown"
+        var key = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+
+        return RateLimitPartition.GetFixedWindowLimiter(key, _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = permitLimit,
+            Window = TimeSpan.FromSeconds(windowSeconds),
+            QueueLimit = 0
+        });
+    });
+
+    options.OnRejected = async (context, ct) =>
+    {
+        var response = context.HttpContext.Response;
+        response.StatusCode = StatusCodes.Status429TooManyRequests;
+        response.ContentType = "application/json";
+
+        var payload = JsonSerializer.Serialize(new
+        {
+            status = StatusCodes.Status429TooManyRequests,
+            error = nameof(HttpStatusCode.TooManyRequests),
+            message = "Muitas tentativas. Tente novamente em instantes.",
+            traceId = context.HttpContext.TraceIdentifier
+        });
+        await response.WriteAsync(payload, ct);
+    };
+});
+
 var app = builder.Build();
 
 // ── Middleware pipeline ───────────────────────────────────────────────────────
@@ -132,6 +176,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors("AllowAngular");
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

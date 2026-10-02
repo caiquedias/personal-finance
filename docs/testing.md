@@ -55,6 +55,13 @@ O `HttpClient` da `WebApplicationFactory` usa Host `localhost`, e `HstsOptions.E
 `Strict-Transport-Security`, enviar `Host: api.example.com` na request; não limpar `ExcludedHosts`
 (enfraqueceria o teste e a config). (#390)
 
+O rate limiter do login (`RateLimiting:Login:PermitLimit`/`WindowSeconds`, default 10/60s por IP) usaria
+o mesmo "IP" nulo (`unknown`) para toda a suíte — `GetAdminAuthenticatedClientAsync()` loga dezenas de
+vezes. Por isso o construtor estático da `TestWebApplicationFactory` seta
+`RateLimiting__Login__PermitLimit=100000` via variável de ambiente. Para testar o 429, usar
+`factory.WithWebHostBuilder(b => b.UseSetting("RateLimiting:Login:PermitLimit", "2"))` — o limiter lê a
+config de forma lazy (ao criar a partição), então o override vale. Não baixar o limite global da factory. (#391)
+
 ## Isolamento de falha por item
 
 Se a regra é "falha em 1 registro não aborta o lote", o teste deve provar que, com 1 registro
