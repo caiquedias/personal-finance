@@ -25,4 +25,41 @@ public class UserConfigurationTests
         property.IsConcurrencyToken.Should().BeTrue();
         property.ValueGenerated.Should().Be(ValueGenerated.OnAddOrUpdate);
     }
+
+    // ── MFA (#393) ────────────────────────────────────────────────────────────
+
+    private static IEntityType UserEntity()
+    {
+        var ctx = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>()
+            .UseInMemoryDatabase($"CfgDb_{Guid.NewGuid()}").Options);
+        return ctx.Model.FindEntityType(typeof(User))!;
+    }
+
+    [Fact(DisplayName = "User deve mapear as colunas de MFA com a nulabilidade correta")]
+    public void User_MfaColumns_ShouldBeMappedWithExpectedNullability()
+    {
+        var e = UserEntity();
+
+        e.FindProperty("MfaEnabled")!.IsNullable.Should().BeFalse();
+        e.FindProperty("MfaEnabled")!.ClrType.Should().Be(typeof(bool));
+        e.FindProperty("MfaSecretEncrypted")!.IsNullable.Should().BeTrue();
+        e.FindProperty("MfaEnabledAt")!.IsNullable.Should().BeTrue();
+        e.FindProperty("LastUsedTotpStep")!.IsNullable.Should().BeTrue();
+        e.FindProperty("LastUsedTotpStep")!.ClrType.Should().Be(typeof(long?));
+    }
+
+    [Fact(DisplayName = "MfaEnabled deve ter default false no banco (usuários existentes não mudam)")]
+    public void User_MfaEnabled_ShouldDefaultToFalse()
+    {
+        UserEntity().FindProperty("MfaEnabled")!.GetDefaultValue().Should().Be(false);
+    }
+
+    [Fact(DisplayName = "MfaSecretEncrypted deve ter tamanho máximo definido (blob cifrado, não o secret em claro)")]
+    public void User_MfaSecretEncrypted_ShouldHaveMaxLength()
+    {
+        var maxLength = UserEntity().FindProperty("MfaSecretEncrypted")!.GetMaxLength();
+
+        maxLength.Should().NotBeNull();
+        maxLength!.Value.Should().BeGreaterOrEqualTo(128);
+    }
 }

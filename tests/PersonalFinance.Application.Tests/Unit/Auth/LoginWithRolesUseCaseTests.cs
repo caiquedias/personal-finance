@@ -21,13 +21,14 @@ public class LoginWithRolesUseCaseTests
     private readonly Mock<ITokenService> _tokenSvc = new();
     private readonly Mock<IUnitOfWork> _uow = new();
     private readonly LoginWithRolesUseCase _sut;
+    private readonly MfaOptions _mfaOptions = new();
 
     public LoginWithRolesUseCaseTests()
     {
         _sut = new LoginWithRolesUseCase(
             _userRepo.Object, _roleRepo.Object, _throttleRepo.Object,
             _hasher.Object, _tokenSvc.Object,
-            _uow.Object, new LoginLockoutOptions());
+            _uow.Object, new LoginLockoutOptions(), _mfaOptions);
     }
 
     private static User FakeUser() =>
@@ -517,7 +518,7 @@ public class LoginWithRolesUseCaseTests
         var options = new LoginLockoutOptions { MaxFailedAttempts = 5, GlobalMaxFailedAttempts = 3, LockoutMinutes = 15 };
         var sut = new LoginWithRolesUseCase(
             _userRepo.Object, _roleRepo.Object, _throttleRepo.Object,
-            _hasher.Object, _tokenSvc.Object, _uow.Object, options);
+            _hasher.Object, _tokenSvc.Object, _uow.Object, options, new MfaOptions());
         var user = FakeUser();
         SetupUser(user);
         SetupStatefulThrottles();
@@ -649,5 +650,132 @@ public class LoginWithRolesUseCaseTests
         _userRepo.Verify(r => r.GetByEmailAsync(Email, default), Times.Exactly(2));
         _uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Exactly(2));
         fresh.FailedLoginCount.Should().Be(1);
+    }
+
+    // ── MFA no login (#393) — 2º fator, flag Auth:Mfa:Enforce ─────────────────
+
+    private static User MfaUser()
+    {
+        var user = FakeUser();
+        user.SetPendingMfaSecret("cipher-blob");
+        user.EnableMfa(DateTime.UtcNow);
+        return user;
+    }
+
+    [Fact(DisplayName = "MFA: Enforce=true com MFA ativo deve retornar MfaRequired e MfaToken, sem Token completo")]
+    public async Task Execute_MfaEnforcedAndEnabled_ShouldReturnChallenge()
+    {
+        _mfaOptions.Enforce = true;
+        var user = MfaUser();
+        SetupUser(user);
+        _hasher.Setup(h => h.Verify("Senha@123", "hashed_password")).Returns(true);
+        _tokenSvc.Setup(t => t.GenerateMfaChallenge(user)).Returns("challenge-token");
+
+        var result = await _sut.ExecuteAsync(new LoginDto(Email, "Senha@123"), IpA);
+
+        result.MfaRequired.Should().BeTrue();
+        result.MfaToken.Should().Be("challenge-token");
+        result.Token.Should().BeNull();
+        result.Email.Should().Be(Email);
+        _tokenSvc.Verify(t => t.Generate(It.IsAny<User>(), It.IsAny<IEnumerable<string>>()), Times.Never);
+    }
+
+    [Fact(DisplayName = "MFA: Enforce=true com MFA ativo não deve zerar contadores nem remover throttle (só após o 2º fator)")]
+    public async Task Execute_MfaEnforcedAndEnabled_ShouldNotResetCounters()
+    {
+        _mfaOptions.Enforce = true;
+        var user = MfaUser();
+        user.RegisterFailedLogin(5, TimeSpan.FromMinutes(15), DateTime.UtcNow);
+        user.RegisterFailedLogin(5, TimeSpan.FromMinutes(15), DateTime.UtcNow);
+        var throttle = LoginThrottle.Create(user.Id, IpA, DateTime.UtcNow);
+        throttle.RegisterFailure(5, TimeSpan.FromMinutes(15), DateTime.UtcNow);
+        SetupUser(user);
+        _throttleRepo.Setup(r => r.GetAsync(user.Id, IpA, It.IsAny<CancellationToken>())).ReturnsAsync(throttle);
+        _hasher.Setup(h => h.Verify("Senha@123", "hashed_password")).Returns(true);
+        _tokenSvc.Setup(t => t.GenerateMfaChallenge(user)).Returns("challenge-token");
+
+        await _sut.ExecuteAsync(new LoginDto(Email, "Senha@123"), IpA);
+
+        user.FailedLoginCount.Should().Be(2);
+        throttle.FailedCount.Should().Be(1);
+        _throttleRepo.Verify(r => r.RemoveAsync(It.IsAny<LoginThrottle>(), It.IsAny<CancellationToken>()), Times.Never);
+        _uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact(DisplayName = "MFA: Enforce=false com MFA ativo deve manter o login normal (flag desligada)")]
+    public async Task Execute_MfaNotEnforcedButEnabled_ShouldLoginNormally()
+    {
+        _mfaOptions.Enforce = false;
+        var user = MfaUser();
+        SetupUser(user);
+        SetupSuccessfulLoginFor(user);
+
+        var result = await _sut.ExecuteAsync(new LoginDto(Email, "Senha@123"), IpA);
+
+        result.Token.Should().Be("jwt_token");
+        result.MfaRequired.Should().BeFalse();
+        result.MfaToken.Should().BeNull();
+        _tokenSvc.Verify(t => t.GenerateMfaChallenge(It.IsAny<User>()), Times.Never);
+    }
+
+    [Fact(DisplayName = "MFA: Enforce=true com usuário sem MFA deve manter o login normal")]
+    public async Task Execute_MfaEnforcedButUserWithoutMfa_ShouldLoginNormally()
+    {
+        _mfaOptions.Enforce = true;
+        var user = FakeUser();
+        SetupUser(user);
+        SetupSuccessfulLoginFor(user);
+
+        var result = await _sut.ExecuteAsync(new LoginDto(Email, "Senha@123"), IpA);
+
+        result.Token.Should().Be("jwt_token");
+        result.MfaRequired.Should().BeFalse();
+        _tokenSvc.Verify(t => t.GenerateMfaChallenge(It.IsAny<User>()), Times.Never);
+    }
+
+    [Fact(DisplayName = "MFA: Enforce=true com setup pendente (não ativado) deve manter o login normal")]
+    public async Task Execute_MfaEnforcedButOnlyPendingSecret_ShouldLoginNormally()
+    {
+        _mfaOptions.Enforce = true;
+        var user = FakeUser();
+        user.SetPendingMfaSecret("cipher-blob");
+        SetupUser(user);
+        SetupSuccessfulLoginFor(user);
+
+        var result = await _sut.ExecuteAsync(new LoginDto(Email, "Senha@123"), IpA);
+
+        result.Token.Should().Be("jwt_token");
+        result.MfaRequired.Should().BeFalse();
+    }
+
+    [Fact(DisplayName = "MFA: senha errada com MFA ativo deve manter a mensagem genérica, contar a falha e não emitir challenge")]
+    public async Task Execute_MfaEnforcedWrongPassword_ShouldFailGenericallyAndCount()
+    {
+        _mfaOptions.Enforce = true;
+        var user = MfaUser();
+        SetupUser(user);
+        _hasher.Setup(h => h.Verify(It.IsAny<string>(), It.IsAny<string>())).Returns(false);
+
+        var act = () => _sut.ExecuteAsync(new LoginDto(Email, "Errada"), IpA);
+
+        await act.Should().ThrowAsync<DomainException>().WithMessage("Credenciais inválidas.");
+        user.FailedLoginCount.Should().Be(1);
+        _tokenSvc.Verify(t => t.GenerateMfaChallenge(It.IsAny<User>()), Times.Never);
+    }
+
+    [Fact(DisplayName = "MFA: conta bloqueada com MFA ativo deve falhar com mensagem genérica, sem challenge")]
+    public async Task Execute_MfaEnforcedLockedAccount_ShouldNotIssueChallenge()
+    {
+        _mfaOptions.Enforce = true;
+        var user = MfaUser();
+        for (var i = 0; i < 5; i++)
+            user.RegisterFailedLogin(5, TimeSpan.FromMinutes(15), DateTime.UtcNow);
+        SetupUser(user);
+        _hasher.Setup(h => h.Verify("Senha@123", "hashed_password")).Returns(true);
+
+        var act = () => _sut.ExecuteAsync(new LoginDto(Email, "Senha@123"), IpA);
+
+        await act.Should().ThrowAsync<DomainException>().WithMessage("Credenciais inválidas.");
+        _tokenSvc.Verify(t => t.GenerateMfaChallenge(It.IsAny<User>()), Times.Never);
     }
 }

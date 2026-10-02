@@ -26,6 +26,7 @@ public sealed class AppDbContext : DbContext
     public DbSet<Income> Incomes { get; set; } = default!;
     public DbSet<PurgeRecord> PurgeRecords { get; set; } = default!;
     public DbSet<LoginThrottle> LoginThrottles { get; set; } = default!;
+    public DbSet<MfaRecoveryCode> MfaRecoveryCodes { get; set; } = default!;
 
     // ── Lookup tables (seed) ──────────────────────────────────────────────────
     public DbSet<Role> Roles { get; set; } = default!;
@@ -48,6 +49,7 @@ public sealed class AppDbContext : DbContext
         modelBuilder.Entity<ExpenseOrder>().HasQueryFilter(e => e.DeletedAt == null);
         modelBuilder.Entity<Income>().HasQueryFilter(e => e.DeletedAt == null);
         modelBuilder.Entity<PurgeRecord>().HasQueryFilter(e => e.DeletedAt == null);
+        modelBuilder.Entity<MfaRecoveryCode>().HasQueryFilter(e => e.DeletedAt == null);
     }
 
     // ── Intercepta SaveChanges — atualiza UpdatedAt ───────────────────────────

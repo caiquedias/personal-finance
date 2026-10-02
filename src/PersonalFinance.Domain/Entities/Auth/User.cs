@@ -35,6 +35,18 @@ public sealed class User : EntityBase
     /// <summary>Fim do bloqueio de login (UTC). Null quando não bloqueado.</summary>
     public DateTime? LockedUntil { get; private set; }
 
+    /// <summary>Indica se o MFA (TOTP) está ativo. Só vira true após validar o 1º código.</summary>
+    public bool MfaEnabled { get; private set; }
+
+    /// <summary>Secret TOTP cifrado (AES-GCM). Pendente enquanto MfaEnabled=false. Nunca em claro.</summary>
+    public string? MfaSecretEncrypted { get; private set; }
+
+    /// <summary>Quando o MFA foi ativado (UTC).</summary>
+    public DateTime? MfaEnabledAt { get; private set; }
+
+    /// <summary>Último time step TOTP aceito — anti-replay.</summary>
+    public long? LastUsedTotpStep { get; private set; }
+
     // ── EF Core ───────────────────────────────────────────────────────────────
     private User() { }
 
@@ -108,6 +120,59 @@ public sealed class User : EntityBase
         FailedLoginCount = 0;
         LockedUntil = null;
         SetUpdatedAt();
+    }
+
+    /// <summary>
+    /// Guarda o secret TOTP já cifrado como pendente (MfaEnabled continua false).
+    /// Com MFA ativo não sobrescreve o secret.
+    /// </summary>
+    public void SetPendingMfaSecret(string encryptedSecret)
+    {
+        if (string.IsNullOrWhiteSpace(encryptedSecret))
+            throw new DomainException("O secret do MFA é obrigatório.");
+
+        if (MfaEnabled)
+            throw new DomainException("O MFA já está ativo.");
+
+        MfaSecretEncrypted = encryptedSecret;
+        SetUpdatedAt();
+    }
+
+    /// <summary>Ativa o MFA. Exige setup prévio (secret pendente).</summary>
+    public void EnableMfa(DateTime now)
+    {
+        if (MfaEnabled)
+            throw new DomainException("O MFA já está ativo.");
+
+        if (string.IsNullOrWhiteSpace(MfaSecretEncrypted))
+            throw new DomainException("Configure o MFA antes de ativá-lo.");
+
+        MfaEnabled = true;
+        MfaEnabledAt = now;
+        SetUpdatedAt();
+    }
+
+    /// <summary>Desativa o MFA e limpa secret, data de ativação e último step.</summary>
+    public void DisableMfa()
+    {
+        MfaEnabled = false;
+        MfaSecretEncrypted = null;
+        MfaEnabledAt = null;
+        LastUsedTotpStep = null;
+        SetUpdatedAt();
+    }
+
+    /// <summary>
+    /// Registra o time step de um código TOTP aceito. Rejeita step igual ou anterior ao último (replay).
+    /// </summary>
+    public bool RegisterTotpStep(long step)
+    {
+        if (LastUsedTotpStep.HasValue && step <= LastUsedTotpStep.Value)
+            return false;
+
+        LastUsedTotpStep = step;
+        SetUpdatedAt();
+        return true;
     }
 
     // ── Validações privadas ───────────────────────────────────────────────────
