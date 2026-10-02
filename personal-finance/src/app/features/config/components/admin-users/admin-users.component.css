@@ -91,6 +91,11 @@
 .action-warning:hover { background: color-mix(in srgb, var(--amber) 12%, transparent);      border-color: var(--amber);      color: var(--amber); }
 .action-info:hover    { background: color-mix(in srgb, var(--terracotta) 12%, transparent); border-color: var(--terracotta); color: var(--terracotta); }
 
+/* ── Feedback de ação ── */
+.action-feedback { padding: 10px 14px; border-radius: var(--v2-radius-sm); margin-bottom: 12px; font-size: 13px; }
+.action-feedback-success { background: var(--color-success-bg); color: var(--color-success); }
+.action-feedback-error   { background: var(--color-danger-bg);  color: var(--color-danger); }
+
 /* ── Loading ── */
 .loading-state {
   display: flex;

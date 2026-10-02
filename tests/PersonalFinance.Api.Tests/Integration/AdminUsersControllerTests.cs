@@ -1,14 +1,19 @@
 using FluentAssertions;
+using Microsoft.EntityFrameworkCore;
+using PersonalFinance.Domain.Entities.Auth;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Xunit;
+using static PersonalFinance.Api.Tests.Integration.MfaTestHelper;
 
 namespace PersonalFinance.Api.Tests.Integration;
 
 public class AdminUsersControllerTests : ApiIntegrationTestBase
 {
-    public AdminUsersControllerTests(TestWebApplicationFactory factory) : base(factory) { }
+    private readonly TestWebApplicationFactory _mfaFactory;
+
+    public AdminUsersControllerTests(TestWebApplicationFactory factory) : base(factory) => _mfaFactory = factory;
 
     // ── Sem autenticação ──────────────────────────────────────────────────────
 
@@ -166,5 +171,65 @@ public class AdminUsersControllerTests : ApiIntegrationTestBase
             new { newPassword = "NovaSenha@456" });
 
         r.StatusCode.Should().Be(HttpStatusCode.NoContent);
+    }
+
+    // ── Reset de MFA (#479) ───────────────────────────────────────────────────
+
+    [Fact(DisplayName = "POST /admin/users/{id}/mfa/reset sem token deve retornar 401")]
+    public async Task ResetMfa_WithoutToken_ShouldReturn401()
+    {
+        var r = await Client.PostAsync($"/api/v1/admin/users/{Guid.NewGuid()}/mfa/reset", null);
+        r.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact(DisplayName = "POST /admin/users/{id}/mfa/reset por não-admin deve retornar 403")]
+    public async Task ResetMfa_NonAdmin_ShouldReturn403()
+    {
+        var (client, _) = await GetAuthenticatedClientAsync();
+
+        var r = await client.PostAsync($"/api/v1/admin/users/{Guid.NewGuid()}/mfa/reset", null);
+
+        r.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact(DisplayName = "POST /admin/users/{id}/mfa/reset por admin deve retornar 204 e limpar MFA e recovery codes")]
+    public async Task ResetMfa_Admin_ShouldReturn204AndClearMfa()
+    {
+        var (adminClient, _) = await GetAdminAuthenticatedClientAsync();
+        var target = await CreateMfaUserAsync(_mfaFactory);
+
+        var r = await adminClient.PostAsync($"/api/v1/admin/users/{target.UserId}/mfa/reset", null);
+
+        r.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        var user = await GetUserAsync(_mfaFactory, target.UserId);
+        user.MfaEnabled.Should().BeFalse();
+        user.MfaSecretEncrypted.Should().BeNull();
+        var activeCodes = await WithDbAsync(_mfaFactory, db =>
+            db.Set<MfaRecoveryCode>().CountAsync(c => c.UserId == target.UserId));
+        activeCodes.Should().Be(0);
+        var softDeleted = await WithDbAsync(_mfaFactory, db =>
+            db.Set<MfaRecoveryCode>().IgnoreQueryFilters()
+              .CountAsync(c => c.UserId == target.UserId && c.DeletedAt != null));
+        softDeleted.Should().BeGreaterThan(0);
+    }
+
+    [Fact(DisplayName = "POST /admin/users/{id}/mfa/reset com id inexistente deve retornar 404")]
+    public async Task ResetMfa_UnknownUser_ShouldReturn404()
+    {
+        var (adminClient, _) = await GetAdminAuthenticatedClientAsync();
+
+        var r = await adminClient.PostAsync($"/api/v1/admin/users/{Guid.NewGuid()}/mfa/reset", null);
+
+        r.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact(DisplayName = "POST /admin/users/{id}/mfa/reset no próprio admin deve retornar 400")]
+    public async Task ResetMfa_OwnAdmin_ShouldReturn400()
+    {
+        var (adminClient, adminId) = await GetAdminAuthenticatedClientAsync();
+
+        var r = await adminClient.PostAsync($"/api/v1/admin/users/{adminId}/mfa/reset", null);
+
+        r.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 }

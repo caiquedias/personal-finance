@@ -60,6 +60,10 @@ export class AdminUsersComponent implements OnInit {
   readonly editError   = signal<string | null>(null);
   readonly resetError  = signal<string | null>(null);
 
+  // Feedback do reset de MFA (banner na listagem)
+  readonly actionMessage = signal<string | null>(null);
+  readonly actionError   = signal<string | null>(null);
+
   nameFilter   = '';
   emailFilter  = '';
   statusFilter = '';
@@ -224,6 +228,17 @@ export class AdminUsersComponent implements OnInit {
     this.api.resetUserPassword(userId, { newPassword: pass }).subscribe({
       next: () => { this.showResetModal.set(false); this.loadingAction.set(false); },
       error: err => { this.resetError.set(err.error?.message ?? 'Erro ao resetar senha.'); this.loadingAction.set(false); },
+    });
+  }
+
+  resetMfa(user: AdminUserResponse): void {
+    if (!window.confirm(`Resetar o MFA de ${user.name}? O usuário precisará configurar o MFA novamente.`)) return;
+    this.actionMessage.set(null);
+    this.actionError.set(null);
+    this.loadingAction.set(true);
+    this.api.resetUserMfa(user.id).subscribe({
+      next: () => { this.actionMessage.set(`MFA de ${user.name} resetado com sucesso.`); this.loadingAction.set(false); },
+      error: err => { this.actionError.set(err.error?.message ?? 'Erro ao resetar MFA.'); this.loadingAction.set(false); },
     });
   }
 

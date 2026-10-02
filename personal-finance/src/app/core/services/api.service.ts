@@ -249,6 +249,10 @@ export class ApiService {
     return this.http.patch<void>(`${this.base}/admin/users/${userId}/reset-password`, data);
   }
 
+  resetUserMfa(userId: string): Observable<void> {
+    return this.http.post<void>(`${this.base}/admin/users/${userId}/mfa/reset`, {});
+  }
+
   createAdminUser(data: CreateUserByAdminRequest): Observable<AdminUserResponse> {
     return this.http.post<AdminUserResponse>(`${this.base}/admin/users`, data);
   }

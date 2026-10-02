@@ -223,6 +223,13 @@ describe('ApiService', () => {
     req.flush(null);
   });
 
+  it('resetUserMfa faz POST /admin/users/:id/mfa/reset', () => {
+    service.resetUserMfa('u-1').subscribe();
+    const req = httpMock.expectOne(`${BASE}/admin/users/u-1/mfa/reset`);
+    expect(req.request.method).toBe('POST');
+    req.flush(null);
+  });
+
   // ── Purge ─────────────────────────────────────────────────────────────────
 
   it('getEligiblePeriods faz GET /purge/eligible-periods', () => {
