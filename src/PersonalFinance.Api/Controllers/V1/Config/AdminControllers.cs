@@ -210,6 +210,8 @@ public sealed class AdminUsersController : ApiControllerBase
     private readonly ResetUserPasswordUseCase   _resetPassword;
     private readonly CreateUserByAdminUseCase   _createUser;
     private readonly UpdateUserByAdminUseCase   _updateUser;
+    private readonly ResetUserMfaUseCase        _resetMfa;
+    private readonly ILogger<AdminUsersController> _logger;
 
     public AdminUsersController(
         GetUsersUseCase           getUsers,
@@ -218,7 +220,9 @@ public sealed class AdminUsersController : ApiControllerBase
         RemoveRoleUseCase         removeRole,
         ResetUserPasswordUseCase  resetPassword,
         CreateUserByAdminUseCase  createUser,
-        UpdateUserByAdminUseCase  updateUser)
+        UpdateUserByAdminUseCase  updateUser,
+        ResetUserMfaUseCase       resetMfa,
+        ILogger<AdminUsersController> logger)
     {
         _getUsers      = getUsers;
         _toggleActive  = toggleActive;
@@ -227,6 +231,8 @@ public sealed class AdminUsersController : ApiControllerBase
         _resetPassword = resetPassword;
         _createUser    = createUser;
         _updateUser    = updateUser;
+        _resetMfa      = resetMfa;
+        _logger        = logger;
     }
 
     /// <summary>Cria um novo usuário com role padrão User.</summary>
@@ -317,6 +323,26 @@ public sealed class AdminUsersController : ApiControllerBase
         CancellationToken ct)
     {
         await _resetPassword.ExecuteAsync(dto with { UserId = id }, CurrentUserId, ct);
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Reseta o MFA de um usuário (desativa, limpa secret e recovery codes).
+    /// Admin não pode resetar o próprio MFA por este endpoint.
+    /// </summary>
+    [HttpPost("{id:guid}/mfa/reset")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ResetMfa(Guid id, CancellationToken ct)
+    {
+        await _resetMfa.ExecuteAsync(id, CurrentUserId, ct);
+
+        // Auditoria: apenas ids e timestamp — nunca secret ou e-mail
+        _logger.LogWarning(
+            "Admin MFA reset: AdminId={AdminId} TargetUserId={TargetUserId} At={At}",
+            CurrentUserId, id, DateTime.UtcNow);
+
         return NoContent();
     }
 }

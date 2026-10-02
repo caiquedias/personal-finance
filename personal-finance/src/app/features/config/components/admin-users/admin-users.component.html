@@ -18,6 +18,13 @@
     />
   </div>
 
+  @if (actionMessage()) {
+    <div class="action-feedback action-feedback-success" role="status">{{ actionMessage() }}</div>
+  }
+  @if (actionError()) {
+    <div class="action-feedback action-feedback-error" role="alert">{{ actionError() }}</div>
+  }
+
   @if (loading()) {
     <div class="loading-state"><span class="spinner-lg"></span></div>
   } @else {
@@ -61,6 +68,7 @@
                     [title]="user.isActive ? 'Desativar' : 'Ativar'"
                   >{{ user.isActive ? '⏸' : '▶' }}</button>
                   <button class="action-btn action-info" (click)="openResetPassword(user)" title="Resetar senha">🔑</button>
+                  <button class="action-btn action-info" (click)="resetMfa(user)" [disabled]="loadingAction()" title="Resetar MFA">🛡</button>
                 </div>
               </td>
             </tr>

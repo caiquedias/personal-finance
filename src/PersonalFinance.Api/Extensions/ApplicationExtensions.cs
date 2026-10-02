@@ -76,6 +76,7 @@ public static class ApplicationExtensions
         services.AddScoped<AssignRoleUseCase>();
         services.AddScoped<RemoveRoleUseCase>();
         services.AddScoped<ResetUserPasswordUseCase>();
+        services.AddScoped<ResetUserMfaUseCase>();
         services.AddScoped<CreateUserByAdminUseCase>();
         services.AddScoped<UpdateUserByAdminUseCase>();
 
