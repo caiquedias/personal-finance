@@ -7,10 +7,9 @@ import { AdminUsersComponent } from './admin-users.component';
 import { ApiService } from '../../../../core/services/api.service';
 import { AdminUserResponse } from '../../../../core/models/models';
 
-// Usuário com os flags de MFA expostos pelo backend (#490)
-type MfaUser = AdminUserResponse & { mfaEnabled: boolean; mfaSetupPending: boolean };
+type MfaUser = AdminUserResponse;
 
-// API do componente a ser criada pelo Green — tipada aqui para o Red não quebrar a compilação
+// API do componente exposta para os testes
 type MfaModalApi = {
   showResetMfaModal: WritableSignal<boolean>;
   openResetMfa(user: AdminUserResponse): void;

@@ -68,7 +68,9 @@
                     [title]="user.isActive ? 'Desativar' : 'Ativar'"
                   >{{ user.isActive ? '⏸' : '▶' }}</button>
                   <button class="action-btn action-info" (click)="openResetPassword(user)" title="Resetar senha">🔑</button>
-                  <button class="action-btn action-info" (click)="resetMfa(user)" [disabled]="loadingAction()" title="Resetar MFA">🛡</button>
+                  @if (user.mfaEnabled || user.mfaSetupPending) {
+                    <button class="action-btn action-info" (click)="openResetMfa(user)" [disabled]="loadingAction()" title="Resetar MFA">🛡</button>
+                  }
                 </div>
               </td>
             </tr>
@@ -183,6 +185,27 @@
               </button>
             </div>
           </form>
+        </app-sonic-modal>
+      </div>
+    }
+
+    <!-- Modal confirmar reset de MFA -->
+    @if (showResetMfaModal()) {
+      <div class="modal-overlay" @backdropAnim (click)="showResetMfaModal.set(false)"></div>
+      <div class="modal-center" @modalAnim>
+        <app-sonic-modal title="Resetar MFA" [subtitle]="selectedUser()?.name ?? ''" (closed)="showResetMfaModal.set(false)">
+          <div class="modal-form">
+            <p>Resetar o MFA de {{ selectedUser()?.name }}? O usuário precisará configurar o MFA novamente.</p>
+            @if (resetError()) {
+              <div class="form-error">{{ resetError() }}</div>
+            }
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-ghost btn-sm" (click)="showResetMfaModal.set(false)">Cancelar</button>
+            <button type="button" class="btn btn-primary btn-sm" [disabled]="loadingAction()" (click)="onConfirmResetMfa()">
+              {{ loadingAction() ? 'Resetando...' : 'Resetar MFA' }}
+            </button>
+          </div>
         </app-sonic-modal>
       </div>
     }
