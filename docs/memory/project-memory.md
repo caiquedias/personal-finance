@@ -39,6 +39,7 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 | #393 | [Security][MFA] Backend — TOTP setup, enable, verify, disable | 2026-10-02 | [393.md](393.md) |
 | #394 | [Security][MFA] Frontend — setup e verificação | 2026-10-02 | [394.md](394.md) |
 | #488 | [Security][Auth] Infra de invalidação de sessões JWT (SecurityStamp) | 2026-10-02 | [488.md](488.md) |
+| #489 | [Security][MFA] Invalidar sessões do usuário no reset de MFA admin | 2026-10-04 | [489.md](489.md) |
 
 ---
 
@@ -49,7 +50,7 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 | Expurgo (Purge) | #329, #330, #331, #332, #356, #369, #367, #368, #377, #376, #378, #384 | 2026-07-05 |
 | Batch Expenses / Serialização | #355 | 2026-06-26 |
 | Login / Auth UI | #387, #394 | 2026-10-02 |
-| Segurança / JWT | #389, #391, #393, #394, #488 | 2026-10-02 |
+| Segurança / JWT | #389, #391, #393, #394, #488, #489 | 2026-10-04 |
 | Import (Income) | #419 | 2026-09-28 |
 | Import (Extrato C6 PDF) | #420, #421, #422, #423, #443, #444, #445, #446, #447, #464 | 2026-10-01 |
 
@@ -69,6 +70,7 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 - **Interfaces:** IStatementParserService (#420 — parser de extrato PDF com senha; `ParseAsync(Stream, password, ct)`)
 - **DTOs:** ConfirmStatementItemDto, ConfirmStatementImportRequestDto, ConfirmStatementImportResultDto (#422), StatementPreviewItemDto, StatementPreviewResultDto (#421 — Items + DiscardedByDateCount), ParsedStatementEntryDto (#420 — record: EventDate, PostingDate, RawType, Description, Amount com sinal), EligiblePeriodDto, PurgeRecordDto, UpdateIncomeDto (#419 — sem PeriodId, sem SourceType)
 - **Use cases alterados:** GetPurgeRecordsUseCase — retorna `IEnumerable<PurgeRecordDto>` (antes `IEnumerable<PurgeRecord>`), mapeamento interno com `ItemCount = ExpenseCount + IncomeCount`
+- **Use cases admin (#489):** ResetUserMfaUseCase, ResetUserPasswordUseCase e ToggleUserActiveUseCase (desativação) chamam `RotateSecurityStamp()` no alvo no mesmo commit — tokens antigos → 401, inclusive após reativar
 - **Use cases MFA (#393):** SetupMfaUseCase, EnableMfaUseCase, DisableMfaUseCase (senha E código), VerifyMfaUseCase (anti-replay, recovery code, lockout); LoginWithRolesUseCase ganha ramo MFA e `MfaOptions` (`Auth:Mfa` Enforce/EncryptionKey, chave validada no startup)
 - **Use cases alterados:** LoginWithRolesUseCase (#391) — `ExecuteAsync(dto, ipAddress, ct)`; lockout por par (conta, IP) + teto global no User; Verify contra hash dummy em todos os caminhos de falha (inclusive inativo); mensagem sempre "Credenciais inválidas."; retry de 3 tentativas em `ConcurrencyConflictException`
 - **Options:** LoginLockoutOptions (#391 — `Auth:LoginLockout`: MaxFailedAttempts 5, LockoutMinutes 15, GlobalMaxFailedAttempts 50, ThrottleMaxRows 2000, ThrottleCleanupBatchSize 500; validadas no startup)
