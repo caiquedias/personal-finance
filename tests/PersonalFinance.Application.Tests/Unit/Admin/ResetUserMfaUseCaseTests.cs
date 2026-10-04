@@ -99,6 +99,7 @@ public class ResetUserMfaUseCaseTests
 
         await act.Should().ThrowAsync<DomainException>();
         user.SecurityStamp.Should().Be(previous);
+        _uow.Verify(u => u.CommitAsync(default), Times.Never);
     }
 
     [Fact(DisplayName = "Deve lançar exceção quando o alvo não tem MFA nem secret pendente")]
