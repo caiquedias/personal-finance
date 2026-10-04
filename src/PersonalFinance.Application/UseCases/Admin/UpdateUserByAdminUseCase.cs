@@ -39,6 +39,8 @@ public sealed class UpdateUserByAdminUseCase
             user.IsActive,
             user.DeletedAt.HasValue,
             user.CreatedAt,
-            roles);
+            roles,
+            user.MfaEnabled,
+            !user.MfaEnabled && user.MfaSecretEncrypted != null);
     }
 }

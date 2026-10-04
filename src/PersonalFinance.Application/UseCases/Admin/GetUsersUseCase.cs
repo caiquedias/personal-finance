@@ -30,7 +30,9 @@ namespace PersonalFinance.Application.UseCases.Admin
                 result.Add(new AdminUserResponseDto(
                     user.Id, user.Name, user.Email,
                     user.IsActive, user.IsDeleted,
-                    user.CreatedAt, roles));
+                    user.CreatedAt, roles,
+                    user.MfaEnabled,
+                    !user.MfaEnabled && user.MfaSecretEncrypted != null));
             }
 
             return new PagedResult<AdminUserResponseDto>(result, totalCount, filter.PageNumber, filter.PageSize);
