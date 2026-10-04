@@ -213,6 +213,72 @@ public class AdminUsersControllerTests : ApiIntegrationTestBase
         softDeleted.Should().BeGreaterThan(0);
     }
 
+    // ── Invalidação de sessões do alvo (#489) ─────────────────────────────────
+
+    private const string ProtectedPath = "/api/v1/periods";
+
+    /// <summary>Cadastra e loga o usuário-alvo guardando o token completo emitido antes da ação admin.</summary>
+    private async Task<(Guid UserId, string Email, string OldToken)> LoginTargetAsync()
+    {
+        var anonymous = _mfaFactory.CreateClient();
+        var email = await RegisterUserAsync(anonymous);
+        var login = await ReadJsonAsync(await anonymous.PostAsJsonAsync(LoginPath, new { email, password = Password }));
+        var userId = await WithDbAsync(_mfaFactory, db =>
+            db.Users.Where(u => u.Email == email).Select(u => u.Id).SingleAsync());
+        return (userId, email, login.GetProperty("token").GetString()!);
+    }
+
+    [Fact(DisplayName = "Reset de MFA pelo admin deve invalidar o token anterior do alvo (401) e permitir novo login")]
+    public async Task ResetMfa_Admin_ShouldInvalidateTargetOldToken()
+    {
+        var (adminClient, _) = await GetAdminAuthenticatedClientAsync();
+        var (userId, email, oldToken) = await LoginTargetAsync();
+        var target = WithBearer(_mfaFactory, oldToken);
+        (await target.PostAsync(SetupPath, null)).EnsureSuccessStatusCode();
+        (await target.GetAsync(ProtectedPath)).StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var r = await adminClient.PostAsync($"/api/v1/admin/users/{userId}/mfa/reset", null);
+
+        r.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await WithBearer(_mfaFactory, oldToken).GetAsync(ProtectedPath))
+            .StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        var login = await ReadJsonAsync(await _mfaFactory.CreateClient()
+            .PostAsJsonAsync(LoginPath, new { email, password = Password }));
+        (await WithBearer(_mfaFactory, login.GetProperty("token").GetString()!).GetAsync(ProtectedPath))
+            .StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact(DisplayName = "Reset de senha pelo admin deve invalidar o token anterior do alvo (401)")]
+    public async Task ResetPassword_Admin_ShouldInvalidateTargetOldToken()
+    {
+        var (adminClient, _) = await GetAdminAuthenticatedClientAsync();
+        var (userId, _, oldToken) = await LoginTargetAsync();
+        (await WithBearer(_mfaFactory, oldToken).GetAsync(ProtectedPath)).StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var r = await adminClient.PatchAsJsonAsync(
+            $"/api/v1/admin/users/{userId}/reset-password",
+            new { newPassword = "NovaSenha@456" });
+
+        r.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await WithBearer(_mfaFactory, oldToken).GetAsync(ProtectedPath))
+            .StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact(DisplayName = "Desativar e reativar o usuário não deve revalidar o token anterior (401)")]
+    public async Task ToggleActive_DeactivateThenReactivate_ShouldKeepOldTokenInvalid()
+    {
+        var (adminClient, _) = await GetAdminAuthenticatedClientAsync();
+        var (userId, _, oldToken) = await LoginTargetAsync();
+
+        (await adminClient.PatchAsync($"/api/v1/admin/users/{userId}/toggle-active", null))
+            .StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await adminClient.PatchAsync($"/api/v1/admin/users/{userId}/toggle-active", null))
+            .StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        (await WithBearer(_mfaFactory, oldToken).GetAsync(ProtectedPath))
+            .StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
     [Fact(DisplayName = "POST /admin/users/{id}/mfa/reset com id inexistente deve retornar 404")]
     public async Task ResetMfa_UnknownUser_ShouldReturn404()
     {
