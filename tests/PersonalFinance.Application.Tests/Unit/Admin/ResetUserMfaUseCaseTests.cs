@@ -61,6 +61,47 @@ public class ResetUserMfaUseCaseTests
         _uow.Verify(u => u.CommitAsync(default), Times.Once);
     }
 
+    [Fact(DisplayName = "Deve rotacionar o SecurityStamp do alvo com MFA ativo")]
+    public async Task Execute_WithMfaEnabled_ShouldRotateSecurityStamp()
+    {
+        var user = NewUserWithMfa();
+        var previous = user.SecurityStamp;
+        _userRepo.Setup(r => r.GetByIdAsync(user.Id, default)).ReturnsAsync(user);
+
+        await _sut.ExecuteAsync(user.Id, AdminId);
+
+        user.SecurityStamp.Should().NotBe(previous);
+        _uow.Verify(u => u.CommitAsync(default), Times.Once);
+    }
+
+    [Fact(DisplayName = "Deve rotacionar o SecurityStamp do alvo com secret pendente")]
+    public async Task Execute_WithPendingSecretOnly_ShouldRotateSecurityStamp()
+    {
+        var user = User.Create("Target", "target@x.com", "hash");
+        user.SetPendingMfaSecret("secret-pendente");
+        var previous = user.SecurityStamp;
+        _userRepo.Setup(r => r.GetByIdAsync(user.Id, default)).ReturnsAsync(user);
+
+        await _sut.ExecuteAsync(user.Id, AdminId);
+
+        user.SecurityStamp.Should().NotBe(previous);
+        _uow.Verify(u => u.CommitAsync(default), Times.Once);
+    }
+
+    [Fact(DisplayName = "Não deve rotacionar o SecurityStamp quando o alvo não tem MFA nem secret")]
+    public async Task Execute_WithoutMfaAndSecret_ShouldNotRotateSecurityStamp()
+    {
+        var user = User.Create("Target", "target@x.com", "hash");
+        var previous = user.SecurityStamp;
+        _userRepo.Setup(r => r.GetByIdAsync(user.Id, default)).ReturnsAsync(user);
+
+        var act = () => _sut.ExecuteAsync(user.Id, AdminId);
+
+        await act.Should().ThrowAsync<DomainException>();
+        user.SecurityStamp.Should().Be(previous);
+        _uow.Verify(u => u.CommitAsync(default), Times.Never);
+    }
+
     [Fact(DisplayName = "Deve lançar exceção quando o alvo não tem MFA nem secret pendente")]
     public async Task Execute_WithoutMfaAndSecret_ShouldThrow()
     {

@@ -39,6 +39,22 @@ public class ResetUserPasswordUseCaseTests
         _uow.Verify(u => u.CommitAsync(default), Times.Once);
     }
 
+    [Fact(DisplayName = "Deve rotacionar o SecurityStamp do alvo ao resetar a senha")]
+    public async Task Execute_WithValidData_ShouldRotateSecurityStamp()
+    {
+        var targetId = Guid.NewGuid();
+        var user     = User.Create("Target", "target@x.com", "old_hash");
+        var previous = user.SecurityStamp;
+
+        _userRepo.Setup(r => r.GetByIdAsync(targetId, default)).ReturnsAsync(user);
+        _hasher.Setup(h => h.Hash("NovaSenha@123")).Returns("new_hash");
+
+        await _sut.ExecuteAsync(new ResetPasswordDto(targetId, "NovaSenha@123"), AdminId);
+
+        user.SecurityStamp.Should().NotBe(previous);
+        _uow.Verify(u => u.CommitAsync(default), Times.Once);
+    }
+
     [Fact(DisplayName = "Deve chamar o hasher antes de atualizar")]
     public async Task Execute_ShouldHashPasswordBeforeUpdate()
     {

@@ -40,6 +40,7 @@ namespace PersonalFinance.Application.UseCases.Admin
 
             var newHash = _hasher.Hash(dto.NewPassword);
             user.UpdatePasswordHash(newHash);
+            user.RotateSecurityStamp(); // invalida sessões ativas do alvo (#489)
 
             await _uow.CommitAsync(ct);
         }

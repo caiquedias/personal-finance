@@ -37,6 +37,7 @@ namespace PersonalFinance.Application.UseCases.Admin
                 throw new DomainException("O MFA não está ativo.");
 
             user.DisableMfa();
+            user.RotateSecurityStamp(); // invalida sessões ativas do alvo (#489)
             await _recoveryCodeRepository.RemoveAllByUserIdAsync(user.Id, ct);
             await _uow.CommitAsync(ct);
         }

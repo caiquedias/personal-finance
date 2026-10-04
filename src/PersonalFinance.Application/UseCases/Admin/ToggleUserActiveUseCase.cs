@@ -29,7 +29,10 @@ namespace PersonalFinance.Application.UseCases.Admin
                 ?? throw new KeyNotFoundException("Usuário não encontrado.");
 
             if (user.IsActive)
+            {
                 user.SoftDelete();
+                user.RotateSecurityStamp(); // desativação invalida sessões ativas (#489)
+            }
             else
             {
                 // Reativar — como SoftDelete seta DeletedAt, precisamos de um método na entidade
