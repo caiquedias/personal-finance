@@ -276,6 +276,8 @@ export interface AdminUserResponse {
   isDeleted: boolean;
   createdAt: string;
   roles:     string[];
+  mfaEnabled:      boolean;
+  mfaSetupPending: boolean;
 }
 
 export interface AssignRoleRequest       { roleId: number; }

@@ -37,6 +37,33 @@ public class UpdateUserByAdminUseCaseTests
         _uow.Verify(u => u.CommitAsync(default), Times.Once);
     }
 
+    [Fact(DisplayName = "Deve espelhar MfaEnabled=true no retorno da atualização")]
+    public async Task Execute_WithMfaEnabledUser_ShouldMirrorMfaEnabled()
+    {
+        var user = User.Create("Antigo", "caique@x.com", "hash");
+        user.SetPendingMfaSecret("secret-cifrado");
+        user.EnableMfa(DateTime.UtcNow);
+        _userRepo.Setup(r => r.GetByIdAsync(user.Id, default)).ReturnsAsync(user);
+        _roleRepo.Setup(r => r.GetRoleNamesByUserIdAsync(user.Id, default)).ReturnsAsync(["User"]);
+
+        var result = await _sut.ExecuteAsync(new UpdateUserByAdminDto(user.Id, "Novo"));
+
+        result.Should().BeEquivalentTo(new { MfaEnabled = true, MfaSetupPending = false });
+    }
+
+    [Fact(DisplayName = "Deve espelhar MfaSetupPending=true no retorno da atualização")]
+    public async Task Execute_WithPendingMfaSecret_ShouldMirrorMfaSetupPending()
+    {
+        var user = User.Create("Antigo", "caique@x.com", "hash");
+        user.SetPendingMfaSecret("secret-cifrado");
+        _userRepo.Setup(r => r.GetByIdAsync(user.Id, default)).ReturnsAsync(user);
+        _roleRepo.Setup(r => r.GetRoleNamesByUserIdAsync(user.Id, default)).ReturnsAsync(["User"]);
+
+        var result = await _sut.ExecuteAsync(new UpdateUserByAdminDto(user.Id, "Novo"));
+
+        result.Should().BeEquivalentTo(new { MfaEnabled = false, MfaSetupPending = true });
+    }
+
     [Fact(DisplayName = "Deve lançar exceção se usuário não encontrado")]
     public async Task Execute_WithNotFoundUser_ShouldThrow()
     {
