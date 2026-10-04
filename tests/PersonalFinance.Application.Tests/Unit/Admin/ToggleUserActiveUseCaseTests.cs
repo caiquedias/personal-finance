@@ -36,6 +36,21 @@ public class ToggleUserActiveUseCaseTests
         _uow.Verify(u => u.CommitAsync(default), Times.Once);
     }
 
+    [Fact(DisplayName = "Deve rotacionar o SecurityStamp ao desativar usuário")]
+    public async Task Execute_WithActiveUser_ShouldRotateSecurityStamp()
+    {
+        var targetId = Guid.NewGuid();
+        var user     = User.Create("Target", "target@x.com", "hash");
+        var previous = user.SecurityStamp;
+
+        _userRepo.Setup(r => r.GetByIdAsync(targetId, default)).ReturnsAsync(user);
+
+        await _sut.ExecuteAsync(targetId, AdminId);
+
+        user.SecurityStamp.Should().NotBe(previous);
+        _uow.Verify(u => u.CommitAsync(default), Times.Once);
+    }
+
     [Fact(DisplayName = "Deve reativar usuário inativo")]
     public async Task Execute_WithInactiveUser_ShouldReactivate()
     {
