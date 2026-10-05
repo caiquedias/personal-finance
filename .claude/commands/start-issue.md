@@ -58,6 +58,11 @@ cd .claude/worktrees/<id>-<slug> && git branch --show-current
 ```
 O output **deve ser exatamente** `claude/<id>-<slug>`.
 
+**Baseline da suíte (antes do Red):** o worktree está em `origin/develop`, então rode a suíte dos projetos
+que a issue toca (`dotnet test <projeto>`, `DOTNET_CLI_UI_LANGUAGE=en`) e anote no contexto (Passo 2.5) qualquer
+falha existente (`## Falhas pré-existentes`). Se houver, informe ao Caique e peça decisão (corrigir na issue /
+issue separada / aceitar) **antes** do Red — evita o ciclo QA → decisão → Green da #401.
+
 **Issue com frontend:** o worktree não tem `node_modules`. Rode `npm ci` em `personal-finance/` (no worktree)
 antes do Red, para ele não gastar um spawn instalando dependências.
 
