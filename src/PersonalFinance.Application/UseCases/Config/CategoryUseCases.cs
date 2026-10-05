@@ -1,3 +1,4 @@
+using FluentValidation;
 using PersonalFinance.Application.DTOs.Config;
 using PersonalFinance.Domain.Entities.Config;
 using PersonalFinance.Domain.Exceptions;
@@ -17,19 +18,24 @@ public sealed class CreateCategoryUseCase
 {
     private readonly ICategoryRepository _categoryRepository;
     private readonly IUnitOfWork         _unitOfWork;
+    private readonly IValidator<CreateCategoryDto> _validator;
 
     public CreateCategoryUseCase(
         ICategoryRepository categoryRepository,
-        IUnitOfWork         unitOfWork)
+        IUnitOfWork         unitOfWork,
+        IValidator<CreateCategoryDto> validator)
     {
         _categoryRepository = categoryRepository;
         _unitOfWork         = unitOfWork;
+        _validator          = validator;
     }
 
     public async Task<CategoryResponseDto> ExecuteAsync(
         CreateCategoryDto dto,
         CancellationToken ct = default)
     {
+        await _validator.ValidateAndThrowAsync(dto, ct);
+
         // Verifica duplicidade de nome no escopo do usuário (ou global)
         var exists = await _categoryRepository
             .ExistsByNameAndUserAsync(dto.Name, dto.UserId, ct);
@@ -64,19 +70,24 @@ public sealed class UpdateCategoryUseCase
 {
     private readonly ICategoryRepository _categoryRepository;
     private readonly IUnitOfWork         _unitOfWork;
+    private readonly IValidator<UpdateCategoryDto> _validator;
 
     public UpdateCategoryUseCase(
         ICategoryRepository categoryRepository,
-        IUnitOfWork         unitOfWork)
+        IUnitOfWork         unitOfWork,
+        IValidator<UpdateCategoryDto> validator)
     {
         _categoryRepository = categoryRepository;
         _unitOfWork         = unitOfWork;
+        _validator          = validator;
     }
 
     public async Task ExecuteAsync(
         UpdateCategoryDto dto,
         CancellationToken ct = default)
     {
+        await _validator.ValidateAndThrowAsync(dto, ct);
+
         var category = await _categoryRepository
             .GetByIdAndUserAsync(dto.Id, dto.UserId, ct);
 

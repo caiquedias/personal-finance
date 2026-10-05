@@ -25,7 +25,20 @@ public class CreateCategoryUseCaseTests
     private static readonly Guid UserId = Guid.NewGuid();
 
     public CreateCategoryUseCaseTests() =>
-        _sut = new CreateCategoryUseCase(_categoryRepo.Object, _uow.Object);
+        _sut = new CreateCategoryUseCase(_categoryRepo.Object, _uow.Object, PersonalFinance.Application.Tests.Unit.Support.TestValidators.Valid<CreateCategoryDto>());
+
+    [Fact(DisplayName = "Deve lançar ValidationException e não persistir quando o validator rejeita o DTO")]
+    public async Task Execute_WhenValidatorFails_ShouldThrowValidationExceptionWithoutPersisting()
+    {
+        var sut = new CreateCategoryUseCase(_categoryRepo.Object, _uow.Object,
+            PersonalFinance.Application.Tests.Unit.Support.TestValidators.Invalid<CreateCategoryDto>());
+
+        var act = () => sut.ExecuteAsync(new CreateCategoryDto("Moradia", "#1E4D2B", null, UserId));
+
+        await act.Should().ThrowAsync<FluentValidation.ValidationException>();
+        _categoryRepo.VerifyNoOtherCalls();
+        _uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
 
     [Fact(DisplayName = "Deve criar categoria de usuário com dados válidos")]
     public async Task Execute_WithValidData_ShouldCreateCategory()
@@ -95,7 +108,20 @@ public class UpdateCategoryUseCaseTests
     private static readonly Guid CategoryId = Guid.NewGuid();
 
     public UpdateCategoryUseCaseTests() =>
-        _sut = new UpdateCategoryUseCase(_categoryRepo.Object, _uow.Object);
+        _sut = new UpdateCategoryUseCase(_categoryRepo.Object, _uow.Object, PersonalFinance.Application.Tests.Unit.Support.TestValidators.Valid<UpdateCategoryDto>());
+
+    [Fact(DisplayName = "Deve lançar ValidationException e não persistir quando o validator rejeita o DTO")]
+    public async Task Execute_WhenValidatorFails_ShouldThrowValidationExceptionWithoutPersisting()
+    {
+        var sut = new UpdateCategoryUseCase(_categoryRepo.Object, _uow.Object,
+            PersonalFinance.Application.Tests.Unit.Support.TestValidators.Invalid<UpdateCategoryDto>());
+
+        var act = () => sut.ExecuteAsync(new UpdateCategoryDto(CategoryId, UserId, "Casa", "#FFFFFF", null));
+
+        await act.Should().ThrowAsync<FluentValidation.ValidationException>();
+        _categoryRepo.VerifyNoOtherCalls();
+        _uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
 
     [Fact(DisplayName = "Deve atualizar categoria existente do usuário")]
     public async Task Execute_WithValidData_ShouldUpdate()

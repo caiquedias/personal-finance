@@ -17,7 +17,7 @@ public class UpdateFortnightTypeUseCaseTests
 
     public UpdateFortnightTypeUseCaseTests()
     {
-        _sut = new UpdateFortnightTypeUseCase(_repository.Object, _uow.Object);
+        _sut = new UpdateFortnightTypeUseCase(_repository.Object, _uow.Object, Support.TestValidators.Valid<UpdateFortnightTypeDto>());
     }
 
     [Fact(DisplayName = "Deve atualizar tipo com dados válidos")]
@@ -66,5 +66,17 @@ public class UpdateFortnightTypeUseCaseTests
         var act = () => _sut.ExecuteAsync(new UpdateFortnightTypeDto(99, "Nome"));
 
         await act.Should().ThrowAsync<DomainException>().WithMessage("*não encontrado*");
+    }
+
+    [Fact(DisplayName = "Deve lançar ValidationException e não persistir quando o validator rejeita o DTO")]
+    public async Task Execute_WhenValidatorFails_ShouldThrowValidationExceptionWithoutPersisting()
+    {
+        var sut = new UpdateFortnightTypeUseCase(_repository.Object, _uow.Object, Support.TestValidators.Invalid<UpdateFortnightTypeDto>());
+
+        var act = () => sut.ExecuteAsync(new UpdateFortnightTypeDto(3, "Third"));
+
+        await act.Should().ThrowAsync<FluentValidation.ValidationException>();
+        _repository.VerifyNoOtherCalls();
+        _uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 }
