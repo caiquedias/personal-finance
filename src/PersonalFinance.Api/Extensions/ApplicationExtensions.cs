@@ -90,6 +90,7 @@ public static class ApplicationExtensions
             .ValidateOnStart();
         services.AddSingleton(sp => sp.GetRequiredService<IOptions<AuditLogRetentionOptions>>().Value);
         services.AddScoped<PurgeExpiredAuditLogsUseCase>();
+        services.AddHostedService<PersonalFinance.Api.BackgroundServices.AuditLogPurgeHostedService>();
         services.AddScoped<CreateUserByAdminUseCase>();
         services.AddScoped<UpdateUserByAdminUseCase>();
 
