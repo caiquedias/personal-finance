@@ -30,7 +30,7 @@ public class LoginWithRolesUseCaseTests
         _sut = new LoginWithRolesUseCase(
             _userRepo.Object, _roleRepo.Object, _throttleRepo.Object,
             _hasher.Object, _tokenSvc.Object,
-            _uow.Object, new LoginLockoutOptions(), _mfaOptions);
+            _uow.Object, new LoginLockoutOptions(), _mfaOptions, TestValidators.Valid<LoginDto>());
     }
 
     private static User FakeUser() =>
@@ -520,7 +520,7 @@ public class LoginWithRolesUseCaseTests
         var options = new LoginLockoutOptions { MaxFailedAttempts = 5, GlobalMaxFailedAttempts = 3, LockoutMinutes = 15 };
         var sut = new LoginWithRolesUseCase(
             _userRepo.Object, _roleRepo.Object, _throttleRepo.Object,
-            _hasher.Object, _tokenSvc.Object, _uow.Object, options, new MfaOptions());
+            _hasher.Object, _tokenSvc.Object, _uow.Object, options, new MfaOptions(), TestValidators.Valid<LoginDto>());
         var user = FakeUser();
         SetupUser(user);
         SetupStatefulThrottles();

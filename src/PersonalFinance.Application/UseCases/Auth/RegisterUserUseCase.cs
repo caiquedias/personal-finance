@@ -1,4 +1,5 @@
-﻿using PersonalFinance.Application.DTOs.Auth;
+﻿using FluentValidation;
+using PersonalFinance.Application.DTOs.Auth;
 using PersonalFinance.Domain.Entities.Auth;
 using PersonalFinance.Domain.Exceptions;
 using PersonalFinance.Domain.Interfaces.Repositories;
@@ -15,22 +16,28 @@ namespace PersonalFinance.Application.UseCases.Auth
         private readonly IUserRepository _userRepository;
         private readonly IPasswordHasher _passwordHasher;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IValidator<RegisterUserDto> _validator;
 
         public RegisterUserUseCase(
             IUserRepository userRepository,
             IPasswordHasher passwordHasher,
-            IUnitOfWork unitOfWork)
+            IUnitOfWork unitOfWork,
+            IValidator<RegisterUserDto> validator)
         {
             _userRepository = userRepository;
             _passwordHasher = passwordHasher;
             _unitOfWork = unitOfWork;
+            _validator = validator;
         }
 
         public async Task<UserResponseDto> ExecuteAsync(
             RegisterUserDto dto,
             CancellationToken ct = default)
         {
-            // Valida campos antes de qualquer acesso ao banco
+            // Valida o DTO antes de qualquer acesso ao banco
+            await _validator.ValidateAndThrowAsync(dto, ct);
+
+            // Defesa em profundidade (mantida para chamadas sem validator efetivo)
             if (string.IsNullOrWhiteSpace(dto.Name))
                 throw new DomainException("O nome do usuário é obrigatório.");
 

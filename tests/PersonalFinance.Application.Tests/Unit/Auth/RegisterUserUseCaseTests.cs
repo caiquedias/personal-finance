@@ -21,7 +21,7 @@ namespace PersonalFinance.Application.Tests.Unit.Auth
 
         public RegisterUserUseCaseTests()
         {
-            _sut = new RegisterUserUseCase(_userRepo.Object, _hasher.Object, _uow.Object);
+            _sut = new RegisterUserUseCase(_userRepo.Object, _hasher.Object, _uow.Object, TestValidators.Valid<RegisterUserDto>());
         }
 
         private static RegisterUserDto ValidDto() => new(
