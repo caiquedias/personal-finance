@@ -1,3 +1,4 @@
+using FluentValidation;
 using PersonalFinance.Application.DTOs.Financial;
 using PersonalFinance.Domain.Entities.Financial;
 using PersonalFinance.Domain.Exceptions;
@@ -18,21 +19,26 @@ public sealed class CreateIncomeUseCase
     private readonly IIncomeRepository _incomeRepository;
     private readonly IPeriodRepository _periodRepository;
     private readonly IUnitOfWork       _unitOfWork;
+    private readonly IValidator<CreateIncomeDto> _validator;
 
     public CreateIncomeUseCase(
         IIncomeRepository incomeRepository,
         IPeriodRepository periodRepository,
-        IUnitOfWork       unitOfWork)
+        IUnitOfWork       unitOfWork,
+        IValidator<CreateIncomeDto> validator)
     {
         _incomeRepository = incomeRepository;
         _periodRepository = periodRepository;
         _unitOfWork       = unitOfWork;
+        _validator        = validator;
     }
 
     public async Task<IncomeResponseDto> ExecuteAsync(
         CreateIncomeDto dto,
         CancellationToken ct = default)
     {
+        await _validator.ValidateAndThrowAsync(dto, ct);
+
         var periodExists = await _periodRepository
             .ExistsByIdAndUserAsync(dto.PeriodId, dto.UserId, ct);
 

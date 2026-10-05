@@ -274,7 +274,7 @@ public class CreateIncomeUseCaseTests
     private static readonly Guid PeriodId = Guid.NewGuid();
 
     public CreateIncomeUseCaseTests() =>
-        _sut = new CreateIncomeUseCase(_incomeRepo.Object, _periodRepo.Object, _uow.Object);
+        _sut = new CreateIncomeUseCase(_incomeRepo.Object, _periodRepo.Object, _uow.Object, TestValidators.Valid<CreateIncomeDto>());
 
     private CreateIncomeDto ValidDto() => new(
         PeriodId:      PeriodId,

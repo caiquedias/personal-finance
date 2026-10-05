@@ -20,7 +20,7 @@ public class UpdateIncomeUseCaseTests
     private static readonly Guid IncomeId = Guid.NewGuid();
 
     public UpdateIncomeUseCaseTests() =>
-        _sut = new UpdateIncomeUseCase(_incomeRepo.Object, _uow.Object);
+        _sut = new UpdateIncomeUseCase(_incomeRepo.Object, _uow.Object, PersonalFinance.Application.Tests.Unit.Support.TestValidators.Valid<UpdateIncomeDto>());
 
     private static Income FakeIncome() => Income.Create(
         Guid.NewGuid(), UserId, FortnightType.First,
