@@ -44,6 +44,7 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 | #396 | [Security][Validation] FluentValidation — Auth e Admin | 2026-10-05 | [396.md](396.md) |
 | #397 | [Security][Validation] FluentValidation — Financial (Expense/Income/Period) | 2026-10-05 | [397.md](397.md) |
 | #398 | [Security][Validation] FluentValidation — Config (Category e lookups) | 2026-10-05 | [398.md](398.md) |
+| #399 | [Security] Restringir política de CORS | 2026-10-05 | [399.md](399.md) |
 
 ---
 
@@ -54,7 +55,7 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 | Expurgo (Purge) | #329, #330, #331, #332, #356, #369, #367, #368, #377, #376, #378, #384 | 2026-07-05 |
 | Batch Expenses / Serialização | #355 | 2026-06-26 |
 | Login / Auth UI | #387, #394 | 2026-10-02 |
-| Segurança / JWT | #389, #391, #393, #394, #488, #489, #490, #396, #397, #398 | 2026-10-05 |
+| Segurança / JWT | #389, #391, #393, #394, #488, #489, #490, #396, #397, #398, #399 | 2026-10-05 |
 | Import (Income) | #419 | 2026-09-28 |
 | Import (Extrato C6 PDF) | #420, #421, #422, #423, #443, #444, #445, #446, #447, #464 | 2026-10-01 |
 
@@ -82,6 +83,7 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 - **Validações (FluentValidation) (#396):** validators em `Validators/Auth|Admin` (Register, Login, CreateUserByAdmin, UpdateUserByAdmin, AssignRole, ResetPassword), registrados por assembly e injetados (`IValidator<T>`) nos use cases correspondentes; Login só NotEmpty/MaximumLength; `ValidationException` e erros de model binding → 400 `{status,error,message,traceId}`
 - **Validações financeiras (#397):** 11 validators em `Validators/Financial` (Period, Expense Create/Update, Income Create/Update, Batch + item, Replicate, SaveOrder + item, MarkAsPaid) injetados em 8 use cases e no `ExpensesController.MarkAsPaid`; Year 1900–2100, Amount ≤ 999.999.999,99 com máx. 2 casas (rejeita), Description ≤ 200, Notes ≤ 500, `IsInEnum`, tetos de itens (500/1000)
 - **Validações Config (#398):** 8 validators em `Validators/Config` (Create/Update de Category, PaymentStatus, SourceType, FortnightType) injetados nos 8 use cases de Config; Category Name ≤ 100, Color `#RRGGBB`, Icon ≤ 50; lookups Name ≤ 50, Description ≤ 200; checagens inline mantidas
+- **CORS restrito (#399):** policy `AllowAngular` com `WithMethods(GET,POST,PUT,PATCH,DELETE)` e `WithHeaders(Authorization,Content-Type)`; header custom novo no frontend exige atualizar `WithHeaders`
 
 ### Infrastructure
 - **Repositórios:** PurgeRepository, LoginThrottleRepository (#391 — `TryAddAsync`: limpeza de expiradas em lote, teto duro de 2.000 linhas, fail-open)
