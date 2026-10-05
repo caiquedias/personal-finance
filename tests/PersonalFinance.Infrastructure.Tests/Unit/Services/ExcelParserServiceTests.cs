@@ -1,6 +1,7 @@
 using ClosedXML.Excel;
 using FluentAssertions;
 using PersonalFinance.Domain.Enums;
+using PersonalFinance.Domain.Exceptions;
 using PersonalFinance.Infrastructure.Services;
 using Xunit;
 
@@ -394,4 +395,79 @@ public class ExcelParserServiceTests
         9 => "Setembro",10 => "Outubro",  11 => "Novembro",12 => "Dezembro",
         _ => "Janeiro"
     };
+
+    // ── Validação de assinatura (magic number) ────────────────────────────────
+
+    [Fact(DisplayName = "Conteúdo não-ZIP lança DomainException")]
+    public async Task ParseAsync_NonZipContent_ShouldThrowDomainException()
+    {
+        using var stream = new MemoryStream(
+            System.Text.Encoding.UTF8.GetBytes("isto nao e um xlsx"));
+
+        var act = () => _sut.ParseAsync(stream);
+
+        await act.Should().ThrowAsync<DomainException>()
+            .WithMessage("*xlsx*");
+    }
+
+    [Fact(DisplayName = "Stream com menos de 4 bytes lança DomainException")]
+    public async Task ParseAsync_StreamShorterThanSignature_ShouldThrowDomainException()
+    {
+        using var stream = new MemoryStream(new byte[] { 0x50, 0x4B });
+
+        var act = () => _sut.ParseAsync(stream);
+
+        await act.Should().ThrowAsync<DomainException>();
+    }
+
+    [Fact(DisplayName = "Stream vazio lança DomainException")]
+    public async Task ParseAsync_EmptyStream_ShouldThrowDomainException()
+    {
+        using var stream = new MemoryStream();
+
+        var act = () => _sut.ParseAsync(stream);
+
+        await act.Should().ThrowAsync<DomainException>();
+    }
+
+    [Fact(DisplayName = "Assinatura ZIP seguida de lixo lança DomainException")]
+    public async Task ParseAsync_ZipSignatureWithGarbage_ShouldThrowDomainException()
+    {
+        var bytes = new byte[] { 0x50, 0x4B, 0x03, 0x04, 1, 2, 3, 4, 5, 6, 7, 8 };
+        using var stream = new MemoryStream(bytes);
+
+        var act = () => _sut.ParseAsync(stream);
+
+        await act.Should().ThrowAsync<DomainException>()
+            .WithMessage("*xlsx*");
+    }
+
+    [Fact(DisplayName = "Stream não-seekable com xlsx válido é parseado")]
+    public async Task ParseAsync_NonSeekableValidXlsx_ShouldParse()
+    {
+        using var inner = BuildWorkbook(wb => AddSheet(wb, "Janeiro", 1000m, 0m, 6, 7));
+        using var stream = new NonSeekableStream(inner);
+
+        var result = await _sut.ParseAsync(stream);
+
+        result.Should().NotBeNull();
+    }
+
+    private sealed class NonSeekableStream(Stream inner) : Stream
+    {
+        public override bool CanRead => true;
+        public override bool CanSeek => false;
+        public override bool CanWrite => false;
+        public override long Length => throw new NotSupportedException();
+        public override long Position
+        {
+            get => throw new NotSupportedException();
+            set => throw new NotSupportedException();
+        }
+        public override void Flush() { }
+        public override int Read(byte[] buffer, int offset, int count) => inner.Read(buffer, offset, count);
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        public override void SetLength(long value) => throw new NotSupportedException();
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+    }
 }
