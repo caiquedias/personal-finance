@@ -68,6 +68,38 @@ public class ImportControllerTests : ApiIntegrationTestBase
         r.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
+    [Fact(DisplayName = "POST /import/legacy com texto renomeado .xlsx deve retornar 400 com message")]
+    public async Task Import_WithTextRenamedToXlsx_ShouldReturn400WithMessage()
+    {
+        var (client, _) = await GetAuthenticatedClientAsync();
+
+        using var content = new MultipartFormDataContent();
+        content.Add(
+            new ByteArrayContent(System.Text.Encoding.UTF8.GetBytes("isto nao e um xlsx")),
+            "file", "falso.xlsx");
+
+        var r = await client.PostAsync("/api/v1/import/legacy", content);
+
+        r.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var body = await r.Content.ReadAsStringAsync();
+        body.Should().Contain("message");
+    }
+
+    [Fact(DisplayName = "POST /import/legacy com header ZIP e lixo deve retornar 400")]
+    public async Task Import_WithZipHeaderAndGarbage_ShouldReturn400()
+    {
+        var (client, _) = await GetAuthenticatedClientAsync();
+
+        using var content = new MultipartFormDataContent();
+        content.Add(
+            new ByteArrayContent(new byte[] { 0x50, 0x4B, 0x03, 0x04, 1, 2, 3, 4, 5, 6, 7, 8 }),
+            "file", "falso.xlsx");
+
+        var r = await client.PostAsync("/api/v1/import/legacy", content);
+
+        r.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
     // ── Importação real com planilha mínima ───────────────────────────────────
 
     [Fact(DisplayName = "POST /import/legacy com xlsx válido deve retornar 200 com sumário")]
