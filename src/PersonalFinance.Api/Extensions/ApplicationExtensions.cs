@@ -1,3 +1,4 @@
+using FluentValidation;
 using Microsoft.Extensions.Options;
 using PersonalFinance.Application.Options;
 using PersonalFinance.Application.UseCases.Admin;
@@ -41,6 +42,9 @@ public static class ApplicationExtensions
                 "Auth:Mfa:EncryptionKey é obrigatória e deve ser Base64 de exatamente 32 bytes.")
             .ValidateOnStart();
         services.AddSingleton(sp => sp.GetRequiredService<IOptions<MfaOptions>>().Value);
+
+        // Validators FluentValidation (issue 396): registra todos os IValidator<T> da assembly Application
+        services.AddValidatorsFromAssemblyContaining<RegisterUserUseCase>(ServiceLifetime.Scoped);
 
         services.AddScoped<RegisterUserUseCase>();
         services.AddScoped<LoginWithRolesUseCase>(); // substitui LoginUseCase

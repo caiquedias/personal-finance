@@ -6,6 +6,7 @@ namespace PersonalFinance.Api.Middleware;
 
 /// <summary>
 /// Middleware global de tratamento de exceções.
+/// ValidationException (FluentValidation) → 400 Bad Request
 /// DomainException  → 400 Bad Request  (erro de regra de negócio)
 /// UnauthorizedAccessException → 401 Unauthorized
 /// KeyNotFoundException        → 404 Not Found
@@ -31,6 +32,14 @@ public sealed class ExceptionMiddleware(
             // Erros de regra de negócio — safe para exibir ao cliente
             _logger.LogWarning("DomainException: {Message}", ex.Message);
             await WriteResponseAsync(context, HttpStatusCode.BadRequest, ex.Message);
+        }
+        catch (FluentValidation.ValidationException ex)
+        {
+            // Falha de validação de input — mensagens dos validators são seguras para o cliente
+            var message = string.Join(" ", ex.Errors.Select(e => e.ErrorMessage).Distinct());
+            if (string.IsNullOrWhiteSpace(message)) message = "Dados inválidos.";
+            _logger.LogWarning("ValidationException: {Count} erro(s)", ex.Errors.Count());
+            await WriteResponseAsync(context, HttpStatusCode.BadRequest, message);
         }
         catch (ConcurrencyConflictException ex)
         {
