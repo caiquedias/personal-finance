@@ -6,6 +6,8 @@ using PersonalFinance.Domain.Entities.Auth;
 using PersonalFinance.Domain.Exceptions;
 using PersonalFinance.Domain.Interfaces.Repositories;
 using PersonalFinance.Domain.Interfaces.Services;
+using FluentValidation;
+using PersonalFinance.Application.Tests.Unit.Support;
 using Xunit;
 
 namespace PersonalFinance.Application.Tests.Unit.Admin;
@@ -102,5 +104,22 @@ public class ResetUserPasswordUseCaseTests
 
         await act.Should().ThrowAsync<KeyNotFoundException>();
         _uow.Verify(u => u.CommitAsync(default), Times.Never);
+    }
+
+    // ── Validação (#396) ──────────────────────────────────────────────────────
+
+    [Fact(DisplayName = "Deve lançar ValidationException e não alterar senha quando o validator reprova")]
+    public async Task Execute_WhenValidatorFails_ShouldThrowValidationExceptionWithoutPersisting()
+    {
+        var sut = UseCaseFactory.Create<ResetUserPasswordUseCase>(
+            _userRepo.Object, _hasher.Object, _uow.Object,
+            TestValidators.Invalid<ResetPasswordDto>());
+
+        var act = () => sut.ExecuteAsync(new ResetPasswordDto(Guid.NewGuid(), "NovaSenha@123"), AdminId);
+
+        await act.Should().ThrowAsync<ValidationException>();
+        _userRepo.Invocations.Should().BeEmpty();
+        _hasher.Invocations.Should().BeEmpty();
+        _uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 }

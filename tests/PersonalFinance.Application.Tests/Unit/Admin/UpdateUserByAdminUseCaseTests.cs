@@ -4,6 +4,8 @@ using PersonalFinance.Application.DTOs.Admin;
 using PersonalFinance.Application.UseCases.Admin;
 using PersonalFinance.Domain.Entities.Auth;
 using PersonalFinance.Domain.Interfaces.Repositories;
+using FluentValidation;
+using PersonalFinance.Application.Tests.Unit.Support;
 using Xunit;
 
 namespace PersonalFinance.Application.Tests.Unit.Admin;
@@ -74,5 +76,21 @@ public class UpdateUserByAdminUseCaseTests
 
         await act.Should().ThrowAsync<KeyNotFoundException>();
         _uow.Verify(u => u.CommitAsync(default), Times.Never);
+    }
+
+    // ── Validação (#396) ──────────────────────────────────────────────────────
+
+    [Fact(DisplayName = "Deve lançar ValidationException e não persistir quando o validator reprova")]
+    public async Task Execute_WhenValidatorFails_ShouldThrowValidationExceptionWithoutPersisting()
+    {
+        var sut = UseCaseFactory.Create<UpdateUserByAdminUseCase>(
+            _userRepo.Object, _roleRepo.Object, _uow.Object,
+            TestValidators.Invalid<UpdateUserByAdminDto>());
+
+        var act = () => sut.ExecuteAsync(new UpdateUserByAdminDto(Guid.NewGuid(), "Novo"));
+
+        await act.Should().ThrowAsync<ValidationException>();
+        _userRepo.Invocations.Should().BeEmpty();
+        _uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 }
