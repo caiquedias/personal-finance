@@ -26,6 +26,8 @@ _(formato esperado: `<issue-number>` ou `<issue-url>`)_
    6. Push + PR `claude/` → `feat/` (vinculado ao projeto) + mover issue **e PR** para **In Review**
    Logo abaixo do plano, **se não houver `Estimativa:` na issue**, uma linha de aviso (fora dos 6 itens):
    `⚠️ Issue sem comentário de Sprint Planning com "Estimativa: Xh" — sem base para medir desvio no /end-issue.`
+   **Bloqueante:** sem `Estimativa:`, a confirmação do item 5 deve incluir a pergunta "rodar o Sprint Planning
+   desta issue antes ou seguir sem estimativa?". Não avançar para o Passo 2 sem a resposta explícita do Caique.
 5. **Aguarde confirmação do Caique antes de avançar**
 
 ---
