@@ -11,7 +11,7 @@ _(formato esperado: `<issue-number>` ou `<issue-url>`)_
 1. Leia a issue via `gh issue view <number> --repo caiquedias/personal-finance --json number,title,body,labels`
    Verifique também se a issue tem comentário de Sprint Planning com a estimativa:
    `gh issue view <number> --repo caiquedias/personal-finance --json comments --jq '.comments[].body' | grep -i "Estimativa:"`
-   — sem resultado, anote o aviso para o passo 4 (a análise de eficiência do `/end-issue` fica sem base de desvio).
+   — sem resultado, o PO gera o Sprint Planning no passo 3/4 (o `/end-issue` precisa da estimativa para medir desvio).
 2. Derive o nome da branch: `feat/<id>-<slug>` (slug em kebab-case do título)
 3. **Spawne o PO em Modo Análise de Impacto** (autônomo — não pedir permissão ao Caique). Passe:
    - Issue number, título e body
@@ -24,10 +24,13 @@ _(formato esperado: `<issue-number>` ou `<issue-url>`)_
    4. **Green (task a task)** — implementar: `<tasks da issue>`
    5. **QA** → **UX Validator** (se frontend) → **Reviewer**
    6. Push + PR `claude/` → `feat/` (vinculado ao projeto) + mover issue **e PR** para **In Review**
-   Logo abaixo do plano, **se não houver `Estimativa:` na issue**, uma linha de aviso (fora dos 6 itens):
-   `⚠️ Issue sem comentário de Sprint Planning com "Estimativa: Xh" — sem base para medir desvio no /end-issue.`
-   **Bloqueante:** sem `Estimativa:`, a confirmação do item 5 deve incluir a pergunta "rodar o Sprint Planning
-   desta issue antes ou seguir sem estimativa?". Não avançar para o Passo 2 sem a resposta explícita do Caique.
+   **Sem `Estimativa:` e sem comentário de Sprint Planning na issue:** não perguntar ao Caique se roda o
+   planning. Ainda no passo 3, peça ao PO (`subagent_type: "po"`) um Sprint Planning completo
+   (Estimativa em h, Prioridade, Size, Risco, arquivos afetados — `docs/sprint-planning.md`) baseado na issue e
+   na Análise de Impacto, e inclua no plano, logo abaixo dos 6 itens, uma linha:
+   `📋 Planning gerado pelo PO: Estimativa Xh | Size X | Risco X — comentário na issue pendente do seu OK.`
+   O comentário `## 📋 Sprint Planning` só é postado na issue (e Estimativa/Size no board) após o OK do Caique
+   (regra de pré-ação). Size L/XL: propor a divisão junto, como em `docs/sprint-planning.md`.
 5. **Aguarde confirmação do Caique antes de avançar**
 
 ---
