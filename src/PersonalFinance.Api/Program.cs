@@ -141,8 +141,8 @@ builder.Services.AddCors(options =>
         policy.WithOrigins(
                 builder.Configuration.GetSection("AllowedOrigins").Get<string[]>()
                 ?? ["http://localhost:4200"])
-              .AllowAnyHeader()
-              .AllowAnyMethod());
+              .WithMethods("GET", "POST", "PUT", "PATCH", "DELETE")
+              .WithHeaders("Authorization", "Content-Type"));
 });
 
 // ── Forwarded headers (TLS termina no proxy; Kestrel recebe HTTP) ─────────────
