@@ -37,14 +37,17 @@ public class ExcelParserServiceTests
         int p2Start = 0, int p2End = 0)
     {
         var ws = wb.AddWorksheet(name);
+        // Cultura invariante: decimal interpolado em pt-BR vira "9739,80", que o Excel lê como dois argumentos do SUM
+        var inc1 = income1.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        var inc2 = income2.ToString(System.Globalization.CultureInfo.InvariantCulture);
 
         // Fórmulas B4 e C4
         ws.Cell("B4").FormulaA1 =
-            $"=SUM({income1})+sum(Q{p1Start}:Q{p1End})-sum(P{p1Start}:P{p1End})";
+            $"=SUM({inc1})+sum(Q{p1Start}:Q{p1End})-sum(P{p1Start}:P{p1End})";
 
         if (p2Start > 0)
             ws.Cell("C4").FormulaA1 =
-                $"={income2}+sum(Q{p2Start}:Q{p2End})-sum(P{p2Start}:P{p2End})";
+                $"={inc2}+sum(Q{p2Start}:Q{p2End})-sum(P{p2Start}:P{p2End})";
 
         // Cabeçalho da tabela de despesas
         ws.Cell(5, 1).Value = "Fonte";
