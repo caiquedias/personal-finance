@@ -37,7 +37,7 @@ public class CreateExpensesBatchUseCaseTests
 
         var dto = new CreateExpensesBatchDto(periodId, userId, [MakeItem(catId1), MakeItem(catId2)]);
         var sut = new CreateExpensesBatchUseCase(
-            _expenseRepo.Object, _periodRepo.Object, _categoryRepo.Object, _uow.Object);
+            _expenseRepo.Object, _periodRepo.Object, _categoryRepo.Object, _uow.Object, PersonalFinance.Application.Tests.Unit.Support.TestValidators.Valid<CreateExpensesBatchDto>());
 
         var result = await sut.ExecuteAsync(dto);
 
@@ -50,7 +50,7 @@ public class CreateExpensesBatchUseCaseTests
     {
         var dto = new CreateExpensesBatchDto(Guid.NewGuid(), Guid.NewGuid(), []);
         var sut = new CreateExpensesBatchUseCase(
-            _expenseRepo.Object, _periodRepo.Object, _categoryRepo.Object, _uow.Object);
+            _expenseRepo.Object, _periodRepo.Object, _categoryRepo.Object, _uow.Object, PersonalFinance.Application.Tests.Unit.Support.TestValidators.Valid<CreateExpensesBatchDto>());
 
         var act = () => sut.ExecuteAsync(dto);
         await act.Should().ThrowAsync<DomainException>();
@@ -68,7 +68,7 @@ public class CreateExpensesBatchUseCaseTests
 
         var dto = new CreateExpensesBatchDto(periodId, userId, [MakeItem(Guid.NewGuid())]);
         var sut = new CreateExpensesBatchUseCase(
-            _expenseRepo.Object, _periodRepo.Object, _categoryRepo.Object, _uow.Object);
+            _expenseRepo.Object, _periodRepo.Object, _categoryRepo.Object, _uow.Object, PersonalFinance.Application.Tests.Unit.Support.TestValidators.Valid<CreateExpensesBatchDto>());
 
         var act = () => sut.ExecuteAsync(dto);
         await act.Should().ThrowAsync<DomainException>();
@@ -89,7 +89,7 @@ public class CreateExpensesBatchUseCaseTests
 
         var dto = new CreateExpensesBatchDto(periodId, userId, [MakeItem(catId)]);
         var sut = new CreateExpensesBatchUseCase(
-            _expenseRepo.Object, _periodRepo.Object, _categoryRepo.Object, _uow.Object);
+            _expenseRepo.Object, _periodRepo.Object, _categoryRepo.Object, _uow.Object, PersonalFinance.Application.Tests.Unit.Support.TestValidators.Valid<CreateExpensesBatchDto>());
 
         var act = () => sut.ExecuteAsync(dto);
         await act.Should().ThrowAsync<DomainException>();

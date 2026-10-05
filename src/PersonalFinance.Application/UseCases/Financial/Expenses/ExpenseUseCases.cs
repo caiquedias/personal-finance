@@ -222,23 +222,28 @@ public sealed class CreateExpensesBatchUseCase
     private readonly IPeriodRepository   _periodRepository;
     private readonly ICategoryRepository _categoryRepository;
     private readonly IUnitOfWork         _unitOfWork;
+    private readonly IValidator<CreateExpensesBatchDto> _validator;
 
     public CreateExpensesBatchUseCase(
         IExpenseRepository  expenseRepository,
         IPeriodRepository   periodRepository,
         ICategoryRepository categoryRepository,
-        IUnitOfWork         unitOfWork)
+        IUnitOfWork         unitOfWork,
+        IValidator<CreateExpensesBatchDto> validator)
     {
         _expenseRepository  = expenseRepository;
         _periodRepository   = periodRepository;
         _categoryRepository = categoryRepository;
         _unitOfWork         = unitOfWork;
+        _validator          = validator;
     }
 
     public async Task<IReadOnlyList<ExpenseResponseDto>> ExecuteAsync(
         CreateExpensesBatchDto dto,
         CancellationToken ct = default)
     {
+        await _validator.ValidateAndThrowAsync(dto, ct);
+
         if (dto.Items.Count == 0)
             throw new DomainException("A lista de despesas não pode ser vazia.");
 

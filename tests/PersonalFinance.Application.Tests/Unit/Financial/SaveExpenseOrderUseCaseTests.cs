@@ -21,7 +21,7 @@ public class SaveExpenseOrderUseCaseTests
     private static readonly Guid ExpenseId = Guid.NewGuid();
 
     public SaveExpenseOrderUseCaseTests() =>
-        _sut = new SaveExpenseOrderUseCase(_orderRepo.Object, _expenseRepo.Object, _uow.Object);
+        _sut = new SaveExpenseOrderUseCase(_orderRepo.Object, _expenseRepo.Object, _uow.Object, PersonalFinance.Application.Tests.Unit.Support.TestValidators.Valid<SaveExpenseOrderDto>());
 
     private static Expense BuildExpense() => Expense.Create(
         Guid.NewGuid(), UserId, Guid.NewGuid(),

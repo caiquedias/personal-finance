@@ -46,7 +46,7 @@ public class ReplicateExpensesUseCaseTests
                 .Callback<IEnumerable<Expense>, CancellationToken>((e, _) => captured = e.ToList())
                 .Returns(Task.CompletedTask);
 
-        var sut = new ReplicateExpensesUseCase(_expRepo.Object, _perRepo.Object, _uow.Object);
+        var sut = new ReplicateExpensesUseCase(_expRepo.Object, _perRepo.Object, _uow.Object, PersonalFinance.Application.Tests.Unit.Support.TestValidators.Valid<ReplicateExpensesDto>());
         await sut.ExecuteAsync(new ReplicateExpensesDto(userId, period.Id, ids));
 
         captured.Should().HaveCount(1);
@@ -72,7 +72,7 @@ public class ReplicateExpensesUseCaseTests
         _expRepo.Setup(r => r.HasReplicatedExpenseAsync(source.Id, period.Id, default))
                 .ReturnsAsync(true); // já replicada
 
-        var sut = new ReplicateExpensesUseCase(_expRepo.Object, _perRepo.Object, _uow.Object);
+        var sut = new ReplicateExpensesUseCase(_expRepo.Object, _perRepo.Object, _uow.Object, PersonalFinance.Application.Tests.Unit.Support.TestValidators.Valid<ReplicateExpensesDto>());
         await sut.ExecuteAsync(new ReplicateExpensesDto(userId, period.Id, ids));
 
         _expRepo.Verify(r => r.AddRangeAsync(It.IsAny<IEnumerable<Expense>>(), default), Times.Never);
@@ -82,7 +82,7 @@ public class ReplicateExpensesUseCaseTests
     [Fact(DisplayName = "Lista vazia deve lançar DomainException")]
     public async Task EmptyList_ShouldThrow()
     {
-        var sut = new ReplicateExpensesUseCase(_expRepo.Object, _perRepo.Object, _uow.Object);
+        var sut = new ReplicateExpensesUseCase(_expRepo.Object, _perRepo.Object, _uow.Object, PersonalFinance.Application.Tests.Unit.Support.TestValidators.Valid<ReplicateExpensesDto>());
         var act = () => sut.ExecuteAsync(new ReplicateExpensesDto(Guid.NewGuid(), Guid.NewGuid(), []));
         await act.Should().ThrowAsync<DomainException>();
     }
@@ -94,7 +94,7 @@ public class ReplicateExpensesUseCaseTests
         _perRepo.Setup(r => r.GetByIdAndUserAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), default))
                 .ReturnsAsync((Period?)null);
 
-        var sut = new ReplicateExpensesUseCase(_expRepo.Object, _perRepo.Object, _uow.Object);
+        var sut = new ReplicateExpensesUseCase(_expRepo.Object, _perRepo.Object, _uow.Object, PersonalFinance.Application.Tests.Unit.Support.TestValidators.Valid<ReplicateExpensesDto>());
         var act = () => sut.ExecuteAsync(new ReplicateExpensesDto(Guid.NewGuid(), Guid.NewGuid(), ids));
         await act.Should().ThrowAsync<DomainException>();
     }

@@ -1,3 +1,4 @@
+using FluentValidation;
 using PersonalFinance.Application.DTOs.Financial;
 using PersonalFinance.Domain.Entities.Financial;
 using PersonalFinance.Domain.Enums;
@@ -17,19 +18,24 @@ public sealed class ReplicateExpensesUseCase
     private readonly IExpenseRepository _expenseRepository;
     private readonly IPeriodRepository  _periodRepository;
     private readonly IUnitOfWork        _unitOfWork;
+    private readonly IValidator<ReplicateExpensesDto> _validator;
 
     public ReplicateExpensesUseCase(
         IExpenseRepository expenseRepository,
         IPeriodRepository  periodRepository,
-        IUnitOfWork        unitOfWork)
+        IUnitOfWork        unitOfWork,
+        IValidator<ReplicateExpensesDto> validator)
     {
         _expenseRepository = expenseRepository;
         _periodRepository  = periodRepository;
         _unitOfWork        = unitOfWork;
+        _validator         = validator;
     }
 
     public async Task ExecuteAsync(ReplicateExpensesDto dto, CancellationToken ct = default)
     {
+        await _validator.ValidateAndThrowAsync(dto, ct);
+
         if (dto.ExpenseIds.Count == 0)
             throw new DomainException("A lista de despesas não pode ser vazia.");
 
