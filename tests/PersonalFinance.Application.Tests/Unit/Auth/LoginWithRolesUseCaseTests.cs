@@ -8,6 +8,8 @@ using PersonalFinance.Domain.Entities.Auth;
 using PersonalFinance.Domain.Exceptions;
 using PersonalFinance.Domain.Interfaces.Repositories;
 using PersonalFinance.Domain.Interfaces.Services;
+using FluentValidation;
+using PersonalFinance.Application.Tests.Unit.Support;
 using Xunit;
 
 namespace PersonalFinance.Application.Tests.Unit.Auth;
@@ -28,7 +30,7 @@ public class LoginWithRolesUseCaseTests
         _sut = new LoginWithRolesUseCase(
             _userRepo.Object, _roleRepo.Object, _throttleRepo.Object,
             _hasher.Object, _tokenSvc.Object,
-            _uow.Object, new LoginLockoutOptions(), _mfaOptions);
+            _uow.Object, new LoginLockoutOptions(), _mfaOptions, TestValidators.Valid<LoginDto>());
     }
 
     private static User FakeUser() =>
@@ -518,7 +520,7 @@ public class LoginWithRolesUseCaseTests
         var options = new LoginLockoutOptions { MaxFailedAttempts = 5, GlobalMaxFailedAttempts = 3, LockoutMinutes = 15 };
         var sut = new LoginWithRolesUseCase(
             _userRepo.Object, _roleRepo.Object, _throttleRepo.Object,
-            _hasher.Object, _tokenSvc.Object, _uow.Object, options, new MfaOptions());
+            _hasher.Object, _tokenSvc.Object, _uow.Object, options, new MfaOptions(), TestValidators.Valid<LoginDto>());
         var user = FakeUser();
         SetupUser(user);
         SetupStatefulThrottles();
@@ -777,5 +779,36 @@ public class LoginWithRolesUseCaseTests
 
         await act.Should().ThrowAsync<DomainException>().WithMessage("Credenciais inválidas.");
         _tokenSvc.Verify(t => t.GenerateMfaChallenge(It.IsAny<User>()), Times.Never);
+    }
+
+    // ── Validação (#396) ──────────────────────────────────────────────────────
+
+    private LoginWithRolesUseCase SutWith(IValidator<LoginDto> validator) =>
+        UseCaseFactory.Create<LoginWithRolesUseCase>(
+            _userRepo.Object, _roleRepo.Object, _throttleRepo.Object,
+            _hasher.Object, _tokenSvc.Object, _uow.Object,
+            new LoginLockoutOptions(), _mfaOptions, validator);
+
+    [Fact(DisplayName = "Deve lançar ValidationException quando o validator reprova o DTO")]
+    public async Task Execute_WhenValidatorFails_ShouldThrowValidationException()
+    {
+        var sut = SutWith(TestValidators.Invalid<LoginDto>());
+
+        var act = () => sut.ExecuteAsync(new LoginDto("caique@monkeybomb.com", "Senha@123"), "1.1.1.1");
+
+        await act.Should().ThrowAsync<ValidationException>();
+    }
+
+    [Fact(DisplayName = "Não deve consultar usuário nem throttle quando o validator reprova")]
+    public async Task Execute_WhenValidatorFails_ShouldNotTouchRepositories()
+    {
+        var sut = SutWith(TestValidators.Invalid<LoginDto>());
+
+        await Assert.ThrowsAsync<ValidationException>(
+            () => sut.ExecuteAsync(new LoginDto("caique@monkeybomb.com", "Senha@123"), "1.1.1.1"));
+
+        _userRepo.Invocations.Should().BeEmpty();
+        _throttleRepo.Invocations.Should().BeEmpty();
+        _tokenSvc.Invocations.Should().BeEmpty();
     }
 }

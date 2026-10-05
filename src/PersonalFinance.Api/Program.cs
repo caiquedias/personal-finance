@@ -26,6 +26,25 @@ builder.Services.AddApplicationUseCases(builder.Configuration);
 
 // ── Controllers ───────────────────────────────────────────────────────────────
 builder.Services.AddControllers()
+    .ConfigureApiBehaviorOptions(o =>
+    {
+        // Erros de model binding (ex.: campo obrigatório ausente) seguem o contrato {status,error,message,traceId}
+        o.InvalidModelStateResponseFactory = ctx =>
+        {
+            var message = string.Join(" ", ctx.ModelState.Values
+                .SelectMany(v => v.Errors)
+                .Select(e => string.IsNullOrWhiteSpace(e.ErrorMessage) ? "Dados inválidos." : e.ErrorMessage)
+                .Distinct());
+            if (string.IsNullOrWhiteSpace(message)) message = "Dados inválidos.";
+            return new Microsoft.AspNetCore.Mvc.BadRequestObjectResult(new
+            {
+                status = 400,
+                error = "BadRequest",
+                message,
+                traceId = ctx.HttpContext.TraceIdentifier
+            });
+        };
+    })
     .AddJsonOptions(o => o.JsonSerializerOptions.Converters.Add(new FlexibleEnumConverterFactory()));
 
 // ── JWT Authentication ────────────────────────────────────────────────────────

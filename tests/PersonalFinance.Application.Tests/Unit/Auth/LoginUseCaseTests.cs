@@ -7,6 +7,7 @@ using PersonalFinance.Domain.Entities.Auth;
 using PersonalFinance.Domain.Exceptions;
 using PersonalFinance.Domain.Interfaces.Repositories;
 using PersonalFinance.Domain.Interfaces.Services;
+using PersonalFinance.Application.Tests.Unit.Support;
 using Xunit;
 
 namespace PersonalFinance.Application.Tests.Unit.Auth
@@ -26,7 +27,7 @@ namespace PersonalFinance.Application.Tests.Unit.Auth
             _sut = new LoginWithRolesUseCase(
                 _userRepo.Object, _roleRepo.Object, _throttleRepo.Object,
                 _hasher.Object, _tokenSvc.Object,
-                _uow.Object, new LoginLockoutOptions(), new MfaOptions());
+                _uow.Object, new LoginLockoutOptions(), new MfaOptions(), TestValidators.Valid<LoginDto>());
         }
 
         private static User FakeUser() =>

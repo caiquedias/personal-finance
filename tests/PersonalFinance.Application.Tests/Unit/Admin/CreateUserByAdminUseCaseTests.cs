@@ -6,6 +6,8 @@ using PersonalFinance.Domain.Entities.Auth;
 using PersonalFinance.Domain.Exceptions;
 using PersonalFinance.Domain.Interfaces.Repositories;
 using PersonalFinance.Domain.Interfaces.Services;
+using FluentValidation;
+using PersonalFinance.Application.Tests.Unit.Support;
 using Xunit;
 
 namespace PersonalFinance.Application.Tests.Unit.Admin;
@@ -20,7 +22,7 @@ public class CreateUserByAdminUseCaseTests
 
     public CreateUserByAdminUseCaseTests()
     {
-        _sut = new CreateUserByAdminUseCase(_userRepo.Object, _roleRepo.Object, _hasher.Object, _uow.Object);
+        _sut = new CreateUserByAdminUseCase(_userRepo.Object, _roleRepo.Object, _hasher.Object, _uow.Object, TestValidators.Valid<CreateUserByAdminDto>());
     }
 
     [Fact(DisplayName = "Deve criar usuário e atribuir role User padrão")]
@@ -76,5 +78,23 @@ public class CreateUserByAdminUseCaseTests
 
         await act.Should().ThrowAsync<DomainException>().WithMessage("*8 caracteres*");
         _uow.Verify(u => u.CommitAsync(default), Times.Never);
+    }
+
+    // ── Validação (#396) ──────────────────────────────────────────────────────
+
+    private CreateUserByAdminUseCase SutWith(IValidator<CreateUserByAdminDto> validator) =>
+        UseCaseFactory.Create<CreateUserByAdminUseCase>(
+            _userRepo.Object, _roleRepo.Object, _hasher.Object, _uow.Object, validator);
+
+    [Fact(DisplayName = "Deve lançar ValidationException e não persistir quando o validator reprova")]
+    public async Task Execute_WhenValidatorFails_ShouldThrowValidationExceptionWithoutPersisting()
+    {
+        var sut = SutWith(TestValidators.Invalid<CreateUserByAdminDto>());
+
+        var act = () => sut.ExecuteAsync(new CreateUserByAdminDto("Novo", "novo@x.com", "Senha@123"));
+
+        await act.Should().ThrowAsync<ValidationException>();
+        _userRepo.Verify(r => r.AddAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()), Times.Never);
+        _uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 }

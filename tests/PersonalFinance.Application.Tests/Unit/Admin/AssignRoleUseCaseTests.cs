@@ -5,6 +5,8 @@ using PersonalFinance.Application.UseCases.Admin;
 using PersonalFinance.Domain.Entities.Auth;
 using PersonalFinance.Domain.Exceptions;
 using PersonalFinance.Domain.Interfaces.Repositories;
+using FluentValidation;
+using PersonalFinance.Application.Tests.Unit.Support;
 using Xunit;
 
 namespace PersonalFinance.Application.Tests.Unit.Admin;
@@ -18,7 +20,7 @@ public class AssignRoleUseCaseTests
 
     public AssignRoleUseCaseTests()
     {
-        _sut = new AssignRoleUseCase(_userRepo.Object, _roleRepo.Object, _uow.Object);
+        _sut = new AssignRoleUseCase(_userRepo.Object, _roleRepo.Object, _uow.Object, TestValidators.Valid<AssignRoleDto>());
     }
 
     [Fact(DisplayName = "Deve atribuir role a usuário ativo")]
@@ -78,5 +80,22 @@ public class AssignRoleUseCaseTests
 
         await act.Should().ThrowAsync<KeyNotFoundException>();
         _uow.Verify(u => u.CommitAsync(default), Times.Never);
+    }
+
+    // ── Validação (#396) ──────────────────────────────────────────────────────
+
+    [Fact(DisplayName = "Deve lançar ValidationException e não atribuir role quando o validator reprova")]
+    public async Task Execute_WhenValidatorFails_ShouldThrowValidationExceptionWithoutPersisting()
+    {
+        var sut = UseCaseFactory.Create<AssignRoleUseCase>(
+            _userRepo.Object, _roleRepo.Object, _uow.Object,
+            TestValidators.Invalid<AssignRoleDto>());
+
+        var act = () => sut.ExecuteAsync(new AssignRoleDto(Guid.NewGuid(), 0));
+
+        await act.Should().ThrowAsync<ValidationException>();
+        _userRepo.Invocations.Should().BeEmpty();
+        _roleRepo.Invocations.Should().BeEmpty();
+        _uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 }

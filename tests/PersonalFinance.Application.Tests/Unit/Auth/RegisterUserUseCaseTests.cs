@@ -6,6 +6,8 @@ using PersonalFinance.Domain.Entities.Auth;
 using PersonalFinance.Domain.Exceptions;
 using PersonalFinance.Domain.Interfaces.Repositories;
 using PersonalFinance.Domain.Interfaces.Services;
+using FluentValidation;
+using PersonalFinance.Application.Tests.Unit.Support;
 using Xunit;
 
 namespace PersonalFinance.Application.Tests.Unit.Auth
@@ -19,7 +21,7 @@ namespace PersonalFinance.Application.Tests.Unit.Auth
 
         public RegisterUserUseCaseTests()
         {
-            _sut = new RegisterUserUseCase(_userRepo.Object, _hasher.Object, _uow.Object);
+            _sut = new RegisterUserUseCase(_userRepo.Object, _hasher.Object, _uow.Object, TestValidators.Valid<RegisterUserDto>());
         }
 
         private static RegisterUserDto ValidDto() => new(
@@ -94,6 +96,34 @@ namespace PersonalFinance.Application.Tests.Unit.Auth
             _hasher.Verify(h => h.Hash("SenhaForte@123"), Times.Once);
             _userRepo.Verify(r => r.AddAsync(
                 It.Is<User>(u => u.PasswordHash == "hash_result"), default), Times.Once);
+        }
+
+        // ── Validação (#396) ──────────────────────────────────────────────────
+
+        private RegisterUserUseCase SutWith(IValidator<RegisterUserDto> validator) =>
+            UseCaseFactory.Create<RegisterUserUseCase>(_userRepo.Object, _hasher.Object, _uow.Object, validator);
+
+        [Fact(DisplayName = "Deve lançar ValidationException quando o validator reprova o DTO")]
+        public async Task Execute_WhenValidatorFails_ShouldThrowValidationException()
+        {
+            var sut = SutWith(TestValidators.Invalid<RegisterUserDto>("Senha curta."));
+
+            var act = () => sut.ExecuteAsync(ValidDto());
+
+            var ex = await Assert.ThrowsAsync<ValidationException>(act);
+            Assert.Contains("Senha curta.", ex.Message);
+        }
+
+        [Fact(DisplayName = "Não deve acessar repositório nem persistir quando o validator reprova")]
+        public async Task Execute_WhenValidatorFails_ShouldNotTouchRepositoryOrCommit()
+        {
+            var sut = SutWith(TestValidators.Invalid<RegisterUserDto>());
+
+            await Assert.ThrowsAsync<ValidationException>(() => sut.ExecuteAsync(ValidDto()));
+
+            _userRepo.Verify(r => r.ExistsByEmailAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+            _userRepo.Verify(r => r.AddAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()), Times.Never);
+            _uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
         }
     }
 }

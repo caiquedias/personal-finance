@@ -1,3 +1,4 @@
+using FluentValidation;
 using PersonalFinance.Application.DTOs.Admin;
 using PersonalFinance.Domain.Interfaces.Repositories;
 
@@ -9,20 +10,25 @@ public sealed class UpdateUserByAdminUseCase
     private readonly IAdminUserRepository _userRepository;
     private readonly IUserRoleRepository  _roleRepository;
     private readonly IUnitOfWork          _uow;
+    private readonly IValidator<UpdateUserByAdminDto> _validator;
 
     public UpdateUserByAdminUseCase(
         IAdminUserRepository userRepository,
         IUserRoleRepository  roleRepository,
-        IUnitOfWork          uow)
+        IUnitOfWork          uow,
+        IValidator<UpdateUserByAdminDto> validator)
     {
         _userRepository = userRepository;
         _roleRepository = roleRepository;
         _uow            = uow;
+        _validator      = validator;
     }
 
     public async Task<AdminUserResponseDto> ExecuteAsync(
         UpdateUserByAdminDto dto, CancellationToken ct = default)
     {
+        await _validator.ValidateAndThrowAsync(dto, ct);
+
         var user = await _userRepository.GetByIdAsync(dto.UserId, ct)
             ?? throw new KeyNotFoundException("Usuário não encontrado.");
 
