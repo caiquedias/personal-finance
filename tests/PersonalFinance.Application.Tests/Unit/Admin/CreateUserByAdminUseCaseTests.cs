@@ -22,7 +22,7 @@ public class CreateUserByAdminUseCaseTests
 
     public CreateUserByAdminUseCaseTests()
     {
-        _sut = new CreateUserByAdminUseCase(_userRepo.Object, _roleRepo.Object, _hasher.Object, _uow.Object);
+        _sut = new CreateUserByAdminUseCase(_userRepo.Object, _roleRepo.Object, _hasher.Object, _uow.Object, TestValidators.Valid<CreateUserByAdminDto>());
     }
 
     [Fact(DisplayName = "Deve criar usuário e atribuir role User padrão")]

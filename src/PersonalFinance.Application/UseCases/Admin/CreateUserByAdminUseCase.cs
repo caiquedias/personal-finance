@@ -1,3 +1,4 @@
+using FluentValidation;
 using PersonalFinance.Application.DTOs.Admin;
 using PersonalFinance.Domain.Entities.Auth;
 using PersonalFinance.Domain.Exceptions;
@@ -13,22 +14,27 @@ public sealed class CreateUserByAdminUseCase
     private readonly IUserRoleRepository  _roleRepository;
     private readonly IPasswordHasher      _hasher;
     private readonly IUnitOfWork          _uow;
+    private readonly IValidator<CreateUserByAdminDto> _validator;
 
     public CreateUserByAdminUseCase(
         IAdminUserRepository userRepository,
         IUserRoleRepository  roleRepository,
         IPasswordHasher      hasher,
-        IUnitOfWork          uow)
+        IUnitOfWork          uow,
+        IValidator<CreateUserByAdminDto> validator)
     {
         _userRepository = userRepository;
         _roleRepository = roleRepository;
         _hasher         = hasher;
         _uow            = uow;
+        _validator      = validator;
     }
 
     public async Task<AdminUserResponseDto> ExecuteAsync(
         CreateUserByAdminDto dto, CancellationToken ct = default)
     {
+        await _validator.ValidateAndThrowAsync(dto, ct);
+
         if (string.IsNullOrWhiteSpace(dto.Password) || dto.Password.Length < 8)
             throw new DomainException("A senha deve ter no mínimo 8 caracteres.");
 

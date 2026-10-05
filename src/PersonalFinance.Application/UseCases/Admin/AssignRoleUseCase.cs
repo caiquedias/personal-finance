@@ -1,4 +1,5 @@
-﻿using PersonalFinance.Application.DTOs.Admin;
+using FluentValidation;
+using PersonalFinance.Application.DTOs.Admin;
 using PersonalFinance.Domain.Exceptions;
 using PersonalFinance.Domain.Interfaces.Repositories;
 
@@ -10,19 +11,24 @@ namespace PersonalFinance.Application.UseCases.Admin
         private readonly IAdminUserRepository _userRepository;
         private readonly IUserRoleRepository _roleRepository;
         private readonly IUnitOfWork _uow;
+        private readonly IValidator<AssignRoleDto> _validator;
 
         public AssignRoleUseCase(
             IAdminUserRepository userRepository,
             IUserRoleRepository roleRepository,
-            IUnitOfWork uow)
+            IUnitOfWork uow,
+            IValidator<AssignRoleDto> validator)
         {
             _userRepository = userRepository;
             _roleRepository = roleRepository;
             _uow = uow;
+            _validator = validator;
         }
 
         public async Task ExecuteAsync(AssignRoleDto dto, CancellationToken ct = default)
         {
+            await _validator.ValidateAndThrowAsync(dto, ct);
+
             var user = await _userRepository.GetByIdAsync(dto.UserId, ct)
                 ?? throw new KeyNotFoundException("Usuário não encontrado.");
 

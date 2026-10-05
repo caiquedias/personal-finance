@@ -19,7 +19,7 @@ public class UpdateUserByAdminUseCaseTests
 
     public UpdateUserByAdminUseCaseTests()
     {
-        _sut = new UpdateUserByAdminUseCase(_userRepo.Object, _roleRepo.Object, _uow.Object);
+        _sut = new UpdateUserByAdminUseCase(_userRepo.Object, _roleRepo.Object, _uow.Object, TestValidators.Valid<UpdateUserByAdminDto>());
     }
 
     [Fact(DisplayName = "Deve atualizar nome do usuário")]

@@ -20,7 +20,7 @@ public class AssignRoleUseCaseTests
 
     public AssignRoleUseCaseTests()
     {
-        _sut = new AssignRoleUseCase(_userRepo.Object, _roleRepo.Object, _uow.Object);
+        _sut = new AssignRoleUseCase(_userRepo.Object, _roleRepo.Object, _uow.Object, TestValidators.Valid<AssignRoleDto>());
     }
 
     [Fact(DisplayName = "Deve atribuir role a usuário ativo")]

@@ -23,7 +23,7 @@ public class ResetUserPasswordUseCaseTests
 
     public ResetUserPasswordUseCaseTests()
     {
-        _sut = new ResetUserPasswordUseCase(_userRepo.Object, _hasher.Object, _uow.Object);
+        _sut = new ResetUserPasswordUseCase(_userRepo.Object, _hasher.Object, _uow.Object, TestValidators.Valid<ResetPasswordDto>());
     }
 
     [Fact(DisplayName = "Deve resetar senha de outro usuário")]
