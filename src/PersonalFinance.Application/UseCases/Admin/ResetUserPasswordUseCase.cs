@@ -1,4 +1,5 @@
-﻿using PersonalFinance.Application.DTOs.Admin;
+using FluentValidation;
+using PersonalFinance.Application.DTOs.Admin;
 using PersonalFinance.Domain.Exceptions;
 using PersonalFinance.Domain.Interfaces.Repositories;
 using PersonalFinance.Domain.Interfaces.Services;
@@ -14,21 +15,26 @@ namespace PersonalFinance.Application.UseCases.Admin
         private readonly IAdminUserRepository _userRepository;
         private readonly IPasswordHasher _hasher;
         private readonly IUnitOfWork _uow;
+        private readonly IValidator<ResetPasswordDto> _validator;
 
         public ResetUserPasswordUseCase(
             IAdminUserRepository userRepository,
             IPasswordHasher hasher,
-            IUnitOfWork uow)
+            IUnitOfWork uow,
+            IValidator<ResetPasswordDto> validator)
         {
             _userRepository = userRepository;
             _hasher = hasher;
             _uow = uow;
+            _validator = validator;
         }
 
         public async Task ExecuteAsync(
             ResetPasswordDto dto, Guid requestingAdminId,
             CancellationToken ct = default)
         {
+            await _validator.ValidateAndThrowAsync(dto, ct);
+
             if (dto.UserId == requestingAdminId)
                 throw new DomainException("Use o endpoint de perfil para alterar sua própria senha.");
 

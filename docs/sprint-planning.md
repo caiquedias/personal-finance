@@ -87,6 +87,11 @@ por classe é regra obrigatória, não só a feature).
 
 > Size decide divisão de escopo, não estimativa de tempo — ver "Fórmula de Estimativa" abaixo.
 
+> **Infra base antes do sizing:** em issue "filha" (ex.: `Parte de #N`), conferir se a infra que ela
+> assume (pacote, registro DI, middleware, ponto de invocação) já existe no código. Se não existir,
+> contá-la no sizing ou criar issue de base antes. Caso real: #396 foi estimada M (~8-10 arquivos) e
+> entregou 35 porque o FluentValidation não existia no projeto.
+
 ---
 
 ## Fórmula de Estimativa

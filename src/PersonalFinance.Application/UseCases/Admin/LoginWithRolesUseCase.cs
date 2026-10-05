@@ -1,4 +1,5 @@
-﻿using PersonalFinance.Application.Options;
+﻿using FluentValidation;
+using PersonalFinance.Application.Options;
 using PersonalFinance.Domain.Entities.Auth;
 using PersonalFinance.Domain.Exceptions;
 using PersonalFinance.Domain.Interfaces.Repositories;
@@ -21,6 +22,7 @@ namespace PersonalFinance.Application.UseCases.Admin
         private readonly IUnitOfWork _unitOfWork;
         private readonly LoginLockoutOptions _lockoutOptions;
         private readonly MfaOptions _mfaOptions;
+        private readonly IValidator<DTOs.Auth.LoginDto> _validator;
 
         public LoginWithRolesUseCase(
             IUserRepository userRepository,
@@ -30,7 +32,8 @@ namespace PersonalFinance.Application.UseCases.Admin
             ITokenService tokenService,
             IUnitOfWork unitOfWork,
             LoginLockoutOptions lockoutOptions,
-            MfaOptions mfaOptions)
+            MfaOptions mfaOptions,
+            IValidator<DTOs.Auth.LoginDto> validator)
         {
             _userRepository = userRepository;
             _roleRepository = roleRepository;
@@ -40,6 +43,7 @@ namespace PersonalFinance.Application.UseCases.Admin
             _unitOfWork = unitOfWork;
             _lockoutOptions = lockoutOptions;
             _mfaOptions = mfaOptions;
+            _validator = validator;
         }
 
         /// <summary>Máximo de tentativas ao persistir o contador em caso de conflito de concorrência.</summary>
@@ -55,6 +59,8 @@ namespace PersonalFinance.Application.UseCases.Admin
         public async Task<DTOs.Auth.LoginResponseDto> ExecuteAsync(
             DTOs.Auth.LoginDto dto, string ipAddress, CancellationToken ct = default)
         {
+            await _validator.ValidateAndThrowAsync(dto, ct);
+
             const string InvalidCredentials = "Credenciais inválidas.";
 
             var email = dto.Email.Trim().ToLowerInvariant();
