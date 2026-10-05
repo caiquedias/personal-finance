@@ -213,6 +213,23 @@ public class AdminUsersControllerTests : ApiIntegrationTestBase
         softDeleted.Should().BeGreaterThan(0);
     }
 
+    [Fact(DisplayName = "Reset de MFA pelo admin deve gravar auditoria MfaReset com ator e alvo (sem logar no controller)")]
+    public async Task ResetMfa_Admin_ShouldWriteAuditRow()
+    {
+        var (adminClient, adminId) = await GetAdminAuthenticatedClientAsync();
+        var target = await CreateMfaUserAsync(_mfaFactory);
+
+        var r = await adminClient.PostAsync($"/api/v1/admin/users/{target.UserId}/mfa/reset", null);
+
+        r.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        var logs = await WithDbAsync(_mfaFactory, db =>
+            db.Set<AuditLog>().AsNoTracking().Where(l => l.TargetUserId == target.UserId).ToListAsync());
+        var log = logs.Should().ContainSingle().Subject;
+        log.Action.Should().Be(PersonalFinance.Domain.Enums.AuditAction.MfaReset);
+        log.ActorUserId.Should().Be(adminId);
+        log.IpAddress.Should().BeNull("o TestServer não tem RemoteIpAddress");
+    }
+
     // ── Invalidação de sessões do alvo (#489) ─────────────────────────────────
 
     private const string ProtectedPath = "/api/v1/periods";
