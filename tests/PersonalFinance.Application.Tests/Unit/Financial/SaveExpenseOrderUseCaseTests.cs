@@ -84,4 +84,20 @@ public class SaveExpenseOrderUseCaseTests
         await act.Should().ThrowAsync<DomainException>().WithMessage("*permissão*");
         _uow.Verify(u => u.CommitAsync(default), Times.Never);
     }
+
+    [Fact(DisplayName = "SaveOrder: validator reprova deve lançar ValidationException sem acessar repositório nem persistir")]
+    public async Task SaveOrder_WhenValidatorFails_ShouldThrowValidationExceptionWithoutPersisting()
+    {
+        var sut = PersonalFinance.Application.Tests.Unit.Support.UseCaseFactory.Create<SaveExpenseOrderUseCase>(
+            _orderRepo.Object, _expenseRepo.Object, _uow.Object,
+            PersonalFinance.Application.Tests.Unit.Support.TestValidators.Invalid<SaveExpenseOrderDto>());
+
+        var act = () => sut.ExecuteAsync(new SaveExpenseOrderDto(
+            Guid.NewGuid(), new[] { new ExpenseOrderItemDto(Guid.NewGuid(), 0) }));
+
+        await act.Should().ThrowAsync<FluentValidation.ValidationException>();
+        _orderRepo.Invocations.Should().BeEmpty();
+        _expenseRepo.Invocations.Should().BeEmpty();
+        _uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
 }

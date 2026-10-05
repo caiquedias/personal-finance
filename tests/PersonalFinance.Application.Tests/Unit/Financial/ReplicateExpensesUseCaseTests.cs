@@ -98,4 +98,20 @@ public class ReplicateExpensesUseCaseTests
         var act = () => sut.ExecuteAsync(new ReplicateExpensesDto(Guid.NewGuid(), Guid.NewGuid(), ids));
         await act.Should().ThrowAsync<DomainException>();
     }
+
+    [Fact(DisplayName = "Replicate: validator reprova deve lançar ValidationException sem acessar repositório nem persistir")]
+    public async Task Replicate_WhenValidatorFails_ShouldThrowValidationExceptionWithoutPersisting()
+    {
+        var sut = PersonalFinance.Application.Tests.Unit.Support.UseCaseFactory.Create<ReplicateExpensesUseCase>(
+            _expRepo.Object, _perRepo.Object, _uow.Object,
+            PersonalFinance.Application.Tests.Unit.Support.TestValidators.Invalid<ReplicateExpensesDto>());
+
+        var act = () => sut.ExecuteAsync(new ReplicateExpensesDto(
+            Guid.NewGuid(), Guid.NewGuid(), new List<Guid> { Guid.NewGuid() }));
+
+        await act.Should().ThrowAsync<FluentValidation.ValidationException>();
+        _expRepo.Invocations.Should().BeEmpty();
+        _perRepo.Invocations.Should().BeEmpty();
+        _uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
 }
