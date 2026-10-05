@@ -26,6 +26,7 @@ public sealed class AppDbContext : DbContext
     public DbSet<Income> Incomes { get; set; } = default!;
     public DbSet<PurgeRecord> PurgeRecords { get; set; } = default!;
     public DbSet<LoginThrottle> LoginThrottles { get; set; } = default!;
+    public DbSet<AuditLog> AuditLogs { get; set; } = default!;
     public DbSet<MfaRecoveryCode> MfaRecoveryCodes { get; set; } = default!;
 
     // ── Lookup tables (seed) ──────────────────────────────────────────────────
