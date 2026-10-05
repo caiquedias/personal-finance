@@ -1,3 +1,4 @@
+using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using PersonalFinance.Application.DTOs;
 using PersonalFinance.Application.DTOs.Financial;
@@ -22,7 +23,8 @@ public sealed class ExpensesController(
     CancelExpensesBatchUseCase cancelBatchUseCase,
     SaveExpenseOrderUseCase saveOrderUseCase,
     IExpenseRepository expenseRepository,
-    IUnitOfWork unitOfWork) : ApiControllerBase
+    IUnitOfWork unitOfWork,
+    IValidator<MarkAsPaidDto> markAsPaidValidator) : ApiControllerBase
 {
     private readonly GetExpensesByPeriodUseCase _getByPeriodUseCase = getByPeriodUseCase;
     private readonly GetExpenseByIdUseCase _getByIdUseCase = getByIdUseCase;
@@ -36,6 +38,7 @@ public sealed class ExpensesController(
     private readonly SaveExpenseOrderUseCase _saveOrderUseCase = saveOrderUseCase;
     private readonly IExpenseRepository _expenseRepository = expenseRepository;
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
+    private readonly IValidator<MarkAsPaidDto> _markAsPaidValidator = markAsPaidValidator;
 
     /// <summary>
     /// Lista despesas de um período com paginação e filtros opcionais.
@@ -92,6 +95,9 @@ public sealed class ExpensesController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> MarkAsPaid(Guid id, [FromBody] MarkAsPaidDto dto, CancellationToken ct)
     {
+        // Valida antes de consultar o banco (400 prevalece sobre 404)
+        await _markAsPaidValidator.ValidateAndThrowAsync(dto, ct);
+
         var expense = await _expenseRepository.GetByIdAndUserAsync(id, CurrentUserId, ct)
             ?? throw new KeyNotFoundException("Despesa não encontrada.");
 
@@ -199,5 +205,3 @@ public sealed class ExpensesController(
     }
 }
 
-/// <summary>DTO para o endpoint PATCH /expenses/{id}/pay</summary>
-public sealed record MarkAsPaidDto(DateOnly PaymentDate);
