@@ -58,6 +58,8 @@ public sealed class CreateUserByAdminUseCase
             user.IsActive,
             user.DeletedAt.HasValue,
             user.CreatedAt,
-            ["User"]);
+            ["User"],
+            user.MfaEnabled,
+            !user.MfaEnabled && user.MfaSecretEncrypted != null);
     }
 }

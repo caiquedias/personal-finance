@@ -40,6 +40,18 @@ public class CreateUserByAdminUseCaseTests
         _uow.Verify(u => u.CommitAsync(default), Times.Once);
     }
 
+    [Fact(DisplayName = "Deve retornar MFA false/false para usuário recém-criado")]
+    public async Task Execute_WithValidData_ShouldReturnMfaFlagsFalse()
+    {
+        var dto = new CreateUserByAdminDto("Caique", "caique@x.com", "senha123");
+        _userRepo.Setup(r => r.ExistsByEmailAsync(dto.Email, default)).ReturnsAsync(false);
+        _hasher.Setup(h => h.Hash(dto.Password)).Returns("hash");
+
+        var result = await _sut.ExecuteAsync(dto);
+
+        result.Should().BeEquivalentTo(new { MfaEnabled = false, MfaSetupPending = false });
+    }
+
     [Fact(DisplayName = "Deve lançar exceção se e-mail já existe")]
     public async Task Execute_WithDuplicateEmail_ShouldThrow()
     {

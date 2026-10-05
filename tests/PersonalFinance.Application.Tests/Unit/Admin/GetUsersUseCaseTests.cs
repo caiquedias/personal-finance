@@ -85,4 +85,49 @@ public class GetUsersUseCaseTests
         result.Email.Should().Be("caique@monkeybomb.com");
         result.IsActive.Should().BeTrue();
     }
+
+    // Os campos de MFA são verificados via BeEquivalentTo para o Red falhar por asserção (não por compilação)
+    [Fact(DisplayName = "Deve expor MfaEnabled=true quando o MFA está ativo")]
+    public async Task Execute_WithMfaEnabledUser_ShouldExposeMfaEnabled()
+    {
+        var user = User.Create("A", "a@x.com", "hash");
+        user.SetPendingMfaSecret("secret-cifrado");
+        user.EnableMfa(DateTime.UtcNow);
+        SetupSingleUser(user);
+
+        var result = (await _sut.ExecuteAsync(new AdminUserFilterDto())).Items.First();
+
+        result.Should().BeEquivalentTo(new { MfaEnabled = true, MfaSetupPending = false });
+    }
+
+    [Fact(DisplayName = "Deve expor MfaSetupPending=true quando há secret pendente sem ativação")]
+    public async Task Execute_WithPendingMfaSecret_ShouldExposeMfaSetupPending()
+    {
+        var user = User.Create("A", "a@x.com", "hash");
+        user.SetPendingMfaSecret("secret-cifrado");
+        SetupSingleUser(user);
+
+        var result = (await _sut.ExecuteAsync(new AdminUserFilterDto())).Items.First();
+
+        result.Should().BeEquivalentTo(new { MfaEnabled = false, MfaSetupPending = true });
+    }
+
+    [Fact(DisplayName = "Deve expor MFA false/false por padrão")]
+    public async Task Execute_WithoutMfa_ShouldExposeBothFalse()
+    {
+        var user = User.Create("A", "a@x.com", "hash");
+        SetupSingleUser(user);
+
+        var result = (await _sut.ExecuteAsync(new AdminUserFilterDto())).Items.First();
+
+        result.Should().BeEquivalentTo(new { MfaEnabled = false, MfaSetupPending = false });
+    }
+
+    private void SetupSingleUser(User user)
+    {
+        _userRepo.Setup(r => r.GetPagedAsync(1, 20, null, null, null, default))
+                 .ReturnsAsync((new[] { user }.AsEnumerable(), 1));
+        _roleRepo.Setup(r => r.GetRoleNamesByUserIdAsync(user.Id, default))
+                 .ReturnsAsync(new[] { "User" });
+    }
 }

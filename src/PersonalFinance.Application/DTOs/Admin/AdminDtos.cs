@@ -10,7 +10,9 @@ public sealed record AdminUserResponseDto(
     bool         IsActive,
     bool         IsDeleted,
     DateTime     CreatedAt,
-    IEnumerable<string> Roles
+    IEnumerable<string> Roles,
+    bool         MfaEnabled,
+    bool         MfaSetupPending
 );
 
 /// <summary>Filtros e paginação para listagem de usuários admin.</summary>
