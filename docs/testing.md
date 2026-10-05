@@ -113,6 +113,13 @@ bash scripts/run-test-on-base.sh tests/<Projeto>.Tests "FullyQualifiedName~<Nome
 
 Exit code = o do `dotnet test` na base (≠ 0 → a falha existe na base).
 
+## Testes que montam fórmulas/strings numéricas — cultura invariante
+
+Interpolar `decimal`/`double` em string de fórmula ou payload (`$"=SUM({valor})"`) usa a cultura da máquina:
+em pt-BR vira `SUM(9739,80)` (dois argumentos, resultado 9819) e o teste falha só fora do CI (#401,
+`ExcelParserServiceTests.AddSheet`). Formatar sempre com `ToString(CultureInfo.InvariantCulture)` ou gravar o
+número direto na célula (`Cell.Value = (double)valor`).
+
 ## Testes dependentes de relógio (TOTP e janelas de tempo)
 
 Nunca recalcular um valor derivado de `DateTime.UtcNow` (código TOTP, expiração) depois de um setup

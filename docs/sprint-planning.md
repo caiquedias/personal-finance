@@ -96,11 +96,12 @@ por classe é regra obrigatória, não só a feature).
 
 ## Fórmula de Estimativa
 
-> **Última calibração:** 2026-10-02 · n=12 issues com codificação medida
-> **Origem dos números:** amostra local (n=12, 10 issues novas desde 2026-09-28). Fórmula sugerida pelo
-> script: codificação mediana 4min (p75 6min, p90 6min) + piso de orquestração 4min = 8min por issue;
-> sem correlação entre nº de arquivos e tempo (Pearson −0,015; Spearman 0,231) — Size segue só para
-> divisão de escopo. Maioria das issues com 0 ciclos de retrabalho (8 de 12). Tratar como indicativo.
+> **Última calibração:** 2026-10-05 · n=23 issues com codificação medida
+> **Origem dos números:** amostra local (n=23, 11 issues novas desde 2026-10-02). Fórmula sugerida pelo
+> script: codificação mediana 4min (p75 8min, p90 25min) + piso de orquestração 9min = 13min por issue;
+> correlação entre nº de arquivos e tempo no limiar do sinal (Pearson 0,404; Spearman 0,417), mas as medianas
+> por bucket de Size seguem não-monotônicas — Size segue só para divisão de escopo. Maioria das issues com 0
+> ciclos de retrabalho (15 de 23). Tratar como indicativo.
 
 Até a primeira calibração, `Estimativa: Xh` do comentário de planning continua sendo um número
 definido manualmente por Caique/PO — **não** deriva do Size (correlação entre nº de arquivos e
@@ -181,3 +182,4 @@ especificação — inclusive as recalibrações da fórmula de estimativa.
 | Data | Decisão | Onde está documentada |
 |---|---|---|
 | 2026-10-02 | Recalibração da fórmula de estimativa: codificação mediana 5min → 4min, piso de orquestração 2min → 4min, total 7min → 8min por issue (n=2 → 12); correlação nº de arquivos × tempo continua inexistente | `Fórmula de Estimativa` (acima) e `node scripts/calibrate-estimates.js` |
+| 2026-10-05 | Recalibração da fórmula de estimativa: codificação mediana 4min (p75 6min → 8min), piso de orquestração 4min → 9min, total 8min → 13min por issue (n=12 → 23); correlação nº de arquivos × tempo no limiar (Pearson 0,404), medianas por Size ainda não-monotônicas | `Fórmula de Estimativa` (acima) e `node scripts/calibrate-estimates.js` |

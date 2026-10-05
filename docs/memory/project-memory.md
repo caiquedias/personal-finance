@@ -41,6 +41,7 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 | #488 | [Security][Auth] Infra de invalidação de sessões JWT (SecurityStamp) | 2026-10-02 | [488.md](488.md) |
 | #489 | [Security][MFA] Invalidar sessões do usuário no reset de MFA admin | 2026-10-04 | [489.md](489.md) |
 | #490 | [MFA][Admin] Botão Resetar MFA condicional (MfaEnabled) + modal de confirmação | 2026-10-04 | [490.md](490.md) |
+| #401 | [Security] Validação de magic number no upload de Excel | 2026-10-05 | [401.md](401.md) |
 | #396 | [Security][Validation] FluentValidation — Auth e Admin | 2026-10-05 | [396.md](396.md) |
 | #397 | [Security][Validation] FluentValidation — Financial (Expense/Income/Period) | 2026-10-05 | [397.md](397.md) |
 | #398 | [Security][Validation] FluentValidation — Config (Category e lookups) | 2026-10-05 | [398.md](398.md) |
@@ -56,7 +57,7 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 | Expurgo (Purge) | #329, #330, #331, #332, #356, #369, #367, #368, #377, #376, #378, #384 | 2026-07-05 |
 | Batch Expenses / Serialização | #355 | 2026-06-26 |
 | Login / Auth UI | #387, #394 | 2026-10-02 |
-| Segurança / JWT | #389, #391, #393, #394, #488, #489, #490, #396, #397, #398, #399, #400 | 2026-10-05 |
+| Segurança / JWT | #389, #391, #393, #394, #488, #489, #490, #396, #397, #398, #399, #400, #401 | 2026-10-05 |
 | Import (Income) | #419 | 2026-09-28 |
 | Import (Extrato C6 PDF) | #420, #421, #422, #423, #443, #444, #445, #446, #447, #464 | 2026-10-01 |
 
@@ -89,7 +90,7 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 ### Infrastructure
 - **Repositórios:** PurgeRepository, LoginThrottleRepository (#391 — `TryAddAsync`: limpeza de expiradas em lote, teto duro de 2.000 linhas, fail-open)
 - **UnitOfWork (#391):** traduz `DbUpdateConcurrencyException` e violação de índice único (2601/2627) em `ConcurrencyConflictException` e limpa o `ChangeTracker` antes de lançar
-- **Serviços:** Argon2PasswordHasher, JwtTokenService, ExcelParserService, C6StatementPdfParserService (#420 — PdfPig por coordenadas x/y, DomainException para senha/PDF/linha inválida; sem consumidor ainda), DatabaseInitializer, CsvExportService
+- **Serviços:** Argon2PasswordHasher, JwtTokenService, ExcelParserService (#401 — valida assinatura ZIP `50 4B 03 04` e falha de abertura do ClosedXML → `DomainException` "O arquivo enviado não é um .xlsx válido." → 400; copia para `MemoryStream` se `!CanSeek`), C6StatementPdfParserService (#420 — PdfPig por coordenadas x/y, DomainException para senha/PDF/linha inválida; sem consumidor ainda), DatabaseInitializer, CsvExportService
 - **Migrations aplicadas:** AddPurgeModule (2026-06-26); #391 (a aplicar em release/produção): AddUserLockoutFields, AddUserRowVersion, AddLoginThrottle; #393 (a aplicar): AddMfa; #488 (a aplicar): AddSecurityStamp
 - **Views:** vw_PeriodSummary (criada pelo DatabaseInitializer no startup)
 
