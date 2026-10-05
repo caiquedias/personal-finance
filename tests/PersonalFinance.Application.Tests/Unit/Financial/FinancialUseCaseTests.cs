@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Moq;
 using PersonalFinance.Application.DTOs.Financial;
+using PersonalFinance.Application.Tests.Unit.Support;
 using PersonalFinance.Application.UseCases.Financial.Expenses;
 using PersonalFinance.Application.UseCases.Financial.Incomes;
 using PersonalFinance.Application.UseCases.Financial.Periods;
@@ -25,7 +26,7 @@ public class CreatePeriodUseCaseTests
     private static readonly Guid UserId = Guid.NewGuid();
 
     public CreatePeriodUseCaseTests() =>
-        _sut = new CreatePeriodUseCase(_periodRepo.Object, _uow.Object);
+        _sut = new CreatePeriodUseCase(_periodRepo.Object, _uow.Object, TestValidators.Valid<CreatePeriodDto>());
 
     [Fact(DisplayName = "Deve criar período com dados válidos")]
     public async Task Execute_WithValidData_ShouldCreatePeriod()
@@ -84,7 +85,7 @@ public class CreateExpenseUseCaseTests
     public CreateExpenseUseCaseTests() =>
         _sut = new CreateExpenseUseCase(
             _expenseRepo.Object, _periodRepo.Object,
-            _categoryRepo.Object, _uow.Object);
+            _categoryRepo.Object, _uow.Object, TestValidators.Valid<CreateExpenseDto>());
 
     private CreateExpenseDto ValidDto() => new(
         PeriodId:      PeriodId,
@@ -170,7 +171,7 @@ public class UpdateExpenseUseCaseTests
     private static readonly Guid CategoryId = Guid.NewGuid();
 
     public UpdateExpenseUseCaseTests() =>
-        _sut = new UpdateExpenseUseCase(_expenseRepo.Object, _categoryRepo.Object, _uow.Object);
+        _sut = new UpdateExpenseUseCase(_expenseRepo.Object, _categoryRepo.Object, _uow.Object, TestValidators.Valid<UpdateExpenseDto>());
 
     private static Expense FakeExpense() => Expense.Create(
         Guid.NewGuid(), UserId, CategoryId,
