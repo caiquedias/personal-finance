@@ -3,6 +3,7 @@ using Moq;
 using PersonalFinance.Application.Tests.Unit.Support;
 using PersonalFinance.Domain.Entities.Auth;
 using PersonalFinance.Domain.Enums;
+using PersonalFinance.Domain.Exceptions;
 using PersonalFinance.Domain.Interfaces.Repositories;
 using Xunit;
 
@@ -144,6 +145,21 @@ public class UserTokenIssuerTests
         var act = () => _h.Issuer.IssueAsync(ActiveUser(), UserTokenPurpose.PasswordReset);
 
         await act.Should().ThrowAsync<InvalidOperationException>();
+        _h.Enqueued.Should().BeEmpty();
+    }
+
+    // ── C2: corrida (409 seria oráculo de enumeração) ────────────────────────
+
+    [Fact(DisplayName = "Conflito de concorrência no commit: retorna false, não enfileira e não propaga")]
+    public async Task Issue_WhenCommitConflicts_ShouldReturnFalseWithoutEnqueue()
+    {
+        _uow.Setup(u => u.CommitAsync(It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new ConcurrencyConflictException());
+
+        var act = () => _h.Issuer.IssueAsync(ActiveUser(), UserTokenPurpose.PasswordReset);
+
+        var issued = await act.Should().NotThrowAsync();
+        issued.Subject.Should().BeFalse();
         _h.Enqueued.Should().BeEmpty();
     }
 

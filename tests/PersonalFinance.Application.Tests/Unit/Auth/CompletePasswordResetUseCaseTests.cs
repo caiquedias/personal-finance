@@ -314,6 +314,47 @@ public class CompletePasswordResetUseCaseTests
         user.PasswordHash.Should().Be("old-hash");
     }
 
+    // ── C3: equalização aproximada de timing (HMAC dummy) ─────────────────────
+
+    [Theory(DisplayName = "Usuário inexistente/inativo/removido: executa HMAC dummy (ComputeHash + Verify), mesma mensagem e nada persistido")]
+    [InlineData("unknown")]
+    [InlineData("inactive")]
+    [InlineData("deleted")]
+    public async Task Execute_UnusableUser_ShouldRunDummyHmacAndPersistNothing(string scenario)
+    {
+        if (scenario == "unknown")
+        {
+            _userRepo.Setup(r => r.GetByEmailAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync((User?)null);
+        }
+        else
+        {
+            var (user, _) = Arrange();
+            if (scenario == "inactive") user.Deactivate(); else user.SoftDelete();
+        }
+
+        var act = () => Sut().ExecuteAsync(Dto(), Ip);
+
+        await act.Should().ThrowAsync<DomainException>().WithMessage(InvalidMessage);
+        _codes.Verify(c => c.ComputeHash(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<UserTokenPurpose>(), It.IsAny<string>()), Times.Once);
+        _codes.Verify(c => c.Verify(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<UserTokenPurpose>(), It.IsAny<string>(), It.IsAny<string>()), Times.Once);
+        _userRepo.Verify(r => r.UpdateAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()), Times.Never);
+        _tokenRepo.Verify(r => r.UpdateAsync(It.IsAny<UserToken>(), It.IsAny<CancellationToken>()), Times.Never);
+        _hasher.Verify(h => h.Hash(It.IsAny<string>()), Times.Never);
+        _trace.Logs.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "Usuário utilizável com código errado: não faz HMAC dummy extra (só a verificação real)")]
+    public async Task Execute_UsableUserWrongCode_ShouldNotRunExtraDummy()
+    {
+        Arrange();
+
+        var act = () => Sut().ExecuteAsync(Dto("000000"), Ip);
+
+        await act.Should().ThrowAsync<DomainException>().WithMessage(InvalidMessage);
+        _codes.Verify(c => c.Verify(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<UserTokenPurpose>(), It.IsAny<string>(), It.IsAny<string>()), Times.Once);
+        _codes.Verify(c => c.ComputeHash(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<UserTokenPurpose>(), It.IsAny<string>()), Times.Never);
+    }
+
     // ── Validação ─────────────────────────────────────────────────────────────
 
     [Fact(DisplayName = "Validator reprovado: ValidationException sem tocar repositórios nem commit")]

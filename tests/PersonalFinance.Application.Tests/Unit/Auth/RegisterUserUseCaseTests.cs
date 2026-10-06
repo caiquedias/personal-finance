@@ -4,6 +4,7 @@ using PersonalFinance.Application.DTOs.Auth;
 using PersonalFinance.Application.UseCases.Auth;
 using PersonalFinance.Domain.Entities.Auth;
 using PersonalFinance.Domain.Enums;
+using PersonalFinance.Domain.Exceptions;
 using PersonalFinance.Domain.Interfaces.Repositories;
 using PersonalFinance.Domain.Interfaces.Services;
 using FluentValidation;
@@ -113,6 +114,33 @@ namespace PersonalFinance.Application.Tests.Unit.Auth
             await _sut.ExecuteAsync(ValidDto());
 
             _hasher.Verify(h => h.Hash("SenhaForte@123"), Times.Once);
+        }
+
+        [Fact(DisplayName = "Corrida de e-mail duplicado (unique violada no commit): não lança e não enfileira — resposta genérica")]
+        public async Task Execute_WhenCommitConflicts_ShouldNotThrowNorEnqueue()
+        {
+            _userRepo.Setup(r => r.ExistsByEmailAsync(It.IsAny<string>(), default)).ReturnsAsync(false);
+            _hasher.Setup(h => h.Hash(It.IsAny<string>())).Returns("argon2_hash");
+            _uow.Setup(u => u.CommitAsync(It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new ConcurrencyConflictException());
+
+            var act = () => _sut.ExecuteAsync(ValidDto());
+
+            await act.Should().NotThrowAsync();
+            _h.Enqueued.Should().BeEmpty();
+        }
+
+        [Fact(DisplayName = "Falha inesperada no commit do registro continua propagando (não é engolida)")]
+        public async Task Execute_WhenCommitFailsUnexpectedly_ShouldPropagate()
+        {
+            _userRepo.Setup(r => r.ExistsByEmailAsync(It.IsAny<string>(), default)).ReturnsAsync(false);
+            _hasher.Setup(h => h.Hash(It.IsAny<string>())).Returns("argon2_hash");
+            _uow.Setup(u => u.CommitAsync(It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new InvalidOperationException("db"));
+
+            var act = () => _sut.ExecuteAsync(ValidDto());
+
+            await act.Should().ThrowAsync<InvalidOperationException>();
         }
 
         // ── Validação de input ────────────────────────────────────────────────────

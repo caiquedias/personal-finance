@@ -6,6 +6,7 @@ using PersonalFinance.Application.Tests.Unit.Support;
 using PersonalFinance.Application.UseCases.Auth;
 using PersonalFinance.Domain.Entities.Auth;
 using PersonalFinance.Domain.Enums;
+using PersonalFinance.Domain.Exceptions;
 using PersonalFinance.Domain.Interfaces.Repositories;
 using Xunit;
 
@@ -148,6 +149,19 @@ public class RequestPasswordResetUseCaseTests
         await act.Should().NotThrowAsync();
         _h.Enqueued.Should().BeEmpty();
         _h.Added.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "Corrida (conflito de concorrência no commit): não lança e não enfileira — resposta idêntica ao inexistente")]
+    public async Task Execute_WhenCommitConflicts_ShouldNotThrowNorEnqueue()
+    {
+        ExistingUser();
+        _uow.Setup(u => u.CommitAsync(It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new ConcurrencyConflictException());
+
+        var act = () => Sut().ExecuteAsync(new EmailRequestDto("ana@x.com"), Ip);
+
+        await act.Should().NotThrowAsync();
+        _h.Enqueued.Should().BeEmpty();
     }
 
     [Fact(DisplayName = "Validator reprovado: lança ValidationException sem tocar repositório, fila ou commit")]

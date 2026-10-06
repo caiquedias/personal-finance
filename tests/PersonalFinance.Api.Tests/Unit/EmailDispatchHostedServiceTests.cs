@@ -101,6 +101,27 @@ public class EmailDispatchHostedServiceTests
         await stop.Should().NotThrowAsync();
     }
 
+    [Fact(DisplayName = "Timeout do sender (TaskCanceledException sem cancelamento do host) é logado e o loop segue")]
+    public async Task SenderTimesOut_ShouldLogAndKeepProcessing()
+    {
+        var sut = Build();
+        _sender.Setup(s => s.SendAsync(It.Is<EmailMessage>(m => m.Subject == "timeout"), It.IsAny<CancellationToken>()))
+               .ThrowsAsync(new TaskCanceledException("The request was canceled due to the configured HttpClient.Timeout.",
+                   new TimeoutException()));
+        await sut.StartAsync(CancellationToken.None);
+
+        _queue.TryEnqueue(Msg("timeout"));
+        _queue.TryEnqueue(Msg("depois"));
+        await WaitUntilAsync(() => SentCount() >= 1);
+
+        lock (_sentSubjects) _sentSubjects.Should().Contain("depois");
+        _logger.Entries.Should().Contain(e => e.Level >= LogLevel.Warning);
+        sut.ExecuteTask!.IsCompleted.Should().BeFalse("timeout do provedor não pode encerrar o loop");
+        _logger.AllText.Should().NotContain(Secret);
+
+        await sut.StopAsync(CancellationToken.None);
+    }
+
     [Fact(DisplayName = "Log de falha do sender não contém o corpo do e-mail (código)")]
     public async Task SenderThrows_ShouldNotLogBody()
     {

@@ -98,6 +98,43 @@ public class BrevoEmailSenderTests
         _logger.AllText.Should().NotContain(ApiKey).And.NotContain(Secret);
     }
 
+    // ── C1: timeout do HttpClient ─────────────────────────────────────────────
+
+    private BrevoEmailSender BuildWithTimeout(HttpMessageHandler handler, TimeSpan timeout) =>
+        new(new HttpClient(handler) { Timeout = timeout }, Options(), _logger);
+
+    [Fact(DisplayName = "Timeout do HttpClient: loga aviso sem lançar (não pode derrubar o consumidor da fila)")]
+    public async Task Send_OnHttpClientTimeout_ShouldLogWithoutThrowing()
+    {
+        var sut = BuildWithTimeout(new HangingHttpMessageHandler(), TimeSpan.FromMilliseconds(50));
+
+        var act = () => sut.SendAsync(Message(), CancellationToken.None);
+
+        await act.Should().NotThrowAsync();
+        _logger.Entries.Should().Contain(e => e.Level >= LogLevel.Warning);
+    }
+
+    [Fact(DisplayName = "Log de timeout não vaza api-key nem o código do e-mail")]
+    public async Task Send_OnHttpClientTimeout_ShouldNotLeakSecrets()
+    {
+        var sut = BuildWithTimeout(new HangingHttpMessageHandler(), TimeSpan.FromMilliseconds(50));
+
+        await sut.SendAsync(Message(), CancellationToken.None);
+
+        _logger.AllText.Should().NotContain(ApiKey).And.NotContain(Secret);
+    }
+
+    [Fact(DisplayName = "Cancelamento do host (token cancelado) continua propagando OperationCanceledException")]
+    public async Task Send_OnHostCancellation_ShouldPropagate()
+    {
+        var sut = BuildWithTimeout(new HangingHttpMessageHandler(), TimeSpan.FromSeconds(30));
+        using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(50));
+
+        var act = () => sut.SendAsync(Message(), cts.Token);
+
+        await act.Should().ThrowAsync<OperationCanceledException>();
+    }
+
     [Fact(DisplayName = "Resposta 2xx não gera log de aviso/erro")]
     public async Task Send_Success_ShouldNotLogWarnings()
     {
