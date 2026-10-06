@@ -87,6 +87,10 @@ Antes de spawnar **qualquer** sub-agente, escreva **um único arquivo** no scrat
 - Interfaces/contratos de domínio relevantes (somente assinaturas)
 - Resultado da Análise de Impacto do PO (Passo 1, item 3)
 - Decisões já confirmadas com o Caique
+- **Fluxo anti-enumeração** (register/forgot/resend ou qualquer endpoint que deve responder igual para conta
+  existente e inexistente): registrar como requisito que **todo commit do fluxo trata `ConcurrencyConflictException`
+  com a mesma resposta genérica** (sem 409) e que o caminho de usuário inexistente/inativo gasta custo
+  equivalente ao do caminho real (sem Argon2 se os testes exigirem `Hash` Never) — #404 pagou isso num ciclo de correção
 
 A partir daqui, **todo** prompt de spawn passa o **caminho deste arquivo**, nunca o conteúdo
 colado. Se partes só devem ser lidas por um dos agentes, nomear seções (`## Para Red` /
