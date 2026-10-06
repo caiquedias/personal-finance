@@ -38,6 +38,8 @@ Você tem acesso de **somente leitura** — leia os arquivos relevantes, não ed
 3. Avaliar **risco de regressão**: o que pode quebrar, testes existentes que cobrem a área, comportamentos adjacentes que podem ser impactados
 4. **Contar arquivos pelo ciclo completo, não só pelo núcleo**: ao estimar o nº de arquivos (e o Size), incluir sempre o controller que muda de assinatura, os testes de use case existentes cujo construtor/assinatura muda, o teste de integração ponta a ponta, `TestWebApplicationFactory`/config de teste e os arquivos de DI/`appsettings`/migration (.cs + .Designer.cs + snapshot). Ocorrido na #402: a análise contou ~29 arquivos e o planning recontou 40 (faltaram controller e teste de integração)
 
+5. **Issue que integra provedor externo** (e-mail, pagamento, API de terceiros via `HttpClient`): listar nas dependências o item "validar as options do provedor no startup (`ValidateOnStart`, só quando a integração estiver habilitada, mensagem citando o nome da opção e nunca o valor) + `Timeout` explícito no `HttpClient` + tratamento de timeout sem derrubar o consumidor (fila/HostedService)". Sem isso o Reviewer reabre o ciclo (#404: 3 itens MÉDIA).
+
 ### Output obrigatório
 
 ```
