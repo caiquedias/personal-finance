@@ -48,7 +48,7 @@ public sealed class EmailDispatchHostedService : BackgroundService
                     var sender = scope.ServiceProvider.GetRequiredService<IEmailSender>();
                     await sender.SendAsync(message, stoppingToken);
                 }
-                catch (OperationCanceledException)
+                catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
                 {
                     throw;
                 }

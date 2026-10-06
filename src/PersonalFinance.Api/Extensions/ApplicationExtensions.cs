@@ -125,14 +125,22 @@ public static class ApplicationExtensions
                 "App:FrontendBaseUrl é obrigatória e deve ser uma URL absoluta http(s) (https em Production).")
             .ValidateOnStart();
         services.AddSingleton(sp => sp.GetRequiredService<IOptions<AppOptions>>().Value);
-        var emailOptions = new EmailOptions();
-        configuration.GetSection("Email").Bind(emailOptions);
-        services.AddSingleton(emailOptions);
-        var brevoOptions = new BrevoOptions();
-        configuration.GetSection("Email:Brevo").Bind(brevoOptions);
-        services.AddSingleton(brevoOptions);
+        // Email:Brevo:ApiKey/SenderEmail só são exigidos com Email:Enabled=true; mensagens citam só o nome da opção
+        services.AddOptions<EmailOptions>().Bind(configuration.GetSection("Email"));
+        services.AddSingleton(sp => sp.GetRequiredService<IOptions<EmailOptions>>().Value);
+        services.AddOptions<BrevoOptions>()
+            .Bind(configuration.GetSection("Email:Brevo"))
+            .Validate<IOptions<EmailOptions>>(
+                (b, email) => !email.Value.Enabled || !string.IsNullOrWhiteSpace(b.ApiKey),
+                "Email:Brevo:ApiKey é obrigatória quando Email:Enabled=true.")
+            .Validate<IOptions<EmailOptions>>(
+                (b, email) => !email.Value.Enabled || IsValidSenderEmail(b.SenderEmail),
+                "Email:Brevo:SenderEmail é obrigatório e deve ser um e-mail válido quando Email:Enabled=true.")
+            .ValidateOnStart();
+        services.AddSingleton(sp => sp.GetRequiredService<IOptions<BrevoOptions>>().Value);
         services.AddSingleton<AuthEmailComposer>();
-        services.AddHttpClient<IEmailSender, BrevoEmailSender>();
+        // Timeout explícito: o consumidor da fila é único; um Brevo lento não pode bloquear todos os e-mails
+        services.AddHttpClient<IEmailSender, BrevoEmailSender>(c => c.Timeout = TimeSpan.FromSeconds(15));
         services.AddHostedService<PersonalFinance.Api.BackgroundServices.EmailDispatchHostedService>();
         services.AddScoped<CreateUserByAdminUseCase>();
         services.AddScoped<UpdateUserByAdminUseCase>();
@@ -191,6 +199,14 @@ public static class ApplicationExtensions
         if (string.IsNullOrWhiteSpace(key)) return false;
         var buffer = new byte[64];
         return Convert.TryFromBase64String(key, buffer, out var written) && written == 32;
+    }
+
+    private static bool IsValidSenderEmail(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return false;
+        var trimmed = value.Trim();
+        // Address == entrada descarta formas como "Nome <a@b.com>"
+        return System.Net.Mail.MailAddress.TryCreate(trimmed, out var mail) && mail.Address == trimmed;
     }
 
     private static bool IsValidFrontendBaseUrl(string? url, bool requireHttps)

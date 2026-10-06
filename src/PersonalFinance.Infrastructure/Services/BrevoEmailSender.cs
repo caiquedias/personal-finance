@@ -40,11 +40,20 @@ public sealed class BrevoEmailSender : IEmailSender
         };
         request.Headers.Add("api-key", _options.ApiKey);
 
-        using var response = await _http.SendAsync(request, ct);
-        if (!response.IsSuccessStatusCode)
+        try
         {
-            // Só o status: o corpo da resposta/e-mail pode conter dados sensíveis
-            _logger.LogWarning("Brevo rejected the email request with status {StatusCode}.", (int)response.StatusCode);
+            using var response = await _http.SendAsync(request, ct);
+            if (!response.IsSuccessStatusCode)
+            {
+                // Só o status: o corpo da resposta/e-mail pode conter dados sensíveis
+                _logger.LogWarning("Brevo rejected the email request with status {StatusCode}.", (int)response.StatusCode);
+            }
+        }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        {
+            // Timeout do HttpClient (token do chamador intacto): falha logada, sem derrubar o consumidor da fila.
+            // Cancelamento do host (ct cancelado) segue propagando.
+            _logger.LogWarning("Brevo email request timed out.");
         }
     }
 }
