@@ -23,13 +23,14 @@ public sealed class AuthController(
 
     /// <summary>Registra um novo usuário.</summary>
     [HttpPost("register")]
-    [ProducesResponseType(typeof(UserResponseDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status202Accepted)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Register(
         [FromBody] RegisterUserDto dto, CancellationToken ct)
     {
-        var result = await _registerUseCase.ExecuteAsync(dto, ct);
-        return CreatedAtAction(nameof(Register), new { id = result.Id }, result);
+        await _registerUseCase.ExecuteAsync(dto, ct);
+        // Resposta genérica idêntica para conta nova e e-mail já cadastrado (anti-enumeração)
+        return Accepted(new { message = "Se o e-mail puder ser cadastrado, enviaremos um código de confirmação." });
     }
 
     /// <summary>
