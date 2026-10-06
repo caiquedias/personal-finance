@@ -1,6 +1,8 @@
 using FluentValidation;
 using Microsoft.Extensions.Options;
+using PersonalFinance.Application.Interfaces;
 using PersonalFinance.Application.Options;
+using PersonalFinance.Application.Services.Auth;
 using PersonalFinance.Application.UseCases.Admin;
 using PersonalFinance.Application.UseCases.Auth;
 using PersonalFinance.Application.UseCases.Config;
@@ -11,6 +13,7 @@ using PersonalFinance.Application.UseCases.Financial.Purge;
 using PersonalFinance.Application.UseCases.Import;
 using PersonalFinance.Application.UseCases.Reports;
 using PersonalFinance.Infrastructure.Auth;
+using PersonalFinance.Infrastructure.Services;
 
 namespace PersonalFinance.Api.Extensions;
 
@@ -91,6 +94,20 @@ public static class ApplicationExtensions
         services.AddSingleton(sp => sp.GetRequiredService<IOptions<AuditLogRetentionOptions>>().Value);
         services.AddScoped<PurgeExpiredAuditLogsUseCase>();
         services.AddHostedService<PersonalFinance.Api.BackgroundServices.AuditLogPurgeHostedService>();
+        // Pipeline de e-mail (#404): fila em memória + dispatcher + Brevo (typed HttpClient).
+        // Validação de startup de App:FrontendBaseUrl e demais options entra na task 11.
+        var appOptions = new AppOptions();
+        configuration.GetSection("App").Bind(appOptions);
+        services.AddSingleton(appOptions);
+        var emailOptions = new EmailOptions();
+        configuration.GetSection("Email").Bind(emailOptions);
+        services.AddSingleton(emailOptions);
+        var brevoOptions = new BrevoOptions();
+        configuration.GetSection("Email:Brevo").Bind(brevoOptions);
+        services.AddSingleton(brevoOptions);
+        services.AddSingleton<AuthEmailComposer>();
+        services.AddHttpClient<IEmailSender, BrevoEmailSender>();
+        services.AddHostedService<PersonalFinance.Api.BackgroundServices.EmailDispatchHostedService>();
         services.AddScoped<CreateUserByAdminUseCase>();
         services.AddScoped<UpdateUserByAdminUseCase>();
 

@@ -67,6 +67,7 @@ public static class InfrastructureExtensions
         // Reset de senha / verificação de e-mail (#404). As options Auth:UserTokens são registradas na Api (task 11).
         services.AddScoped<IUserTokenRepository, UserTokenRepository>();
         services.AddSingleton<IOneTimeCodeService, HmacOneTimeCodeService>();
+        services.AddSingleton<IEmailQueue, ChannelEmailQueue>();
 
         // ── Import (legado Excel) ─────────────────────────────────────────────────────
         services.AddScoped<IExcelParserService, ExcelParserService>();
