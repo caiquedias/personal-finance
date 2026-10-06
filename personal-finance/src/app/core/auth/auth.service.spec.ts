@@ -2,6 +2,8 @@ import { TestBed } from '@angular/core/testing';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
+import { Observable } from 'rxjs';
+import { GenericMessageResponse } from '../models/models';
 import { AuthService } from './auth.service';
 
 const TOKEN_KEY = 'pf_token';
@@ -174,7 +176,24 @@ describe('AuthService', () => {
       service.register({ name: 'N', email: 'e@e.com', password: 'p' }).subscribe();
       const req = httpMock.expectOne(`https://localhost:51841/api/v1/auth/register`);
       expect(req.request.method).toBe('POST');
-      req.flush({ id: '1', name: 'N', email: 'e@e.com', isActive: true });
+      req.flush({ message: 'ok' });
+    });
+
+    it('devolve GenericMessageResponse ({ message }) da resposta 202', () => {
+      let result: GenericMessageResponse | undefined;
+      service.register({ name: 'N', email: 'e@e.com', password: 'p' })
+        .subscribe(r => (result = r as unknown as GenericMessageResponse));
+      httpMock.expectOne(`https://localhost:51841/api/v1/auth/register`)
+        .flush({ message: 'Verifique seu e-mail.' }, { status: 202, statusText: 'Accepted' });
+
+      expect(result).toEqual({ message: 'Verifique seu e-mail.' });
+    });
+
+    it('register emite o corpo {message} sem transformação', () => {
+      const obs: Observable<unknown> =
+        service.register({ name: 'N', email: 'e@e.com', password: 'p' });
+      obs.subscribe();
+      httpMock.expectOne(`https://localhost:51841/api/v1/auth/register`).flush({ message: 'ok' });
     });
   });
 
