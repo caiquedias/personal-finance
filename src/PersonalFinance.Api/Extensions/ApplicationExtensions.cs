@@ -46,6 +46,11 @@ public static class ApplicationExtensions
             .ValidateOnStart();
         services.AddSingleton(sp => sp.GetRequiredService<IOptions<MfaOptions>>().Value);
 
+        // Verificação de e-mail (#404): Auth:EmailVerification:Enforce (default false)
+        services.AddOptions<EmailVerificationOptions>()
+            .Bind(configuration.GetSection("Auth:EmailVerification"));
+        services.AddSingleton(sp => sp.GetRequiredService<IOptions<EmailVerificationOptions>>().Value);
+
         // Validators FluentValidation (issue 396): registra todos os IValidator<T> da assembly Application
         services.AddValidatorsFromAssemblyContaining<RegisterUserUseCase>(ServiceLifetime.Scoped);
 
