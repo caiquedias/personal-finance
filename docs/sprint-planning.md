@@ -171,6 +171,8 @@ aqui até que uma issue de tooling/infra justifique abrir work item.
 | 2026-10-02 | Respostas de `/mfa/setup` e `/mfa/enable` sem `Cache-Control: no-store` | #393 | Baixa |
 | 2026-10-02 | `Program.cs` importa namespace do controller só para ler `MfaVerifyController.ChallengeScheme` | #393 | Baixa (cosmético) |
 | 2026-10-02 | Deploy: sem `Auth__Mfa__EncryptionKey` a app não sobe em nenhum ambiente — criar a variável no Render antes do merge em `master` | #393 | Lembrete |
+| 2026-10-06 | Deploy: sem `Auth__UserTokens__HmacKey` (Base64 de 32 bytes) a app não sobe em nenhum ambiente — criar no Render antes do merge em `master`, junto de `Email__Brevo__ApiKey/SenderEmail/SenderName`, `Email__Enabled=true`, `App__FrontendBaseUrl` (https, sem barra final) e `Auth__EmailVerification__Enforce=false` (só ligar após validar em release e conferir que nenhum usuário ficou com `EmailConfirmedAt` nulo) | #404 | Lembrete |
+| 2026-10-06 | Risco residual: fila de e-mail em memória perde mensagens em restart/spin-down do Render (usuário pode reenviar); remetente sem domínio próprio no Brevo pode cair em spam (DMARC) | #404 | Aceito; mitigação futura: domínio próprio com SPF/DKIM/DMARC |
 
 ---
 
@@ -184,3 +186,4 @@ especificação — inclusive as recalibrações da fórmula de estimativa.
 | 2026-10-02 | Recalibração da fórmula de estimativa: codificação mediana 5min → 4min, piso de orquestração 2min → 4min, total 7min → 8min por issue (n=2 → 12); correlação nº de arquivos × tempo continua inexistente | `Fórmula de Estimativa` (acima) e `node scripts/calibrate-estimates.js` |
 | 2026-10-05 | Recalibração da fórmula de estimativa: codificação mediana 4min (p75 6min → 8min), piso de orquestração 4min → 9min, total 8min → 13min por issue (n=12 → 23); correlação nº de arquivos × tempo no limiar (Pearson 0,404), medianas por Size ainda não-monotônicas | `Fórmula de Estimativa` (acima) e `node scripts/calibrate-estimates.js` |
 | 2026-10-06 | #402 (XL, ~43 arquivos) mantida sem divisão em sub-issues por decisão do Caique (sessão única); Estimativa 1h gerada pelo PO na própria sessão; `/start-issue` passou a gerar o planning via PO quando a issue não tem estimativa | `docs/memory/402.md` e `.claude/commands/start-issue.md` |
+| 2026-10-06 | #404 (XL, ~98 arquivos, backend + frontend) mantida sem divisão em sub-issues por decisão do Caique (sessão única); Estimativa 3h gerada pelo PO após 3 rodadas de análise (escopo cresceu de ~20 para ~98 arquivos ao fechar fila de e-mail, HMAC, enforcement de login, correção de enumeração no register e telas Angular); planning postado na issue após OK do Caique | Comentário `## 📋 Sprint Planning` da #404 |
