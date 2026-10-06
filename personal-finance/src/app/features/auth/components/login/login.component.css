@@ -170,6 +170,14 @@
   font-size: 0.875rem;
 }
 
+.login-notice {
+  padding: 10px 14px;
+  background: var(--color-success-bg);
+  color: var(--color-success);
+  border-radius: var(--v2-radius-sm);
+  font-size: 0.875rem;
+}
+
 .login-links {
   display: flex;
   flex-wrap: wrap;

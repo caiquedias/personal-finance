@@ -44,6 +44,10 @@
         <p class="subtitle">{{ mfaStep() ? 'Informe o código para concluir o acesso' : 'Acesse sua conta para continuar' }}</p>
       </div>
 
+      @if (notice() && !mfaStep()) {
+        <div class="login-notice" data-testid="login-notice" role="status">{{ notice() }}</div>
+      }
+
       @if (mfaStep()) {
       <form [formGroup]="mfaForm" (ngSubmit)="onVerify()" class="login-form">
         <div class="field">
@@ -185,10 +189,12 @@
 
       }
 
-      <div class="login-links">
-        <a routerLink="/forgot-password">Esqueci minha senha</a>
-        <a routerLink="/confirm-email">Confirmar e-mail</a>
-      </div>
+      @if (!mfaStep()) {
+        <div class="login-links">
+          <a routerLink="/forgot-password">Esqueci minha senha</a>
+          <a routerLink="/confirm-email">Confirmar e-mail</a>
+        </div>
+      }
 
     </div>
   </div>
