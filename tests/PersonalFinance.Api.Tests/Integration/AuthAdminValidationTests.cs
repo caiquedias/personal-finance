@@ -21,10 +21,8 @@ public class AuthAdminValidationTests : ApiIntegrationTestBase
 
     private async Task<string> RegisterTargetAsync()
     {
-        var reg = await Client.PostAsJsonAsync("/api/v1/auth/register",
-            new { name = "Alvo", email = $"alvo_{Guid.NewGuid():N}@test.com", password = "Senha@Teste123" });
-        var body = await reg.Content.ReadFromJsonAsync<JsonElement>();
-        return body.GetProperty("id").GetString()!;
+        var id = await RegisterAndGetUserIdAsync("Alvo", $"alvo_{Guid.NewGuid():N}@test.com", "Senha@Teste123");
+        return id.ToString();
     }
 
     private static async Task AssertValidationPayloadAsync(HttpResponseMessage r)

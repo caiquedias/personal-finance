@@ -103,10 +103,7 @@ public class AdminUsersControllerTests : ApiIntegrationTestBase
 
         // Cria usuário-alvo
         var email = $"target_{Guid.NewGuid():N}@test.com";
-        var reg = await Client.PostAsJsonAsync("/api/v1/auth/register",
-            new { name = "Target", email, password = "Senha@Teste123" });
-        var regBody = await reg.Content.ReadFromJsonAsync<JsonElement>();
-        var targetId = regBody.GetProperty("id").GetString()!;
+        var targetId = (await RegisterAndGetUserIdAsync("Target", email, "Senha@Teste123")).ToString();
 
         var r = await adminClient.PatchAsync(
             $"/api/v1/admin/users/{targetId}/toggle-active", null);
@@ -120,10 +117,7 @@ public class AdminUsersControllerTests : ApiIntegrationTestBase
         var (adminClient, _) = await GetAdminAuthenticatedClientAsync();
 
         var email = $"assign_{Guid.NewGuid():N}@test.com";
-        var reg = await Client.PostAsJsonAsync("/api/v1/auth/register",
-            new { name = "Assign", email, password = "Senha@Teste123" });
-        var regBody = await reg.Content.ReadFromJsonAsync<JsonElement>();
-        var targetId = regBody.GetProperty("id").GetString()!;
+        var targetId = (await RegisterAndGetUserIdAsync("Assign", email, "Senha@Teste123")).ToString();
 
         var r = await adminClient.PostAsJsonAsync(
             $"/api/v1/admin/users/{targetId}/roles",
@@ -138,10 +132,7 @@ public class AdminUsersControllerTests : ApiIntegrationTestBase
         var (adminClient, _) = await GetAdminAuthenticatedClientAsync();
 
         var email = $"remove_{Guid.NewGuid():N}@test.com";
-        var reg = await Client.PostAsJsonAsync("/api/v1/auth/register",
-            new { name = "Remove", email, password = "Senha@Teste123" });
-        var regBody = await reg.Content.ReadFromJsonAsync<JsonElement>();
-        var targetId = regBody.GetProperty("id").GetString()!;
+        var targetId = (await RegisterAndGetUserIdAsync("Remove", email, "Senha@Teste123")).ToString();
 
         // Atribui role 2 ao usuário
         await adminClient.PostAsJsonAsync(
@@ -161,10 +152,7 @@ public class AdminUsersControllerTests : ApiIntegrationTestBase
         var (adminClient, _) = await GetAdminAuthenticatedClientAsync();
 
         var email = $"reset_{Guid.NewGuid():N}@test.com";
-        var reg = await Client.PostAsJsonAsync("/api/v1/auth/register",
-            new { name = "Reset", email, password = "Senha@Teste123" });
-        var regBody = await reg.Content.ReadFromJsonAsync<JsonElement>();
-        var targetId = regBody.GetProperty("id").GetString()!;
+        var targetId = (await RegisterAndGetUserIdAsync("Reset", email, "Senha@Teste123")).ToString();
 
         var r = await adminClient.PatchAsJsonAsync(
             $"/api/v1/admin/users/{targetId}/reset-password",
