@@ -42,6 +42,7 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 | #489 | [Security][MFA] Invalidar sessões do usuário no reset de MFA admin | 2026-10-04 | [489.md](489.md) |
 | #490 | [MFA][Admin] Botão Resetar MFA condicional (MfaEnabled) + modal de confirmação | 2026-10-04 | [490.md](490.md) |
 | #401 | [Security] Validação de magic number no upload de Excel | 2026-10-05 | [401.md](401.md) |
+| #402 | [Security] Audit log de ações administrativas | 2026-10-06 | [402.md](402.md) |
 | #396 | [Security][Validation] FluentValidation — Auth e Admin | 2026-10-05 | [396.md](396.md) |
 | #397 | [Security][Validation] FluentValidation — Financial (Expense/Income/Period) | 2026-10-05 | [397.md](397.md) |
 | #398 | [Security][Validation] FluentValidation — Config (Category e lookups) | 2026-10-05 | [398.md](398.md) |
@@ -57,7 +58,7 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 | Expurgo (Purge) | #329, #330, #331, #332, #356, #369, #367, #368, #377, #376, #378, #384 | 2026-07-05 |
 | Batch Expenses / Serialização | #355 | 2026-06-26 |
 | Login / Auth UI | #387, #394 | 2026-10-02 |
-| Segurança / JWT | #389, #391, #393, #394, #488, #489, #490, #396, #397, #398, #399, #400, #401 | 2026-10-05 |
+| Segurança / JWT | #389, #391, #393, #394, #488, #489, #490, #396, #397, #398, #399, #400, #401, #402 | 2026-10-06 |
 | Import (Income) | #419 | 2026-09-28 |
 | Import (Extrato C6 PDF) | #420, #421, #422, #423, #443, #444, #445, #446, #447, #464 | 2026-10-01 |
 
@@ -66,14 +67,14 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 ## Estado atual por layer
 
 ### Domain
-- **Entidades:** User (#488 — `SecurityStamp` + `RotateSecurityStamp()`; #391 — `FailedLoginCount`, `LockedUntil`, `RowVersion`; #393 — `MfaEnabled`, `MfaSecretEncrypted`, `MfaEnabledAt`, `LastUsedTotpStep`), MfaRecoveryCode (#393 — hash Argon2, uso único), Category, Period, Expense, Income, PurgeRecord, LoginThrottle (#391 — par conta+IP; fora do EntityBase, exclusão física)
+- **Entidades:** User (#488 — `SecurityStamp` + `RotateSecurityStamp()`; #391 — `FailedLoginCount`, `LockedUntil`, `RowVersion`; #393 — `MfaEnabled`, `MfaSecretEncrypted`, `MfaEnabledAt`, `LastUsedTotpStep`), MfaRecoveryCode (#393 — hash Argon2, uso único), Category, Period, Expense, Income, PurgeRecord, LoginThrottle (#391 — par conta+IP; fora do EntityBase, exclusão física); AuditLog (#402 — insert-only: ActorUserId, Action, TargetUserId, Details JSON ≤2000, IpAddress ≤45, CreatedAt; exceção ao soft-delete como LoginThrottle)
 - **Value objects / enums:** PaymentStatus, SourceType, FortnightType, Role
 - **Regras notáveis:** soft-delete universal (DeletedAt; exceção deliberada: `LoginThrottle`, #391), PKs via Guid.NewGuid(); lockout com `now` injetado (`User.RegisterFailedLogin`, `IsLockedOut`; `LoginThrottle.RegisterFailure`)
-- **Interfaces:** IPurgeRepository, ICsvExportService (Application layer), ILoginThrottleRepository (#391)
+- **Interfaces:** IPurgeRepository, ICsvExportService (Application layer), ILoginThrottleRepository (#391); IAuditLogRepository (#402)
 - **Exceções:** ConcurrencyConflictException (#391 — conflito de rowversion/índice único; vira 409 no ExceptionMiddleware)
 
 ### Application
-- **Use cases:** ExportPeriodUseCase, PurgePeriodUseCase, GetPurgeRecordsUseCase, DeletePurgeRecordUseCase, GetEligiblePeriodsUseCase, UpdateIncomeUseCase (#419 — ownership 400 via DomainException, mesmo padrão do UpdateExpenseUseCase), ConfirmStatementImportUseCase (#422 — persiste extrato revisado; valida tudo antes, um CommitAsync, reativa Period soft-deleted), PreviewStatementImportUseCase (#421 — preview de extrato sem persistência; filtro `fromDate` por PostingDate, Receita/Despesa pelo sinal, categoria sugerida, transferência interna e duplicata por userId), StatementEntryClassifier (#421)
+- **Use cases:** ExportPeriodUseCase, PurgePeriodUseCase, GetPurgeRecordsUseCase, DeletePurgeRecordUseCase, GetEligiblePeriodsUseCase, UpdateIncomeUseCase (#419 — ownership 400 via DomainException, mesmo padrão do UpdateExpenseUseCase), ConfirmStatementImportUseCase (#422 — persiste extrato revisado; valida tudo antes, um CommitAsync, reativa Period soft-deleted), PreviewStatementImportUseCase (#421 — preview de extrato sem persistência; filtro `fromDate` por PostingDate, Receita/Despesa pelo sinal, categoria sugerida, transferência interna e duplicata por userId), StatementEntryClassifier (#421); #402 — auditoria nos 7 use cases admin (Create/Update/Toggle/AssignRole/RemoveRole/ResetPassword/ResetMfa), PurgeExpiredAuditLogsUseCase (retenção 365d, lotes), AuditDetailsSerializer; `AuditLog:Retention` + AuditLogPurgeHostedService na Api
 - **Interfaces:** IStatementParserService (#420 — parser de extrato PDF com senha; `ParseAsync(Stream, password, ct)`)
 - **DTOs:** ConfirmStatementItemDto, ConfirmStatementImportRequestDto, ConfirmStatementImportResultDto (#422), StatementPreviewItemDto, StatementPreviewResultDto (#421 — Items + DiscardedByDateCount), ParsedStatementEntryDto (#420 — record: EventDate, PostingDate, RawType, Description, Amount com sinal), EligiblePeriodDto, PurgeRecordDto, UpdateIncomeDto (#419 — sem PeriodId, sem SourceType)
 - **Use cases alterados:** GetPurgeRecordsUseCase — retorna `IEnumerable<PurgeRecordDto>` (antes `IEnumerable<PurgeRecord>`), mapeamento interno com `ItemCount = ExpenseCount + IncomeCount`
@@ -88,10 +89,10 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 - **CORS restrito (#399):** policy `AllowAngular` com `WithMethods(GET,POST,PUT,PATCH,DELETE)` e `WithHeaders(Authorization,Content-Type)`; header custom novo no frontend exige atualizar `WithHeaders`
 
 ### Infrastructure
-- **Repositórios:** PurgeRepository, LoginThrottleRepository (#391 — `TryAddAsync`: limpeza de expiradas em lote, teto duro de 2.000 linhas, fail-open)
+- **Repositórios:** PurgeRepository, LoginThrottleRepository, AuditLogRepository (#402 — insert-only; `RemoveOlderThanAsync` em lote) (#391 — `TryAddAsync`: limpeza de expiradas em lote, teto duro de 2.000 linhas, fail-open)
 - **UnitOfWork (#391):** traduz `DbUpdateConcurrencyException` e violação de índice único (2601/2627) em `ConcurrencyConflictException` e limpa o `ChangeTracker` antes de lançar
 - **Serviços:** Argon2PasswordHasher, JwtTokenService, ExcelParserService (#401 — valida assinatura ZIP `50 4B 03 04` e falha de abertura do ClosedXML → `DomainException` "O arquivo enviado não é um .xlsx válido." → 400; copia para `MemoryStream` se `!CanSeek`), C6StatementPdfParserService (#420 — PdfPig por coordenadas x/y, DomainException para senha/PDF/linha inválida; sem consumidor ainda), DatabaseInitializer, CsvExportService
-- **Migrations aplicadas:** AddPurgeModule (2026-06-26); #391 (a aplicar em release/produção): AddUserLockoutFields, AddUserRowVersion, AddLoginThrottle; #393 (a aplicar): AddMfa; #488 (a aplicar): AddSecurityStamp
+- **Migrations aplicadas:** AddPurgeModule (2026-06-26); #391 (a aplicar em release/produção): AddUserLockoutFields, AddUserRowVersion, AddLoginThrottle; #393 (a aplicar): AddMfa; #488 (a aplicar): AddSecurityStamp; #402 (a aplicar em release/produção): AddAuditLog
 - **Views:** vw_PeriodSummary (criada pelo DatabaseInitializer no startup)
 
 ### Api
@@ -108,6 +109,7 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
   - POST /api/v1/auth/mfa/setup|enable|disable — `[Authorize]`; POST /api/v1/auth/mfa/verify — esquema `MfaChallenge` (aud `pf-mfa`), rate limit `mfa-verify`; login devolve `mfaRequired`/`mfaToken` com `Auth:Mfa:Enforce=true` (#393)
   - Qualquer endpoint: `ConcurrencyConflictException` → 409 "O registro foi alterado por outra operação. Tente novamente." (#391)
   - Pipeline (#390, #391): `UseForwardedHeaders` (XFF+XFP, só redes privadas 10/8, 172.16/12, 192.168/16 + loopback, `ForwardLimit=1`) → ExceptionMiddleware → `UseHsts` (só não-Development, sem Preload/IncludeSubDomains) → `UseHttpsRedirection` → CORS → `UseRateLimiter` (#391) → Auth
+- **Auditoria admin (#402):** `AdminUsersController` passa `CurrentUserId` e IP do cliente aos 7 use cases; `AuditLogPurgeHostedService` (BackgroundService, purge no startup + a cada `PurgeIntervalMinutes`; desligado na TestWebApplicationFactory)
 - **Auth:** JWT Bearer (#488 — claim `stamp` validada no `OnTokenValidated` do esquema principal via `SecurityStampValidator`; ausente/divergente/usuário inativo → 401, sem cache; challenge MFA fora); AuthController [AllowAnonymous]; Admin [Authorize(Roles="Admin")]; `JwtSettings:SecretKey` não é mais hardcoded em `appsettings.json` — configurado via User Secrets (dev) / env var `JwtSettings__SecretKey` no Render (homolog/prod) (#389)
 - **Converters:** `FlexibleEnumConverterFactory` registrada globalmente via `AddJsonOptions` — deserializa enums de int, string numérica ou nome; serializa como int
 
@@ -126,4 +128,4 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 
 ### Banco de dados
 - **Lookup tables seeded:** Role, PaymentStatus, SourceType, FortnightType
-- **Tabelas principais:** Users (#391 — +FailedLoginCount default 0, LockedUntil, RowVersion), MfaRecoveryCodes (#393 — FK Restrict, soft-delete; Users +MfaEnabled default 0, MfaSecretEncrypted, MfaEnabledAt, LastUsedTotpStep), Categories, Periods, Expenses, Incomes, PurgeRecords, LoginThrottles (#391 — índice único (UserId, IpAddress), FK Restrict, sem soft-delete)
+- **Tabelas principais:** Users (#391 — +FailedLoginCount default 0, LockedUntil, RowVersion), MfaRecoveryCodes (#393 — FK Restrict, soft-delete; Users +MfaEnabled default 0, MfaSecretEncrypted, MfaEnabledAt, LastUsedTotpStep), Categories, Periods, Expenses, Incomes, PurgeRecords, LoginThrottles (#391 — índice único (UserId, IpAddress), FK Restrict, sem soft-delete); AuditLog (#402 — FKs Restrict para Users; índices CreatedAt, TargetUserId, ActorUserId)

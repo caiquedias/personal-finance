@@ -66,6 +66,8 @@ git branch --show-current
 ```
 O output deve ser `claude/<id>-<slug>`. Se não for, interrompa e reporte ao Macro Agent.
 
+**Commits: `git -C <worktree> commit ...`** — o hook pre-bash avalia o branch pelo cwd do shell e bloqueia `git commit` quando o cwd não é o worktree (ocorrido na #402 em todos os spawns). Use sempre `git -C .claude/worktrees/<id>-<slug> add/commit`.
+
 **Toda chamada de Write/Edit usa o caminho absoluto dentro deste worktree** — o `cd` acima só afeta
 o cwd do Bash tool. Path sem o segmento `.claude/worktrees/<id>-<slug>/` escreve na branch base
 silenciosamente, e arquivos novos criados lá ficam untracked, fora do alcance de `rm`/`git clean`

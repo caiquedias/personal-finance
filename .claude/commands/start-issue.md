@@ -103,6 +103,7 @@ Passe no prompt **apenas fatos desta sessão**:
 - Issue number, título e URL
 - **Caminho do arquivo de contexto** (Passo 2.5)
 - Path do worktree: `.claude/worktrees/<id>-<slug>`
+- Lembrar: commits via `git -C <worktree>` (o hook pre-bash avalia o cwd)
 
 Aguarde RED CONCLUÍDO antes de avançar.
 

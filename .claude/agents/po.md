@@ -36,6 +36,7 @@ Você tem acesso de **somente leitura** — leia os arquivos relevantes, não ed
    - Em issue de **redesign/layout de tela**, subir a árvore: checar `max-width`/`width`/`overflow` do componente **pai** (ex.: container de abas, `page-shell`) e comparar com a tela de referência. Reportar qualquer limite de largura que impeça o novo layout de ocupar o espaço (ocorrido na #464: `max-width: 760px` do pai `/import` só foi detectado após a entrega)
 2. Verificar **pacotes/versões**: se a issue exige atualização de dependência (npm/NuGet), listar pacote atual e versão necessária
 3. Avaliar **risco de regressão**: o que pode quebrar, testes existentes que cobrem a área, comportamentos adjacentes que podem ser impactados
+4. **Contar arquivos pelo ciclo completo, não só pelo núcleo**: ao estimar o nº de arquivos (e o Size), incluir sempre o controller que muda de assinatura, os testes de use case existentes cujo construtor/assinatura muda, o teste de integração ponta a ponta, `TestWebApplicationFactory`/config de teste e os arquivos de DI/`appsettings`/migration (.cs + .Designer.cs + snapshot). Ocorrido na #402: a análise contou ~29 arquivos e o planning recontou 40 (faltaram controller e teste de integração)
 
 ### Output obrigatório
 
