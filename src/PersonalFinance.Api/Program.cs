@@ -171,9 +171,34 @@ builder.Services.AddOptions<MfaVerifyRateLimitOptions>()
     .Validate(o => o.WindowSeconds > 0, "RateLimiting:MfaVerify:WindowSeconds deve ser > 0.")
     .ValidateOnStart();
 
+// Rate limit dos endpoints anônimos de recuperação de conta (#404) — mesma validação de startup
+builder.Services.AddOptions<AccountRecoveryRateLimitOptions>()
+    .Bind(builder.Configuration.GetSection("RateLimiting:AccountRecovery"))
+    .Validate(o => o.PermitLimit > 0, "RateLimiting:AccountRecovery:PermitLimit deve ser > 0.")
+    .Validate(o => o.WindowSeconds > 0, "RateLimiting:AccountRecovery:WindowSeconds deve ser > 0.")
+    .ValidateOnStart();
+
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    options.AddPolicy("account-recovery", httpContext =>
+    {
+        var recoveryOptions = httpContext.RequestServices
+            .GetRequiredService<IOptions<AccountRecoveryRateLimitOptions>>().Value;
+        var permitLimit = recoveryOptions.PermitLimit;
+        var windowSeconds = recoveryOptions.WindowSeconds;
+
+        // Partição própria (prefixo) para não dividir contador com login/mfa-verify
+        var key = "account-recovery:" + (httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown");
+
+        return RateLimitPartition.GetFixedWindowLimiter(key, _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = permitLimit,
+            Window = TimeSpan.FromSeconds(windowSeconds),
+            QueueLimit = 0
+        });
+    });
 
     options.AddPolicy("mfa-verify", httpContext =>
     {
@@ -221,8 +246,7 @@ builder.Services.AddRateLimiter(options =>
         // Segundos de espera: metadata do lease; fallback = janela configurada
         var retryAfterSeconds = context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter)
             ? (int)Math.Ceiling(retryAfter.TotalSeconds)
-            : context.HttpContext.RequestServices
-                .GetRequiredService<IOptions<LoginRateLimitOptions>>().Value.WindowSeconds;
+            : FallbackWindowSeconds(context.HttpContext);
         retryAfterSeconds = Math.Max(1, retryAfterSeconds);
         response.Headers.RetryAfter = retryAfterSeconds.ToString(System.Globalization.CultureInfo.InvariantCulture);
 
@@ -267,6 +291,20 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+// Janela configurada da policy que rejeitou a requisição (fallback do Retry-After)
+static int FallbackWindowSeconds(HttpContext httpContext)
+{
+    var services = httpContext.RequestServices;
+    var policyName = httpContext.GetEndpoint()?.Metadata
+        .GetMetadata<Microsoft.AspNetCore.RateLimiting.EnableRateLimitingAttribute>()?.PolicyName;
+    return policyName switch
+    {
+        "account-recovery" => services.GetRequiredService<IOptions<AccountRecoveryRateLimitOptions>>().Value.WindowSeconds,
+        "mfa-verify" => services.GetRequiredService<IOptions<MfaVerifyRateLimitOptions>>().Value.WindowSeconds,
+        _ => services.GetRequiredService<IOptions<LoginRateLimitOptions>>().Value.WindowSeconds
+    };
+}
 
 // Torna Program acessível para WebApplicationFactory nos testes de integração
 public partial class Program { }

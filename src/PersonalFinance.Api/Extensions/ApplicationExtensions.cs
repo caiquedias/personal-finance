@@ -51,6 +51,23 @@ public static class ApplicationExtensions
             .Bind(configuration.GetSection("Auth:EmailVerification"));
         services.AddSingleton(sp => sp.GetRequiredService<IOptions<EmailVerificationOptions>>().Value);
 
+        // Códigos de uso único (#404): Auth:UserTokens. A HmacKey é validada SEMPRE no startup
+        // (sem ela a app não sobe); as mensagens citam o nome da opção, nunca o valor.
+        services.AddOptions<UserTokenOptions>()
+            .Bind(configuration.GetSection("Auth:UserTokens"))
+            .Validate(o => TryParseHmacKey(o.HmacKey),
+                "Auth:UserTokens:HmacKey é obrigatória e deve ser Base64 de exatamente 32 bytes.")
+            .Validate(o => o.CodeTtlMinutes >= 1, "Auth:UserTokens:CodeTtlMinutes deve ser >= 1.")
+            .Validate(o => o.MaxAttempts >= 1, "Auth:UserTokens:MaxAttempts deve ser >= 1.")
+            .Validate(o => o.ResendCooldownSeconds >= 0, "Auth:UserTokens:ResendCooldownSeconds deve ser >= 0.")
+            .ValidateOnStart();
+        services.AddSingleton(sp => sp.GetRequiredService<IOptions<UserTokenOptions>>().Value);
+        services.AddScoped<UserTokenIssuer>();
+        services.AddScoped<RequestPasswordResetUseCase>();
+        services.AddScoped<CompletePasswordResetUseCase>();
+        services.AddScoped<ConfirmEmailUseCase>();
+        services.AddScoped<ResendEmailVerificationUseCase>();
+
         // Validators FluentValidation (issue 396): registra todos os IValidator<T> da assembly Application
         services.AddValidatorsFromAssemblyContaining<RegisterUserUseCase>(ServiceLifetime.Scoped);
 
@@ -100,10 +117,14 @@ public static class ApplicationExtensions
         services.AddScoped<PurgeExpiredAuditLogsUseCase>();
         services.AddHostedService<PersonalFinance.Api.BackgroundServices.AuditLogPurgeHostedService>();
         // Pipeline de e-mail (#404): fila em memória + dispatcher + Brevo (typed HttpClient).
-        // Validação de startup de App:FrontendBaseUrl e demais options entra na task 11.
-        var appOptions = new AppOptions();
-        configuration.GetSection("App").Bind(appOptions);
-        services.AddSingleton(appOptions);
+        // App:FrontendBaseUrl validada no startup: http(s) absoluta; https obrigatório em Production.
+        services.AddOptions<AppOptions>()
+            .Bind(configuration.GetSection("App"))
+            .Validate<IHostEnvironment>(
+                (o, env) => IsValidFrontendBaseUrl(o.FrontendBaseUrl, env.IsProduction()),
+                "App:FrontendBaseUrl é obrigatória e deve ser uma URL absoluta http(s) (https em Production).")
+            .ValidateOnStart();
+        services.AddSingleton(sp => sp.GetRequiredService<IOptions<AppOptions>>().Value);
         var emailOptions = new EmailOptions();
         configuration.GetSection("Email").Bind(emailOptions);
         services.AddSingleton(emailOptions);
@@ -162,5 +183,20 @@ public static class ApplicationExtensions
         services.AddScoped<DeletePurgeRecordUseCase>();
 
         return services;
+    }
+
+    // Base64 de exatamente 32 bytes (forma não-lançante)
+    private static bool TryParseHmacKey(string? key)
+    {
+        if (string.IsNullOrWhiteSpace(key)) return false;
+        var buffer = new byte[64];
+        return Convert.TryFromBase64String(key, buffer, out var written) && written == 32;
+    }
+
+    private static bool IsValidFrontendBaseUrl(string? url, bool requireHttps)
+    {
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri)) return false;
+        if (uri.Scheme == Uri.UriSchemeHttps) return true;
+        return uri.Scheme == Uri.UriSchemeHttp && !requireHttps;
     }
 }
