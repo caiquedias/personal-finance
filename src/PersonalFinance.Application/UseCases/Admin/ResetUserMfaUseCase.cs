@@ -1,3 +1,5 @@
+using PersonalFinance.Domain.Entities.Auth;
+using PersonalFinance.Domain.Enums;
 using PersonalFinance.Domain.Exceptions;
 using PersonalFinance.Domain.Interfaces.Repositories;
 
@@ -12,19 +14,23 @@ namespace PersonalFinance.Application.UseCases.Admin
         private readonly IAdminUserRepository _userRepository;
         private readonly IMfaRecoveryCodeRepository _recoveryCodeRepository;
         private readonly IUnitOfWork _uow;
+        private readonly IAuditLogRepository _auditRepository;
 
         public ResetUserMfaUseCase(
             IAdminUserRepository userRepository,
             IMfaRecoveryCodeRepository recoveryCodeRepository,
-            IUnitOfWork uow)
+            IUnitOfWork uow,
+            IAuditLogRepository auditRepository)
         {
             _userRepository = userRepository;
             _recoveryCodeRepository = recoveryCodeRepository;
             _uow = uow;
+            _auditRepository = auditRepository;
         }
 
         public async Task ExecuteAsync(
-            Guid userId, Guid requestingAdminId, CancellationToken ct = default)
+            Guid userId, Guid requestingAdminId, string? ipAddress,
+            CancellationToken ct = default)
         {
             if (userId == requestingAdminId)
                 throw new DomainException("Use o endpoint de MFA do perfil para desativar seu próprio MFA.");
@@ -39,6 +45,9 @@ namespace PersonalFinance.Application.UseCases.Admin
             user.DisableMfa();
             user.RotateSecurityStamp(); // invalida sessões ativas do alvo (#489)
             await _recoveryCodeRepository.RemoveAllByUserIdAsync(user.Id, ct);
+            // Auditoria na mesma transação; sem secret nem recovery codes (LGPD)
+            await _auditRepository.AddAsync(AuditLog.Create(
+                requestingAdminId, AuditAction.MfaReset, userId, null, ipAddress, DateTime.UtcNow), ct);
             await _uow.CommitAsync(ct);
         }
     }

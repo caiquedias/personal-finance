@@ -81,6 +81,16 @@ public static class ApplicationExtensions
         services.AddScoped<RemoveRoleUseCase>();
         services.AddScoped<ResetUserPasswordUseCase>();
         services.AddScoped<ResetUserMfaUseCase>();
+        // Audit log (#402): retenção AuditLog:Retention, validada no startup
+        services.AddOptions<AuditLogRetentionOptions>()
+            .Bind(configuration.GetSection("AuditLog:Retention"))
+            .Validate(o => o.RetentionDays >= 1, "AuditLog:Retention:RetentionDays deve ser >= 1.")
+            .Validate(o => o.PurgeIntervalMinutes >= 1, "AuditLog:Retention:PurgeIntervalMinutes deve ser >= 1.")
+            .Validate(o => o.BatchSize >= 1, "AuditLog:Retention:BatchSize deve ser >= 1.")
+            .ValidateOnStart();
+        services.AddSingleton(sp => sp.GetRequiredService<IOptions<AuditLogRetentionOptions>>().Value);
+        services.AddScoped<PurgeExpiredAuditLogsUseCase>();
+        services.AddHostedService<PersonalFinance.Api.BackgroundServices.AuditLogPurgeHostedService>();
         services.AddScoped<CreateUserByAdminUseCase>();
         services.AddScoped<UpdateUserByAdminUseCase>();
 

@@ -1,5 +1,7 @@
 using FluentValidation;
 using PersonalFinance.Application.DTOs.Admin;
+using PersonalFinance.Domain.Entities.Auth;
+using PersonalFinance.Domain.Enums;
 using PersonalFinance.Domain.Exceptions;
 using PersonalFinance.Domain.Interfaces.Repositories;
 using PersonalFinance.Domain.Interfaces.Services;
@@ -15,22 +17,25 @@ namespace PersonalFinance.Application.UseCases.Admin
         private readonly IAdminUserRepository _userRepository;
         private readonly IPasswordHasher _hasher;
         private readonly IUnitOfWork _uow;
+        private readonly IAuditLogRepository _auditRepository;
         private readonly IValidator<ResetPasswordDto> _validator;
 
         public ResetUserPasswordUseCase(
             IAdminUserRepository userRepository,
             IPasswordHasher hasher,
             IUnitOfWork uow,
+            IAuditLogRepository auditRepository,
             IValidator<ResetPasswordDto> validator)
         {
             _userRepository = userRepository;
             _hasher = hasher;
             _uow = uow;
+            _auditRepository = auditRepository;
             _validator = validator;
         }
 
         public async Task ExecuteAsync(
-            ResetPasswordDto dto, Guid requestingAdminId,
+            ResetPasswordDto dto, Guid requestingAdminId, string? ipAddress,
             CancellationToken ct = default)
         {
             await _validator.ValidateAndThrowAsync(dto, ct);
@@ -47,6 +52,10 @@ namespace PersonalFinance.Application.UseCases.Admin
             var newHash = _hasher.Hash(dto.NewPassword);
             user.UpdatePasswordHash(newHash);
             user.RotateSecurityStamp(); // invalida sessões ativas do alvo (#489)
+
+            // Auditoria na mesma transação; sem senha nem hash (LGPD)
+            await _auditRepository.AddAsync(AuditLog.Create(
+                requestingAdminId, AuditAction.PasswordReset, dto.UserId, null, ipAddress, DateTime.UtcNow), ct);
 
             await _uow.CommitAsync(ct);
         }

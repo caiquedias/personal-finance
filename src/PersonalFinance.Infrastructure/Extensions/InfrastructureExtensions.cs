@@ -50,6 +50,7 @@ public static class InfrastructureExtensions
         services.AddScoped<IFortnightTypeRepository, FortnightTypeRepository>();
         services.AddScoped<IUserRoleRepository, UserRoleRepository>();
         services.AddScoped<ILoginThrottleRepository, LoginThrottleRepository>();
+        services.AddScoped<IAuditLogRepository, AuditLogRepository>();
         services.AddScoped<IAdminUserRepository, AdminUserRepository>();
 
         // ── Auth ──────────────────────────────────────────────────────────────
