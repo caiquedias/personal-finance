@@ -170,23 +170,6 @@
   font-size: 0.875rem;
 }
 
-.login-register {
-  margin-top: 20px;
-  text-align: center;
-  font-size: 0.875rem;
-  color: var(--text-muted);
-}
-
-.login-register a {
-  color: var(--terracotta);
-  text-decoration: none;
-  font-weight: 500;
-}
-
-.login-register a:hover {
-  text-decoration: underline;
-}
-
 .login-links {
   display: flex;
   flex-wrap: wrap;
