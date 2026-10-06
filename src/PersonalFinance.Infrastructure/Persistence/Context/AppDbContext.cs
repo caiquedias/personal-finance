@@ -28,6 +28,7 @@ public sealed class AppDbContext : DbContext
     public DbSet<LoginThrottle> LoginThrottles { get; set; } = default!;
     public DbSet<AuditLog> AuditLogs { get; set; } = default!;
     public DbSet<MfaRecoveryCode> MfaRecoveryCodes { get; set; } = default!;
+    public DbSet<UserToken> UserTokens { get; set; } = default!;
 
     // ── Lookup tables (seed) ──────────────────────────────────────────────────
     public DbSet<Role> Roles { get; set; } = default!;

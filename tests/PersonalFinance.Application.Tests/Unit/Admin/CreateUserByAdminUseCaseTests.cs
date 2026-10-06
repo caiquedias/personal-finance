@@ -59,6 +59,24 @@ public class CreateUserByAdminUseCaseTests
         result.Should().BeEquivalentTo(new { MfaEnabled = false, MfaSetupPending = false });
     }
 
+    [Fact(DisplayName = "Usuário criado pelo admin já nasce com e-mail confirmado (#404)")]
+    public async Task Execute_WithValidData_ShouldCreateUserWithEmailConfirmed()
+    {
+        var dto = new CreateUserByAdminDto("Caique", "caique@x.com", "senha123");
+        _userRepo.Setup(r => r.ExistsByEmailAsync(dto.Email, default)).ReturnsAsync(false);
+        _hasher.Setup(h => h.Hash(dto.Password)).Returns("hash");
+        User? added = null;
+        _userRepo.Setup(r => r.AddAsync(It.IsAny<User>(), default))
+                 .Callback<User, CancellationToken>((u, _) => added = u)
+                 .Returns(Task.CompletedTask);
+
+        await _sut.ExecuteAsync(dto, AdminId, Ip);
+
+        added.Should().NotBeNull();
+        added!.IsEmailConfirmed.Should().BeTrue();
+        added.EmailConfirmedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(30));
+    }
+
     [Fact(DisplayName = "Deve lançar exceção se e-mail já existe")]
     public async Task Execute_WithDuplicateEmail_ShouldThrow()
     {

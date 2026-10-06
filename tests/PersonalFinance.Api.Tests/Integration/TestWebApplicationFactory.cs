@@ -50,10 +50,33 @@ public sealed class TestWebApplicationFactory : WebApplicationFactory<Program>
 
         // Audit log (#402): purge em background desligado nos testes (determinismo); o use case é testado à parte.
         Environment.SetEnvironmentVariable("AuditLog__Retention__Enabled", "false");
+
+        // Reset de senha / verificação de e-mail (#404): valores dummy — nada disso é segredo real.
+        // Sem HmacKey a app não sobe (ValidateOnStart); o envio real (Brevo) é trocado pelo FakeEmailSender.
+        Environment.SetEnvironmentVariable("Auth__UserTokens__HmacKey", TestUserTokenHmacKey);
+        Environment.SetEnvironmentVariable("Auth__EmailVerification__Enforce", "false");
+        Environment.SetEnvironmentVariable("Email__Enabled", "true");
+        Environment.SetEnvironmentVariable("Email__Brevo__ApiKey", "test-brevo-api-key-not-real");
+        Environment.SetEnvironmentVariable("Email__Brevo__SenderEmail", "no-reply@monkeybomb.test");
+        Environment.SetEnvironmentVariable("Email__Brevo__SenderName", "MonkeyBomb Test");
+        Environment.SetEnvironmentVariable("App__FrontendBaseUrl", TestFrontendBaseUrl);
+        // Limite alto para a policy account-recovery; testes do 429 sobrescrevem via WithWebHostBuilder.
+        Environment.SetEnvironmentVariable("RateLimiting__AccountRecovery__PermitLimit", "100000");
     }
 
     // Base64 de 32 bytes (0x00..0x1F) — só para testes
     private const string TestMfaEncryptionKey = "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=";
+
+    // Base64 de 32 bytes (0x20..0x3F) — só para testes (#404)
+    private const string TestUserTokenHmacKey = "ICEiIyQlJicoKSorLC0uLzAxMjM0NTY3ODk6Ozw9Pj8=";
+
+    public const string TestFrontendBaseUrl = "https://app.monkeybomb.test";
+
+    /// <summary>
+    /// Substitui o envio real de e-mail (#404). Instância única por factory — as factories derivadas
+    /// (WithWebHostBuilder) reaproveitam esta mesma instância.
+    /// </summary>
+    public FakeEmailSender EmailSender { get; } = new();
 
     protected override void ConfigureWebHost(
         Microsoft.AspNetCore.Hosting.IWebHostBuilder builder)
@@ -93,6 +116,12 @@ public sealed class TestWebApplicationFactory : WebApplicationFactory<Program>
 
             services.AddScoped<IPurgeRepository, FakePurgeRepository>();
 
+            // Substitui o provedor de e-mail (Brevo via HTTP) pelo fake que só registra as mensagens (#404).
+            foreach (var d in services.Where(d => d.ServiceType == typeof(IEmailSender)).ToList())
+                services.Remove(d);
+
+            services.AddSingleton<IEmailSender>(EmailSender);
+
             // Remove o DatabaseInitializer — ele chama MigrateAsync() e
             // ExecuteSqlRawAsync() que são métodos relacionais e explodem com InMemory.
             var initDescriptor = services.SingleOrDefault(
@@ -117,6 +146,7 @@ public sealed class TestWebApplicationFactory : WebApplicationFactory<Program>
         if (context.Users.Any(u => u.Email == adminEmail)) return;
 
         var admin = User.Create("Admin Test", adminEmail, hasher.Hash("Arkham@01"));
+        admin.ConfirmEmail(DateTime.UtcNow); // admin semeado já tem e-mail verificado (#404)
         context.Users.Add(admin);
         context.SaveChanges();
 

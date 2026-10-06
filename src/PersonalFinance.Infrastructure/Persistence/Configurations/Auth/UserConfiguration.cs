@@ -66,6 +66,11 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
                .HasColumnName("MfaEnabledAt")
                .HasColumnType("datetime2(7)");
 
+        // Verificação de e-mail (#404): nulo = não verificado (backfill na migration para os existentes)
+        builder.Property(u => u.EmailConfirmedAt)
+               .HasColumnName("EmailConfirmedAt")
+               .HasColumnType("datetime2(7)");
+
         builder.Property(u => u.LastUsedTotpStep)
                .HasColumnName("LastUsedTotpStep")
                .HasColumnType("bigint");

@@ -376,4 +376,50 @@ public class UserTests
         user.SecurityStamp.Should().NotBe(stamp);
         user.UpdatedAt.Should().BeAfter(original);
     }
+
+    // ── Confirmação de e-mail (#404) ──────────────────────────────────────────
+
+    private static readonly DateTime ConfirmNow = new(2026, 3, 1, 10, 0, 0, DateTimeKind.Utc);
+
+    [Fact(DisplayName = "Usuário novo não tem e-mail confirmado")]
+    public void Create_ShouldStartWithEmailUnconfirmed()
+    {
+        var user = CreateValid();
+
+        user.EmailConfirmedAt.Should().BeNull();
+        user.IsEmailConfirmed.Should().BeFalse();
+    }
+
+    [Fact(DisplayName = "ConfirmEmail deve registrar a data e marcar o e-mail como confirmado")]
+    public void ConfirmEmail_ShouldSetTimestampAndFlag()
+    {
+        var user = CreateValid();
+        var original = user.UpdatedAt;
+
+        Task.Delay(10).Wait();
+        user.ConfirmEmail(ConfirmNow);
+
+        user.EmailConfirmedAt.Should().Be(ConfirmNow);
+        user.IsEmailConfirmed.Should().BeTrue();
+        user.UpdatedAt.Should().BeAfter(original);
+    }
+
+    [Fact(DisplayName = "ConfirmEmail é idempotente: segunda chamada mantém a data original")]
+    public void ConfirmEmail_CalledTwice_ShouldKeepFirstTimestamp()
+    {
+        var user = CreateValid();
+        user.ConfirmEmail(ConfirmNow);
+
+        user.ConfirmEmail(ConfirmNow.AddDays(5));
+
+        user.EmailConfirmedAt.Should().Be(ConfirmNow);
+    }
+
+    [Fact(DisplayName = "User.Create mantém a assinatura (name, email, passwordHash)")]
+    public void Create_Signature_ShouldRemainThreeParameters()
+    {
+        var create = typeof(User).GetMethod(nameof(User.Create))!;
+
+        create.GetParameters().Select(p => p.Name).Should().Equal("name", "email", "passwordHash");
+    }
 }

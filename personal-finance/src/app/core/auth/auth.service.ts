@@ -4,8 +4,9 @@ import { Router } from '@angular/router';
 import { tap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import {
-  EnableMfaResponse, LoginRequest, LoginResponse, MfaSetupResponse,
-  MfaVerifyRequest, RegisterRequest, UserResponse
+  ConfirmEmailRequest, EnableMfaResponse, ForgotPasswordRequest, GenericMessageResponse,
+  LoginRequest, LoginResponse, MfaSetupResponse, MfaVerifyRequest,
+  PasswordResetConfirmRequest, RegisterRequest, ResendConfirmationRequest, UserResponse
 } from '../models/models';
 
 const TOKEN_KEY = 'pf_token';
@@ -99,6 +100,27 @@ export class AuthService {
   register(request: RegisterRequest) {
     return this.http
       .post<UserResponse>(`${environment.apiUrl}/auth/register`, request);
+  }
+
+  // ── Recuperação de conta (endpoints anônimos; não tocam na sessão) ────────
+  forgotPassword(request: ForgotPasswordRequest) {
+    return this.http.post<GenericMessageResponse>(
+      `${environment.apiUrl}/auth/password/forgot`, request);
+  }
+
+  resetPassword(request: PasswordResetConfirmRequest) {
+    return this.http.post<GenericMessageResponse>(
+      `${environment.apiUrl}/auth/password/reset`, request);
+  }
+
+  confirmEmail(request: ConfirmEmailRequest) {
+    return this.http.post<GenericMessageResponse>(
+      `${environment.apiUrl}/auth/email/confirm`, request);
+  }
+
+  resendConfirmation(request: ResendConfirmationRequest) {
+    return this.http.post<GenericMessageResponse>(
+      `${environment.apiUrl}/auth/email/resend`, request);
   }
 
   logout(): void {

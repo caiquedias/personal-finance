@@ -10,12 +10,15 @@ namespace PersonalFinance.Api.Tests.Integration
     {
         public AuthControllerTests(TestWebApplicationFactory f) : base(f) { }
 
-        [Fact(DisplayName = "POST /register deve retornar 201 para dados válidos")]
-        public async Task Register_WithValidData_ShouldReturn201()
+        [Fact(DisplayName = "POST /register deve retornar 202 com mensagem genérica para dados válidos")]
+        public async Task Register_WithValidData_ShouldReturn202WithGenericMessage()
         {
             var r = await Client.PostAsJsonAsync("/api/v1/auth/register", new
             { name = "Caique", email = $"c_{Guid.NewGuid():N}@x.com", password = "Senha@123" });
-            r.StatusCode.Should().Be(HttpStatusCode.Created);
+            r.StatusCode.Should().Be(HttpStatusCode.Accepted);
+            var body = await r.Content.ReadFromJsonAsync<JsonElement>();
+            body.GetProperty("message").GetString().Should().NotBeNullOrWhiteSpace();
+            body.TryGetProperty("id", out _).Should().BeFalse("o id não pode ser exposto (anti-enumeração)");
         }
 
         [Fact(DisplayName = "POST /register deve retornar 400 para e-mail inválido")]
@@ -26,15 +29,32 @@ namespace PersonalFinance.Api.Tests.Integration
             r.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         }
 
-        [Fact(DisplayName = "POST /register deve retornar 400 para e-mail duplicado")]
-        public async Task Register_WithDuplicateEmail_ShouldReturn400()
+        [Fact(DisplayName = "POST /register com e-mail duplicado deve responder igual ao sucesso (202, mesmo corpo) — anti-enumeração")]
+        public async Task Register_WithDuplicateEmail_ShouldReturnSameResponseAsSuccess()
         {
             var email = $"dup_{Guid.NewGuid():N}@x.com";
-            await Client.PostAsJsonAsync("/api/v1/auth/register",
+            var first = await Client.PostAsJsonAsync("/api/v1/auth/register",
                 new { name = "A", email, password = "Senha@123" });
-            var r = await Client.PostAsJsonAsync("/api/v1/auth/register",
-                new { name = "B", email, password = "Senha@123" });
-            r.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+            var second = await Client.PostAsJsonAsync("/api/v1/auth/register",
+                new { name = "B", email, password = "Outra@Senha456" });
+
+            second.StatusCode.Should().Be(HttpStatusCode.Accepted);
+            first.StatusCode.Should().Be(second.StatusCode);
+            (await second.Content.ReadAsStringAsync()).Should().Be(await first.Content.ReadAsStringAsync());
+        }
+
+        [Fact(DisplayName = "POST /register duplicado não altera a conta original (senha original continua valendo)")]
+        public async Task Register_WithDuplicateEmail_ShouldNotChangeOriginalAccount()
+        {
+            var email = $"dupkeep_{Guid.NewGuid():N}@x.com";
+            await Client.PostAsJsonAsync("/api/v1/auth/register", new { name = "A", email, password = "Senha@123" });
+            await Client.PostAsJsonAsync("/api/v1/auth/register", new { name = "B", email, password = "Outra@Senha456" });
+
+            var original = await Client.PostAsJsonAsync("/api/v1/auth/login", new { email, password = "Senha@123" });
+            var attacker = await Client.PostAsJsonAsync("/api/v1/auth/login", new { email, password = "Outra@Senha456" });
+
+            original.StatusCode.Should().Be(HttpStatusCode.OK);
+            attacker.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         }
 
         [Fact(DisplayName = "POST /login deve retornar 200 e token para credenciais válidas")]

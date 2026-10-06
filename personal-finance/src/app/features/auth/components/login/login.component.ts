@@ -1,5 +1,5 @@
 import { Component, ElementRef, inject, OnDestroy, signal, ViewChild } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { AuthService } from '../../../../core/auth/auth.service';
 
@@ -70,7 +70,7 @@ const QUOTES_STORAGE_KEY = 'login_quotes_usage';
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, RouterLink],
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.css']
 })

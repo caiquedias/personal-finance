@@ -186,6 +186,35 @@ describe('LoginComponent', () => {
     });
   });
 
+  describe('links de recuperação de conta (#404)', () => {
+    it('exibe o link "Esqueci minha senha" apontando para /forgot-password', () => {
+      const link: HTMLAnchorElement | null = fixture.nativeElement.querySelector('a[href="/forgot-password"]');
+
+      expect(link).not.toBeNull();
+      expect(link!.textContent).toContain('Esqueci minha senha');
+    });
+
+    it('exibe o link "Confirmar e-mail" apontando para /confirm-email', () => {
+      const link: HTMLAnchorElement | null = fixture.nativeElement.querySelector('a[href="/confirm-email"]');
+
+      expect(link).not.toBeNull();
+      expect(link!.textContent).toContain('Confirmar e-mail');
+    });
+
+    it('os links são estáticos: continuam visíveis mesmo com erro da API (sem comportamento condicional)', () => {
+      component.apiError.set('Credenciais inválidas.');
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector('a[href="/forgot-password"]')).not.toBeNull();
+      expect(fixture.nativeElement.querySelector('a[href="/confirm-email"]')).not.toBeNull();
+    });
+
+    it('não reintroduz cadastro: sem link /register nem classe login-register', () => {
+      expect(fixture.nativeElement.querySelector('a[href="/register"]')).toBeNull();
+      expect(fixture.nativeElement.querySelector('.login-register')).toBeNull();
+    });
+  });
+
   describe('showPassword signal', () => {
     it('começa como false', () => {
       expect(component.showPassword()).toBeFalse();
