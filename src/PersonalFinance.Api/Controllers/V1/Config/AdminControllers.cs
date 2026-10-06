@@ -211,7 +211,9 @@ public sealed class AdminUsersController : ApiControllerBase
     private readonly CreateUserByAdminUseCase   _createUser;
     private readonly UpdateUserByAdminUseCase   _updateUser;
     private readonly ResetUserMfaUseCase        _resetMfa;
-    private readonly ILogger<AdminUsersController> _logger;
+
+    // IP do cliente para a trilha de auditoria (null quando indisponível)
+    private string? ClientIp => HttpContext.Connection.RemoteIpAddress?.ToString();
 
     public AdminUsersController(
         GetUsersUseCase           getUsers,
@@ -221,8 +223,7 @@ public sealed class AdminUsersController : ApiControllerBase
         ResetUserPasswordUseCase  resetPassword,
         CreateUserByAdminUseCase  createUser,
         UpdateUserByAdminUseCase  updateUser,
-        ResetUserMfaUseCase       resetMfa,
-        ILogger<AdminUsersController> logger)
+        ResetUserMfaUseCase       resetMfa)
     {
         _getUsers      = getUsers;
         _toggleActive  = toggleActive;
@@ -232,7 +233,6 @@ public sealed class AdminUsersController : ApiControllerBase
         _createUser    = createUser;
         _updateUser    = updateUser;
         _resetMfa      = resetMfa;
-        _logger        = logger;
     }
 
     /// <summary>Cria um novo usuário com role padrão User.</summary>
@@ -242,7 +242,7 @@ public sealed class AdminUsersController : ApiControllerBase
     public async Task<IActionResult> CreateUser(
         [FromBody] CreateUserByAdminDto dto, CancellationToken ct)
     {
-        var result = await _createUser.ExecuteAsync(dto, ct);
+        var result = await _createUser.ExecuteAsync(dto, CurrentUserId, ClientIp, ct);
         return CreatedAtAction(nameof(GetAll), result);
     }
 
@@ -254,7 +254,7 @@ public sealed class AdminUsersController : ApiControllerBase
     public async Task<IActionResult> UpdateUser(
         Guid id, [FromBody] UpdateUserByAdminDto dto, CancellationToken ct)
     {
-        var result = await _updateUser.ExecuteAsync(dto with { UserId = id }, ct);
+        var result = await _updateUser.ExecuteAsync(dto with { UserId = id }, CurrentUserId, ClientIp, ct);
         return Ok(result);
     }
 
@@ -275,7 +275,7 @@ public sealed class AdminUsersController : ApiControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ToggleActive(Guid id, CancellationToken ct)
     {
-        await _toggleActive.ExecuteAsync(id, CurrentUserId, ct);
+        await _toggleActive.ExecuteAsync(id, CurrentUserId, ClientIp, ct);
         return NoContent();
     }
 
@@ -289,7 +289,7 @@ public sealed class AdminUsersController : ApiControllerBase
         [FromBody] AssignRoleDto dto,
         CancellationToken ct)
     {
-        await _assignRole.ExecuteAsync(dto with { UserId = id }, ct);
+        await _assignRole.ExecuteAsync(dto with { UserId = id }, CurrentUserId, ClientIp, ct);
         return NoContent();
     }
 
@@ -305,7 +305,7 @@ public sealed class AdminUsersController : ApiControllerBase
         Guid id, int roleId, CancellationToken ct)
     {
         await _removeRole.ExecuteAsync(
-            new RemoveRoleDto(id, roleId), CurrentUserId, ct);
+            new RemoveRoleDto(id, roleId), CurrentUserId, ClientIp, ct);
         return NoContent();
     }
 
@@ -322,7 +322,7 @@ public sealed class AdminUsersController : ApiControllerBase
         [FromBody] ResetPasswordDto dto,
         CancellationToken ct)
     {
-        await _resetPassword.ExecuteAsync(dto with { UserId = id }, CurrentUserId, ct);
+        await _resetPassword.ExecuteAsync(dto with { UserId = id }, CurrentUserId, ClientIp, ct);
         return NoContent();
     }
 
@@ -336,12 +336,7 @@ public sealed class AdminUsersController : ApiControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ResetMfa(Guid id, CancellationToken ct)
     {
-        await _resetMfa.ExecuteAsync(id, CurrentUserId, ct);
-
-        // Auditoria: apenas ids e timestamp — nunca secret ou e-mail
-        _logger.LogWarning(
-            "Admin MFA reset: AdminId={AdminId} TargetUserId={TargetUserId} At={At}",
-            CurrentUserId, id, DateTime.UtcNow);
+        await _resetMfa.ExecuteAsync(id, CurrentUserId, ClientIp, ct);
 
         return NoContent();
     }

@@ -47,6 +47,9 @@ public sealed class TestWebApplicationFactory : WebApplicationFactory<Program>
         // para a policy mfa-verify. Testes do 429 sobrescrevem via WithWebHostBuilder.
         Environment.SetEnvironmentVariable("Auth__Mfa__EncryptionKey", TestMfaEncryptionKey);
         Environment.SetEnvironmentVariable("RateLimiting__MfaVerify__PermitLimit", "100000");
+
+        // Audit log (#402): purge em background desligado nos testes (determinismo); o use case é testado à parte.
+        Environment.SetEnvironmentVariable("AuditLog__Retention__Enabled", "false");
     }
 
     // Base64 de 32 bytes (0x00..0x1F) — só para testes

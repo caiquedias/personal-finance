@@ -1,6 +1,7 @@
 using FluentValidation;
 using PersonalFinance.Application.DTOs.Admin;
 using PersonalFinance.Domain.Entities.Auth;
+using PersonalFinance.Domain.Enums;
 using PersonalFinance.Domain.Exceptions;
 using PersonalFinance.Domain.Interfaces.Repositories;
 using PersonalFinance.Domain.Interfaces.Services;
@@ -14,6 +15,7 @@ public sealed class CreateUserByAdminUseCase
     private readonly IUserRoleRepository  _roleRepository;
     private readonly IPasswordHasher      _hasher;
     private readonly IUnitOfWork          _uow;
+    private readonly IAuditLogRepository  _auditRepository;
     private readonly IValidator<CreateUserByAdminDto> _validator;
 
     public CreateUserByAdminUseCase(
@@ -21,17 +23,20 @@ public sealed class CreateUserByAdminUseCase
         IUserRoleRepository  roleRepository,
         IPasswordHasher      hasher,
         IUnitOfWork          uow,
+        IAuditLogRepository  auditRepository,
         IValidator<CreateUserByAdminDto> validator)
     {
         _userRepository = userRepository;
         _roleRepository = roleRepository;
         _hasher         = hasher;
         _uow            = uow;
+        _auditRepository = auditRepository;
         _validator      = validator;
     }
 
     public async Task<AdminUserResponseDto> ExecuteAsync(
-        CreateUserByAdminDto dto, CancellationToken ct = default)
+        CreateUserByAdminDto dto, Guid requestingAdminId, string? ipAddress,
+        CancellationToken ct = default)
     {
         await _validator.ValidateAndThrowAsync(dto, ct);
 
@@ -54,6 +59,10 @@ public sealed class CreateUserByAdminUseCase
             RoleId     = 2,
             AssignedAt = DateTime.UtcNow
         }, ct);
+
+        // Auditoria na mesma transação; sem e-mail, nome ou senha (LGPD)
+        await _auditRepository.AddAsync(AuditLog.Create(
+            requestingAdminId, AuditAction.UserCreated, user.Id, null, ipAddress, DateTime.UtcNow), ct);
 
         await _uow.CommitAsync(ct);
 
