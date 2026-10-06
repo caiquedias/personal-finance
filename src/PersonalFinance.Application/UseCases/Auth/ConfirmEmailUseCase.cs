@@ -51,7 +51,10 @@ public sealed class ConfirmEmailUseCase
         {
             var user = await _users.GetByEmailAsync(email, ct);
             if (user is null || !user.IsActive || user.IsDeleted)
+            {
+                await RunDummyVerificationAsync(ct);
                 throw new DomainException(InvalidCode);
+            }
 
             var now = DateTime.UtcNow;
             var token = await _tokens.GetLatestAsync(user.Id, UserTokenPurpose.EmailVerification, ct);
@@ -86,5 +89,18 @@ public sealed class ConfirmEmailUseCase
 
         // Inalcançável: o laço sempre retorna ou lança
         throw new DomainException(InvalidCode);
+    }
+
+    /// <summary>
+    /// Equalização APROXIMADA de timing para usuário inexistente/inativo/removido: HMAC + verificação e uma
+    /// leitura de token com valores fixos, sem persistir nada. Não iguala o custo do commit do contador
+    /// de tentativas; o resíduo é mitigado pelo rate limit por IP e pela resposta idêntica.
+    /// </summary>
+    private async Task RunDummyVerificationAsync(CancellationToken ct)
+    {
+        var purpose = UserTokenPurpose.EmailVerification;
+        var dummyHash = _codes.ComputeHash(Guid.Empty, Guid.Empty, purpose, "000000");
+        _codes.Verify(Guid.Empty, Guid.Empty, purpose, "000000", dummyHash);
+        await _tokens.GetLatestAsync(Guid.Empty, purpose, ct);
     }
 }
