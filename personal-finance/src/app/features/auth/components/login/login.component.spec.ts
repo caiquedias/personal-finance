@@ -215,6 +215,79 @@ describe('LoginComponent', () => {
     });
   });
 
+  describe('links de recuperação no passo MFA (#405)', () => {
+    it('ocultos quando mfaStep() é true', () => {
+      component.mfaStep.set(true);
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector('a[href="/forgot-password"]')).toBeNull();
+      expect(fixture.nativeElement.querySelector('a[href="/confirm-email"]')).toBeNull();
+    });
+
+    it('voltam a aparecer quando mfaStep() volta a false', () => {
+      component.mfaStep.set(true);
+      fixture.detectChanges();
+      component.mfaStep.set(false);
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector('a[href="/forgot-password"]')).not.toBeNull();
+      expect(fixture.nativeElement.querySelector('a[href="/confirm-email"]')).not.toBeNull();
+    });
+  });
+
+  describe('CSS morto', () => {
+    it('estilos do componente não contêm mais .login-register', () => {
+      const css = Array.from(document.head.querySelectorAll('style'))
+        .map(s => s.textContent ?? '').join('\n');
+
+      expect(css).not.toContain('login-register');
+    });
+  });
+
+  describe('banner de sucesso (history.state.notice, #405)', () => {
+    afterEach(() => history.replaceState(null, '', location.pathname + location.search));
+
+    function createWithState(state: object | null): void {
+      history.replaceState(state, '', location.pathname + location.search);
+      fixture   = TestBed.createComponent(LoginComponent);
+      component = fixture.componentInstance;
+      fixture.detectChanges();
+    }
+
+    const banner = () => fixture.nativeElement.querySelector('[data-testid="login-notice"]');
+
+    it('com state.notice: exibe o banner com a mensagem', () => {
+      createWithState({ notice: 'Senha redefinida com sucesso.' });
+
+      expect(banner()).not.toBeNull();
+      expect(banner().textContent).toContain('Senha redefinida com sucesso.');
+    });
+
+    it('sem notice: não exibe banner', () => {
+      createWithState(null);
+
+      expect(banner()).toBeNull();
+    });
+
+    it('state sem notice (ex.: só email): não exibe banner', () => {
+      createWithState({ email: 'a@x.com' });
+
+      expect(banner()).toBeNull();
+    });
+
+    it('notice não-string é ignorado', () => {
+      createWithState({ notice: 42 });
+
+      expect(banner()).toBeNull();
+    });
+
+    it('state com email e notice: banner aparece sem conflito', () => {
+      createWithState({ email: 'a@x.com', notice: 'E-mail confirmado.' });
+
+      expect(banner().textContent).toContain('E-mail confirmado.');
+    });
+  });
+
   describe('showPassword signal', () => {
     it('começa como false', () => {
       expect(component.showPassword()).toBeFalse();

@@ -6,7 +6,7 @@ import { environment } from '../../../environments/environment';
 import {
   ConfirmEmailRequest, EnableMfaResponse, ForgotPasswordRequest, GenericMessageResponse,
   LoginRequest, LoginResponse, MfaSetupResponse, MfaVerifyRequest,
-  PasswordResetConfirmRequest, RegisterRequest, ResendConfirmationRequest, UserResponse
+  PasswordResetConfirmRequest, RegisterRequest, ResendConfirmationRequest
 } from '../models/models';
 
 const TOKEN_KEY = 'pf_token';
@@ -99,7 +99,7 @@ export class AuthService {
 
   register(request: RegisterRequest) {
     return this.http
-      .post<UserResponse>(`${environment.apiUrl}/auth/register`, request);
+      .post<GenericMessageResponse>(`${environment.apiUrl}/auth/register`, request);
   }
 
   // ── Recuperação de conta (endpoints anônimos; não tocam na sessão) ────────

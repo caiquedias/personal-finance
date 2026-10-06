@@ -40,6 +40,8 @@ Você tem acesso de **somente leitura** — leia os arquivos relevantes, não ed
 
 5. **Issue que integra provedor externo** (e-mail, pagamento, API de terceiros via `HttpClient`): listar nas dependências o item "validar as options do provedor no startup (`ValidateOnStart`, só quando a integração estiver habilitada, mensagem citando o nome da opção e nunca o valor) + `Timeout` explícito no `HttpClient` + tratamento de timeout sem derrubar o consumidor (fila/HostedService)". Sem isso o Reviewer reabre o ciclo (#404: 3 itens MÉDIA).
 
+6. **Issue "filha" (`Parte de #N`) ou que consome endpoints/telas de outra issue**: antes de qualquer análise, conferir em `develop` (Glob/Grep nas rotas, componentes, serviços e specs citados) e em `docs/memory/<N>.md` se o escopo **já foi entregue** pela issue pai (escopo ampliado a pedido do Caique). Se sim, reportar logo no topo ("Escopo já entregue pela #N") e propor as opções ao Caique: fechar como entregue, ou reaproveitar a issue para os débitos herdados. Ocorrido na #405: o body pedia telas que a #404 já entregara e quase foram duplicadas.
+
 ### Output obrigatório
 
 ```

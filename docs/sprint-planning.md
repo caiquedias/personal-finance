@@ -92,6 +92,10 @@ por classe é regra obrigatória, não só a feature).
 > contá-la no sizing ou criar issue de base antes. Caso real: #396 foi estimada M (~8-10 arquivos) e
 > entregou 35 porque o FluentValidation não existia no projeto.
 
+> **Escopo já entregue pela issue pai:** conferir também o inverso — se o que a issue "filha" pede já existe
+> em `develop` (escopo ampliado da pai). Caso real: #405 pedia as telas de reset que a #404 já entregara;
+> virou limpeza de débitos + banner (Size L, ~16 arquivos) em vez de duplicar componentes.
+
 ---
 
 ## Fórmula de Estimativa
@@ -166,7 +170,7 @@ aqui até que uma issue de tooling/infra justifique abrir work item.
 | 2026-10-02 | Risco residual: tabela de throttle cheia de bloqueios ativos → rastreio por (conta, IP) em fail-open (só teto global) | #391 | Aceito (fail-closed permitiria negar login a todos) |
 | 2026-10-02 | `/mfa/disable` e `/mfa/enable` sem rate limit nem contagem de falhas no lockout — token completo roubado pode tentar senha sem limite (disable ainda exige senha E código) | #393 | Média — policy de rate limit + contagem de falhas |
 | 2026-10-02 | `code` sem limite de tamanho antes do Argon2 em Verify/Disable (até 10 verificações por falha) | #393 | Baixa — rejeitar `code` > 16 chars antes de hashear |
-| 2026-10-02 | FE MFA: build avisa `qrcode` não-ESM (`allowedCommonJsDependencies`); `package.json` com reordenação cosmética de chaves; 400 do `/mfa/setup` exibe erro acima do card "ativo"; confirmar que o interceptor ignora 401 em `/auth/` no verify; `as any` no spy do `qr-code.service.spec` | #394 | Baixa — resolver junto da próxima issue de auth/tooling FE |
+| 2026-10-02 | FE MFA: build avisa `qrcode` não-ESM (`allowedCommonJsDependencies`); `package.json` com reordenação cosmética de chaves; 400 do `/mfa/setup` exibe erro acima do card "ativo"; confirmar que o interceptor ignora 401 em `/auth/` no verify; `as any` no spy do `qr-code.service.spec` | #394 | Baixa — não tratado na #405 (qrcode/allowedCommonJsDependencies e `as any` seguem pendentes); interceptor/401 fora do escopo |
 | 2026-10-02 | `Unprotect` com chave rotacionada/secret corrompido vira 500 no verify/disable | #393 | Baixa — erro controlado + procedimento de reset (#479) |
 | 2026-10-02 | Respostas de `/mfa/setup` e `/mfa/enable` sem `Cache-Control: no-store` | #393 | Baixa |
 | 2026-10-02 | `Program.cs` importa namespace do controller só para ler `MfaVerifyController.ChallengeScheme` | #393 | Baixa (cosmético) |
@@ -178,7 +182,7 @@ aqui até que uma issue de tooling/infra justifique abrir work item.
 | 2026-10-06 | Cooldown do `UserTokenIssuer` não é atômico (requisições paralelas passam pela checagem e disparam vários e-mails; só o token mais recente vale); em cooldown, o `PasswordResetRequested` não é persistido (auditoria só da 1ª solicitação por janela); no conflito de commit o AuditLog adicionado antes é descartado pelo `ChangeTracker.Clear()`; qualquer violação de unicidade no commit do issuer vira `false` silencioso | #404 | Baixa — mitigação futura: índice único (UserId, Purpose) com tratamento de conflito |
 | 2026-10-06 | Os 4 endpoints de recuperação dividem a policy `account-recovery` (5 req/min por IP); em NAT compartilhado pode dar 429 legítimo | #404 | Baixa — configurável por `RateLimiting__AccountRecovery__*` |
 | 2026-10-06 | `RunDummyVerificationAsync` duplicado em `ConfirmEmailUseCase` e `CompletePasswordResetUseCase`; `RegisterUserUseCase._unitOfWork` sem uso (ctor exigido pelos testes) | #404 | Baixa — extrair helper e remover o campo junto com os testes |
-| 2026-10-06 | FE: `AuthService.register` ainda tipado `Observable<UserResponse>` (API devolve 202 `{ message }`, sem caller no app); links "Esqueci minha senha"/"Confirmar e-mail" também aparecem no passo MFA do login; campo do código aceita letras na digitação (só a validação bloqueia); `.login-register` CSS morto pré-existente | #404 | Baixa — resolver junto da próxima issue de auth FE |
+| 2026-10-06 | FE: `AuthService.register` ainda tipado `Observable<UserResponse>` (API devolve 202 `{ message }`, sem caller no app); links "Esqueci minha senha"/"Confirmar e-mail" também aparecem no passo MFA do login; campo do código aceita letras na digitação (só a validação bloqueia); `.login-register` CSS morto pré-existente | #404 | Resolvido na #405 |
 | 2026-10-06 | Flaky de startup tests: `UserTokenOptionsStartupValidationTests.InvalidFrontendBaseUrl_ShouldFailStartup("/relative/path")` falhou 1 de 3 execuções completas (nunca reproduzido depois); 11+ classes em `Integration/` usam `WithWebHostBuilder` sem `[Collection]`/`DisableParallelization` | #404 | Baixa (tooling, S) — `[Collection("StartupFactories")]` com `DisableParallelization` nas classes `*StartupValidationTests` — issue #525 (Backlog) |
 | 2026-10-06 | Sem teste de integração do dispatcher real com timeout do Brevo (só unitários do sender e do dispatcher) | #404 | Baixa |
 
@@ -196,3 +200,4 @@ especificação — inclusive as recalibrações da fórmula de estimativa.
 | 2026-10-06 | #402 (XL, ~43 arquivos) mantida sem divisão em sub-issues por decisão do Caique (sessão única); Estimativa 1h gerada pelo PO na própria sessão; `/start-issue` passou a gerar o planning via PO quando a issue não tem estimativa | `docs/memory/402.md` e `.claude/commands/start-issue.md` |
 | 2026-10-06 | #404 (XL, ~98 arquivos, backend + frontend) mantida sem divisão em sub-issues por decisão do Caique (sessão única); Estimativa 3h gerada pelo PO após 3 rodadas de análise (escopo cresceu de ~20 para ~98 arquivos ao fechar fila de e-mail, HMAC, enforcement de login, correção de enumeração no register e telas Angular); planning postado na issue após OK do Caique | Comentário `## 📋 Sprint Planning` da #404 |
 | 2026-10-06 | Melhorias de fluxo da #404 aplicadas: PO passa a listar validação de options + timeout do `HttpClient` quando a issue integra provedor externo; `/start-issue` (Passo 2.5) exige no contexto o tratamento de `ConcurrencyConflictException` e custo equivalente nos fluxos anti-enumeração; Red e Green proibidos de reescrever histórico, e Green de mover/editar testes no worktree; flaky de startup tests virou a issue #525 | `.claude/agents/{po,implementer-red,implementer-green}.md`, `.claude/commands/start-issue.md` e `docs/memory/404.md` |
+| 2026-10-06 | #405 (L, ~16 arquivos) mantida sem divisão por decisão do Caique (sessão única); escopo original já entregue pela #404, issue reaproveitada para débitos de FE + banner; melhoria de fluxo aplicada: PO confere se o escopo da issue "filha" já foi entregue pela pai antes da análise | `.claude/agents/po.md`, `docs/sprint-planning.md` e `docs/memory/405.md` |
