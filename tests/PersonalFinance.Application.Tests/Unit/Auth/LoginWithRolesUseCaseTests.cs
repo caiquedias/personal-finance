@@ -24,13 +24,14 @@ public class LoginWithRolesUseCaseTests
     private readonly Mock<IUnitOfWork> _uow = new();
     private readonly LoginWithRolesUseCase _sut;
     private readonly MfaOptions _mfaOptions = new();
+    private readonly EmailVerificationOptions _emailOptions = new();
 
     public LoginWithRolesUseCaseTests()
     {
         _sut = new LoginWithRolesUseCase(
             _userRepo.Object, _roleRepo.Object, _throttleRepo.Object,
             _hasher.Object, _tokenSvc.Object,
-            _uow.Object, new LoginLockoutOptions(), _mfaOptions, TestValidators.Valid<LoginDto>());
+            _uow.Object, new LoginLockoutOptions(), _mfaOptions, _emailOptions, TestValidators.Valid<LoginDto>());
     }
 
     private static User FakeUser() =>
@@ -520,7 +521,7 @@ public class LoginWithRolesUseCaseTests
         var options = new LoginLockoutOptions { MaxFailedAttempts = 5, GlobalMaxFailedAttempts = 3, LockoutMinutes = 15 };
         var sut = new LoginWithRolesUseCase(
             _userRepo.Object, _roleRepo.Object, _throttleRepo.Object,
-            _hasher.Object, _tokenSvc.Object, _uow.Object, options, new MfaOptions(), TestValidators.Valid<LoginDto>());
+            _hasher.Object, _tokenSvc.Object, _uow.Object, options, new MfaOptions(), _emailOptions, TestValidators.Valid<LoginDto>());
         var user = FakeUser();
         SetupUser(user);
         SetupStatefulThrottles();
@@ -781,13 +782,89 @@ public class LoginWithRolesUseCaseTests
         _tokenSvc.Verify(t => t.GenerateMfaChallenge(It.IsAny<User>()), Times.Never);
     }
 
+    // ── Verificação de e-mail no login (#404) — flag Auth:EmailVerification:Enforce ──────
+
+    private void SetupCorrectPassword(User user)
+    {
+        _userRepo.Setup(r => r.GetByEmailAsync("caique@monkeybomb.com", default)).ReturnsAsync(user);
+        _hasher.Setup(h => h.Verify("Senha@123", "hashed_password")).Returns(true);
+        _roleRepo.Setup(r => r.GetRoleNamesByUserIdAsync(user.Id, default)).ReturnsAsync(new[] { "User" });
+        _tokenSvc.Setup(t => t.Generate(user, It.IsAny<IEnumerable<string>>())).Returns("jwt_token");
+    }
+
+    [Fact(DisplayName = "E-mail: Enforce=false (default) com e-mail não verificado e senha correta deve logar normalmente")]
+    public async Task Execute_EmailEnforceOff_UnverifiedUser_ShouldLogin()
+    {
+        _emailOptions.Enforce = false;
+        var user = FakeUser();
+        SetupCorrectPassword(user);
+
+        var result = await _sut.ExecuteAsync(new LoginDto("caique@monkeybomb.com", "Senha@123"), "1.1.1.1");
+
+        result.Token.Should().Be("jwt_token");
+    }
+
+    [Fact(DisplayName = "E-mail: Enforce=true com e-mail não verificado e senha correta deve recusar com a mensagem genérica")]
+    public async Task Execute_EmailEnforceOn_UnverifiedUser_ShouldRejectWithGenericMessage()
+    {
+        _emailOptions.Enforce = true;
+        var user = FakeUser();
+        SetupCorrectPassword(user);
+
+        var act = () => _sut.ExecuteAsync(new LoginDto("caique@monkeybomb.com", "Senha@123"), "1.1.1.1");
+
+        await act.Should().ThrowAsync<DomainException>().WithMessage("Credenciais inválidas.");
+        _tokenSvc.Verify(t => t.Generate(It.IsAny<User>(), It.IsAny<IEnumerable<string>>()), Times.Never);
+    }
+
+    [Fact(DisplayName = "E-mail: Enforce=true com e-mail verificado deve logar normalmente")]
+    public async Task Execute_EmailEnforceOn_VerifiedUser_ShouldLogin()
+    {
+        _emailOptions.Enforce = true;
+        var user = FakeUser();
+        user.ConfirmEmail(DateTime.UtcNow);
+        SetupCorrectPassword(user);
+
+        var result = await _sut.ExecuteAsync(new LoginDto("caique@monkeybomb.com", "Senha@123"), "1.1.1.1");
+
+        result.Token.Should().Be("jwt_token");
+    }
+
+    [Fact(DisplayName = "E-mail: Enforce=true e não verificado com MFA ativo não deve emitir challenge de MFA")]
+    public async Task Execute_EmailEnforceOn_UnverifiedUserWithMfa_ShouldNotIssueMfaChallenge()
+    {
+        _emailOptions.Enforce = true;
+        _mfaOptions.Enforce = true;
+        var user = MfaUser();
+        SetupCorrectPassword(user);
+
+        var act = () => _sut.ExecuteAsync(new LoginDto("caique@monkeybomb.com", "Senha@123"), "1.1.1.1");
+
+        await act.Should().ThrowAsync<DomainException>().WithMessage("Credenciais inválidas.");
+        _tokenSvc.Verify(t => t.GenerateMfaChallenge(It.IsAny<User>()), Times.Never);
+    }
+
+    [Fact(DisplayName = "E-mail: Enforce=true com senha ERRADA mantém o fluxo de falha (contador e mesma mensagem)")]
+    public async Task Execute_EmailEnforceOn_WrongPassword_ShouldKeepFailureFlow()
+    {
+        _emailOptions.Enforce = true;
+        var user = FakeUser();
+        _userRepo.Setup(r => r.GetByEmailAsync("caique@monkeybomb.com", default)).ReturnsAsync(user);
+        _hasher.Setup(h => h.Verify("Errada", "hashed_password")).Returns(false);
+
+        var act = () => _sut.ExecuteAsync(new LoginDto("caique@monkeybomb.com", "Errada"), "1.1.1.1");
+
+        await act.Should().ThrowAsync<DomainException>().WithMessage("Credenciais inválidas.");
+        user.FailedLoginCount.Should().Be(1);
+    }
+
     // ── Validação (#396) ──────────────────────────────────────────────────────
 
     private LoginWithRolesUseCase SutWith(IValidator<LoginDto> validator) =>
         UseCaseFactory.Create<LoginWithRolesUseCase>(
             _userRepo.Object, _roleRepo.Object, _throttleRepo.Object,
             _hasher.Object, _tokenSvc.Object, _uow.Object,
-            new LoginLockoutOptions(), _mfaOptions, validator);
+            new LoginLockoutOptions(), _mfaOptions, _emailOptions, validator);
 
     [Fact(DisplayName = "Deve lançar ValidationException quando o validator reprova o DTO")]
     public async Task Execute_WhenValidatorFails_ShouldThrowValidationException()

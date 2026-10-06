@@ -50,6 +50,11 @@ public sealed class User : EntityBase
     /// <summary>Carimbo de segurança — embutido no JWT; rotacioná-lo invalida as sessões emitidas.</summary>
     public Guid SecurityStamp { get; private set; }
 
+    /// <summary>Quando o e-mail foi confirmado (UTC). Null = não verificado.</summary>
+    public DateTime? EmailConfirmedAt { get; private set; }
+
+    public bool IsEmailConfirmed => EmailConfirmedAt.HasValue;
+
     // ── EF Core ───────────────────────────────────────────────────────────────
     private User() { }
 
@@ -177,6 +182,16 @@ public sealed class User : EntityBase
         LastUsedTotpStep = step;
         SetUpdatedAt();
         return true;
+    }
+
+    /// <summary>Confirma o e-mail. Idempotente: mantém a primeira data.</summary>
+    public void ConfirmEmail(DateTime now)
+    {
+        if (EmailConfirmedAt.HasValue)
+            return;
+
+        EmailConfirmedAt = now;
+        SetUpdatedAt();
     }
 
     /// <summary>Gera novo SecurityStamp, invalidando os tokens emitidos anteriormente.</summary>

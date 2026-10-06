@@ -21,3 +21,53 @@ describe('app routes — MFA', () => {
     expect(shell!.children!.some(c => c.path?.includes('verify'))).toBeFalse();
   });
 });
+
+describe('app routes — recuperação de conta (#404)', () => {
+  const shell = routes.find(r => r.path === '' && r.children);
+  const publicPaths = ['forgot-password', 'reset-password', 'confirm-email'] as const;
+  const expectedComponents: Record<string, string> = {
+    'forgot-password': 'ForgotPasswordComponent',
+    'reset-password':  'ResetPasswordComponent',
+    'confirm-email':   'ConfirmEmailComponent',
+  };
+
+  publicPaths.forEach(path => {
+    describe(`rota /${path}`, () => {
+      it('existe como rota pública de nível raiz, fora do shell protegido', () => {
+        const route = routes.find(r => r.path === path);
+        expect(route).toBeDefined();
+        expect(shell!.children!.some(c => c.path === path)).toBeFalse();
+      });
+
+      it('não tem authGuard nem adminGuard (usuário deslogado precisa acessar)', () => {
+        const route = routes.find(r => r.path === path);
+        expect(route?.canActivate ?? []).toEqual([]);
+        expect(route?.canMatch ?? []).toEqual([]);
+      });
+
+      it('carrega o componente certo via lazy load', async () => {
+        const route = routes.find(r => r.path === path);
+        expect(route?.loadComponent).toBeDefined();
+        const cmp: any = await (route!.loadComponent as () => Promise<any>)();
+        expect(cmp.name).toBe(expectedComponents[path]);
+      });
+    });
+  });
+
+  it('nenhuma rota de nível raiz contém "verify" no path', () => {
+    expect(routes.some(r => r.path?.includes('verify'))).toBeFalse();
+  });
+
+  it('o fallback ** continua sendo a última rota', () => {
+    expect(routes[routes.length - 1].path).toBe('**');
+  });
+
+  it('as rotas públicas vêm antes do fallback **', () => {
+    const fallbackIndex = routes.findIndex(r => r.path === '**');
+    publicPaths.forEach(path => {
+      const index = routes.findIndex(r => r.path === path);
+      expect(index).toBeGreaterThanOrEqual(0);
+      expect(index).toBeLessThan(fallbackIndex);
+    });
+  });
+});

@@ -83,12 +83,29 @@ public class AuditLogTests
         bad.Should().Throw<DomainException>();
     }
 
-    [Fact(DisplayName = "AuditAction deve ter os 8 valores previstos")]
+    [Fact(DisplayName = "AuditAction deve ter os 10 valores previstos")]
     public void AuditAction_ShouldContainExpectedValues()
     {
         Enum.GetNames<AuditAction>().Should().BeEquivalentTo(
             "UserCreated", "UserUpdated", "UserActivated", "UserDeactivated",
-            "RoleAssigned", "RoleRemoved", "PasswordReset", "MfaReset");
+            "RoleAssigned", "RoleRemoved", "PasswordReset", "MfaReset",
+            "PasswordResetRequested", "PasswordResetCompleted");
+    }
+
+    [Fact(DisplayName = "AuditAction de reset de senha deve ter valores numéricos estáveis (9 e 10)")]
+    public void AuditAction_PasswordResetFlow_ShouldHaveStableValues()
+    {
+        ((int)AuditAction.PasswordResetRequested).Should().Be(9);
+        ((int)AuditAction.PasswordResetCompleted).Should().Be(10);
+    }
+
+    [Fact(DisplayName = "Create com PasswordResetCompleted deve aceitar ator igual ao alvo (o próprio usuário)")]
+    public void Create_PasswordResetCompleted_ShouldAllowSelfActor()
+    {
+        var log = AuditLog.Create(Target, AuditAction.PasswordResetCompleted, Target, null, "203.0.113.7", Now);
+
+        log.Action.Should().Be(AuditAction.PasswordResetCompleted);
+        log.ActorUserId.Should().Be(log.TargetUserId);
     }
 
     [Fact(DisplayName = "AuditLog não herda EntityBase (insert-only, sem soft-delete)")]

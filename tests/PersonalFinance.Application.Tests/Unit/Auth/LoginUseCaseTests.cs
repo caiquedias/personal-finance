@@ -27,7 +27,7 @@ namespace PersonalFinance.Application.Tests.Unit.Auth
             _sut = new LoginWithRolesUseCase(
                 _userRepo.Object, _roleRepo.Object, _throttleRepo.Object,
                 _hasher.Object, _tokenSvc.Object,
-                _uow.Object, new LoginLockoutOptions(), new MfaOptions(), TestValidators.Valid<LoginDto>());
+                _uow.Object, new LoginLockoutOptions(), new MfaOptions(), new EmailVerificationOptions(), TestValidators.Valid<LoginDto>());
         }
 
         private static User FakeUser() =>

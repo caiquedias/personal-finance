@@ -1,0 +1,113 @@
+/* Estilos compartilhados das telas de recuperação de conta (esqueci a senha, redefinir, confirmar e-mail).
+   Tokens de tema (light/dark) vêm das variáveis globais — sem ThemeService. */
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  background: var(--v2-bg);
+  font-family: var(--font-b);
+}
+
+@media (max-width: 768px) {
+  .auth-page { padding: 24px 16px; }
+  .auth-card { padding: 28px 20px; }
+  .auth-header h1 { font-size: 1.5rem; }
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 420px;
+  background: var(--v2-surface);
+  backdrop-filter: blur(24px);
+  border-radius: var(--v2-radius);
+  border: 1px solid var(--v2-border);
+  box-shadow: var(--v2-shadow);
+  padding: 40px;
+}
+
+.auth-header { margin-bottom: 32px; }
+
+.auth-header h1 {
+  font-family: var(--font-d);
+  font-size: 1.75rem;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.auth-header .subtitle {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.field-error {
+  font-size: 0.8125rem;
+  color: var(--color-danger);
+}
+
+.auth-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+  border-radius: var(--v2-radius-sm);
+  font-size: 0.875rem;
+}
+
+.auth-info {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.auth-links {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-top: 20px;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.auth-links a {
+  color: var(--terracotta);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.auth-links a:hover { text-decoration: underline; }
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255,255,255,.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+  display: inline-block;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }

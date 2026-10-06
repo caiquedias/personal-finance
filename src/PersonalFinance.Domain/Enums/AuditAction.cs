@@ -10,5 +10,7 @@ public enum AuditAction
     RoleAssigned = 5,
     RoleRemoved = 6,
     PasswordReset = 7,
-    MfaReset = 8
+    MfaReset = 8,
+    PasswordResetRequested = 9,
+    PasswordResetCompleted = 10
 }

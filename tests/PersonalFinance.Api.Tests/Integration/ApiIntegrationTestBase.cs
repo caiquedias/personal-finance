@@ -49,18 +49,8 @@ namespace PersonalFinance.Api.Tests.Integration
             var email = $"caique_dias@outlook.com";
             var password = "Arkham@01";
 
-            var createdUser = await Client.PostAsJsonAsync("/api/v1/auth/register",
-                new { name = "Test User", email, password });
-
-            // Tenta obter o ID do usuário recém criado; se e-mail já existia, ignora (idempotente)
-            if (createdUser.IsSuccessStatusCode)
-            {
-                var createdUserResponse = await createdUser.Content.ReadFromJsonAsync<JsonElement>();
-                var createdUserId = createdUserResponse.GetProperty("id").GetString()!;
-                await Client.PostAsJsonAsync($"/api/v1/admin/users/{createdUserId}/roles",
-                    new { UserId = createdUserId, RoleId = 1 });
-            }
-
+            // O admin já é semeado pela factory (com role Admin e e-mail confirmado). O register agora responde
+            // 202 genérico sem id (#404), então o id vem do claim sub do JWT do login.
             var loginResponse = await Client.PostAsJsonAsync("/api/v1/auth/login",
                 new { email, password });
 
@@ -78,6 +68,25 @@ namespace PersonalFinance.Api.Tests.Integration
             var userId = Guid.Parse(payload.GetProperty("sub").GetString()!);
 
             return (authClient, userId);
+        }
+
+        /// <summary>
+        /// Registra um usuário (202 genérico, sem id — #404) e devolve o Id obtido do claim sub do JWT do login.
+        /// </summary>
+        protected async Task<Guid> RegisterAndGetUserIdAsync(string name, string email, string password)
+        {
+            var register = await Client.PostAsJsonAsync("/api/v1/auth/register", new { name, email, password });
+            register.EnsureSuccessStatusCode();
+
+            var loginResponse = await Client.PostAsJsonAsync("/api/v1/auth/login", new { email, password });
+            var body = await loginResponse.Content.ReadFromJsonAsync<JsonElement>();
+            var token = body.GetProperty("token").GetString()!;
+
+            var parts = token.Split('.');
+            var padded = parts[1].PadRight(parts[1].Length + (4 - parts[1].Length % 4) % 4, '=');
+            var payload = JsonSerializer.Deserialize<JsonElement>(
+                System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(padded)));
+            return Guid.Parse(payload.GetProperty("sub").GetString()!);
         }
 
         public void Dispose() => Client.Dispose();

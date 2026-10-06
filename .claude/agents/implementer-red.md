@@ -79,6 +79,10 @@ O output deve ser `claude/<id>-<slug>`. Se não for, interrompa e reporte ao Mac
 
 **Commits: `git -C <worktree> commit ...`** — o hook pre-bash avalia o branch pelo cwd do shell e bloqueia `git commit` quando o cwd não é o worktree (ocorrido na #402 em todos os spawns). Use sempre `git -C .claude/worktrees/<id>-<slug> add/commit`.
 
+**Nunca reescrever histórico** (`filter-branch`, `rebase`, `commit --amend`, `reset --hard`) — o histórico da branch
+pode já ter sido enviado ao remoto (#404: mensagens reescritas com `filter-branch` só para ajustar o trailer).
+Errou a mensagem? Siga em frente com um novo commit.
+
 **Toda chamada de Write/Edit usa o caminho absoluto dentro deste worktree** — o `cd` acima só afeta
 o cwd do Bash tool, não o path que você passa para Write/Edit. Antes de escrever o **primeiro**
 arquivo de teste, confira que o path absoluto contém `.claude/worktrees/<id>-<slug>/` — um path sem

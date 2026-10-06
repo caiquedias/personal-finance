@@ -162,6 +162,10 @@ namespace PersonalFinance.Infrastructure.Migrations
                         .HasColumnType("nvarchar(200)")
                         .HasColumnName("Email");
 
+                    b.Property<DateTime?>("EmailConfirmedAt")
+                        .HasColumnType("datetime2(7)")
+                        .HasColumnName("EmailConfirmedAt");
+
                     b.Property<int>("FailedLoginCount")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int")
@@ -256,6 +260,55 @@ namespace PersonalFinance.Infrastructure.Migrations
                         .HasDatabaseName("IX_UserRole_UserId");
 
                     b.ToTable("UserRole", (string)null);
+                });
+
+            modelBuilder.Entity("PersonalFinance.Domain.Entities.Auth.UserToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Attempts")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(7)");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("datetime2(7)");
+
+                    b.Property<bool>("IsInvalidated")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<int>("Purpose")
+                        .HasColumnType("int");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<DateTime?>("UsedAt")
+                        .HasColumnType("datetime2(7)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "Purpose")
+                        .HasDatabaseName("IX_UserToken_UserId_Purpose");
+
+                    b.ToTable("UserToken", (string)null);
                 });
 
             modelBuilder.Entity("PersonalFinance.Domain.Entities.Config.Category", b =>
@@ -838,6 +891,15 @@ namespace PersonalFinance.Infrastructure.Migrations
                 });
 
             modelBuilder.Entity("PersonalFinance.Domain.Entities.Auth.UserRole", b =>
+                {
+                    b.HasOne("PersonalFinance.Domain.Entities.Auth.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("PersonalFinance.Domain.Entities.Auth.UserToken", b =>
                 {
                     b.HasOne("PersonalFinance.Domain.Entities.Auth.User", null)
                         .WithMany()

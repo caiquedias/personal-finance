@@ -62,4 +62,16 @@ public class UserConfigurationTests
         maxLength.Should().NotBeNull();
         maxLength!.Value.Should().BeGreaterOrEqualTo(128);
     }
+
+    // ── Verificação de e-mail (#404) ──────────────────────────────────────────
+
+    [Fact(DisplayName = "User deve mapear EmailConfirmedAt como DateTime nullable")]
+    public void User_EmailConfirmedAt_ShouldBeNullableDateTime()
+    {
+        var p = UserEntity().FindProperty("EmailConfirmedAt");
+
+        p.Should().NotBeNull();
+        p!.ClrType.Should().Be(typeof(DateTime?));
+        p.IsNullable.Should().BeTrue();
+    }
 }

@@ -50,6 +50,9 @@ public sealed class CreateUserByAdminUseCase
         var hash = _hasher.Hash(dto.Password);
         var user = User.Create(dto.Name, dto.Email, hash);
 
+        // Usuário criado pelo admin já nasce com o e-mail confirmado
+        user.ConfirmEmail(DateTime.UtcNow);
+
         await _userRepository.AddAsync(user, ct);
 
         // role padrão: User (Id = 2)

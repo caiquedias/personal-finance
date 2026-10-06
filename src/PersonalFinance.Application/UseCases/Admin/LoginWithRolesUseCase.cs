@@ -22,6 +22,7 @@ namespace PersonalFinance.Application.UseCases.Admin
         private readonly IUnitOfWork _unitOfWork;
         private readonly LoginLockoutOptions _lockoutOptions;
         private readonly MfaOptions _mfaOptions;
+        private readonly EmailVerificationOptions _emailVerificationOptions;
         private readonly IValidator<DTOs.Auth.LoginDto> _validator;
 
         public LoginWithRolesUseCase(
@@ -33,6 +34,7 @@ namespace PersonalFinance.Application.UseCases.Admin
             IUnitOfWork unitOfWork,
             LoginLockoutOptions lockoutOptions,
             MfaOptions mfaOptions,
+            EmailVerificationOptions emailVerificationOptions,
             IValidator<DTOs.Auth.LoginDto> validator)
         {
             _userRepository = userRepository;
@@ -43,6 +45,7 @@ namespace PersonalFinance.Application.UseCases.Admin
             _unitOfWork = unitOfWork;
             _lockoutOptions = lockoutOptions;
             _mfaOptions = mfaOptions;
+            _emailVerificationOptions = emailVerificationOptions;
             _validator = validator;
         }
 
@@ -129,6 +132,11 @@ namespace PersonalFinance.Application.UseCases.Admin
                         await _unitOfWork.CommitAsync(ct);
                         throw new DomainException(InvalidCredentials);
                     }
+
+                    // Verificação de e-mail exigida: senha correta mas e-mail não confirmado recebe a mesma
+                    // resposta genérica (não revela o estado da conta)
+                    if (_emailVerificationOptions.Enforce && !user.IsEmailConfirmed)
+                        throw new DomainException(InvalidCredentials);
 
                     // 2º fator exigido: emite apenas o challenge. Contadores/throttle NÃO são zerados aqui —
                     // o reset ocorre somente após o 2º fator correto (VerifyMfaUseCase).
