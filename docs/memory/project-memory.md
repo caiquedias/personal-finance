@@ -49,6 +49,7 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 | #399 | [Security] Restringir política de CORS | 2026-10-05 | [399.md](399.md) |
 | #400 | [Security] Escopar authInterceptor à API própria | 2026-10-05 | [400.md](400.md) |
 | #404 | [Security][PasswordReset] Backend — tokens, e-mail e use cases (inclui telas FE) | 2026-10-06 | [404.md](404.md) |
+| #405 | [Security][PasswordReset] Frontend — telas de reset e verificação (débitos FE + banner) | 2026-10-06 | [405.md](405.md) |
 
 ---
 
@@ -58,7 +59,7 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 |---|---|---|
 | Expurgo (Purge) | #329, #330, #331, #332, #356, #369, #367, #368, #377, #376, #378, #384 | 2026-07-05 |
 | Batch Expenses / Serialização | #355 | 2026-06-26 |
-| Login / Auth UI | #387, #394, #404 | 2026-10-06 |
+| Login / Auth UI | #387, #394, #404, #405 | 2026-10-06 |
 | Segurança / JWT | #389, #391, #393, #394, #488, #489, #490, #396, #397, #398, #399, #400, #401, #402, #404 | 2026-10-06 |
 | Import (Income) | #419 | 2026-09-28 |
 | Import (Extrato C6 PDF) | #420, #421, #422, #423, #443, #444, #445, #446, #447, #464 | 2026-10-01 |
@@ -127,7 +128,7 @@ Estado atual do sistema. Atualizado ao final de cada issue via `/end-issue`.
 - **Componentes:** `PurgeDetailComponent` (#378, #384) — header, 3 abas (expenses/incomes/indicators), grid padronizado (.table/.table-wrap, badges, CurrencyBrlPipe, ícones de sort), KPIs (kpiTotalIncome, kpiTotalExpense, kpiTotalPaid, kpiTotalOwed, kpiBalance, kpiPaymentProgress). Filtros independentes por aba (#384): Despesas (expFilterDesc, expFortnight, expStatus, expSourceType, expFilterOpen, expFilterFields 4 campos, expActiveFilterCount) e Receitas (incFilterDesc, incFilterOpen, incFilterFields 1 campo, incActiveFilterCount); Indicadores sem filtro próprio
 - **Componentes:** `IncomesComponent` — modo edit do modal faz update real via `updateIncome` (antes fazia delete+create); select de período desabilitado em modo edit, com hint visual (#419)
 - **Modelos:** `PurgeRecordResponse` adicionado em models.ts; `UpdateIncomeRequest` adicionado (#419)
-- **Recuperação de conta (#404):** rotas públicas lazy `/forgot-password`, `/reset-password`, `/confirm-email` (fora do `authGuard`); `ForgotPasswordComponent`, `ResetPasswordComponent`, `ConfirmEmailComponent` + `auth-form.css` compartilhado e `readEmailHint` (`#email=` ou `history.state`, limpa o fragmento); links "Esqueci minha senha"/"Confirmar e-mail" no `LoginComponent`; `AuthService.forgotPassword/resetPassword/confirmEmail/resendConfirmation` sem tocar na sessão
+- **Recuperação de conta (#404):** rotas públicas lazy `/forgot-password`, `/reset-password`, `/confirm-email` (fora do `authGuard`); `ForgotPasswordComponent`, `ResetPasswordComponent`, `ConfirmEmailComponent` + `auth-form.css` compartilhado e `readEmailHint` (`#email=` ou `history.state`, limpa o fragmento); links "Esqueci minha senha"/"Confirmar e-mail" no `LoginComponent`; `AuthService.forgotPassword/resetPassword/confirmEmail/resendConfirmation` sem tocar na sessão; **#405:** banner `login-notice` (`history.state.notice`, vindo de reset/confirm), links ocultos no passo MFA, `register` tipado `GenericMessageResponse`
 - **Sidebar:** item "Expurgo" com ícone `archive` e rota `/purge`; item "Segurança" (`shield`, `/account/security`, #394)
 - **Auth:** authInterceptor injeta token automaticamente (não sobrescreve `Authorization` já presente, #394) e só atua em URLs da API própria (`environment.apiUrl` com fronteira; 401 externo não faz logout, #400); `vercel.json` com CSP bloqueante (`script-src 'self'`) + nosniff + Referrer-Policy e `inlineCritical=false` no build prod (#400); `AuthService` com `mfaChallenge` (signal em memória), `verifyMfa`/`setupMfa`/`enableMfa`; login com 2º passo MFA; `MfaSetupComponent` em `/account/security` (lazy, authGuard) com QR local via `QrCodeService` (#394)
 -464:** grid de revisão no padrão de Despesas — `.table-wrap.card` > `.table` (regras copiadas para o CSS do componente; só `.card` é global), `col-hide-mobile` em Data e Avisos no <768px (substitui o `min-width: 680px` com scroll); débito: possível scroll interno em 375px (inputs `min-width: 90px`)$Login:** `LoginComponent` sem seção de cadastro — link `/register` e `RouterLink` removidos (#387)

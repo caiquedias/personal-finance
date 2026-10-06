@@ -92,6 +92,10 @@ por classe é regra obrigatória, não só a feature).
 > contá-la no sizing ou criar issue de base antes. Caso real: #396 foi estimada M (~8-10 arquivos) e
 > entregou 35 porque o FluentValidation não existia no projeto.
 
+> **Escopo já entregue pela issue pai:** conferir também o inverso — se o que a issue "filha" pede já existe
+> em `develop` (escopo ampliado da pai). Caso real: #405 pedia as telas de reset que a #404 já entregara;
+> virou limpeza de débitos + banner (Size L, ~16 arquivos) em vez de duplicar componentes.
+
 ---
 
 ## Fórmula de Estimativa
@@ -196,3 +200,4 @@ especificação — inclusive as recalibrações da fórmula de estimativa.
 | 2026-10-06 | #402 (XL, ~43 arquivos) mantida sem divisão em sub-issues por decisão do Caique (sessão única); Estimativa 1h gerada pelo PO na própria sessão; `/start-issue` passou a gerar o planning via PO quando a issue não tem estimativa | `docs/memory/402.md` e `.claude/commands/start-issue.md` |
 | 2026-10-06 | #404 (XL, ~98 arquivos, backend + frontend) mantida sem divisão em sub-issues por decisão do Caique (sessão única); Estimativa 3h gerada pelo PO após 3 rodadas de análise (escopo cresceu de ~20 para ~98 arquivos ao fechar fila de e-mail, HMAC, enforcement de login, correção de enumeração no register e telas Angular); planning postado na issue após OK do Caique | Comentário `## 📋 Sprint Planning` da #404 |
 | 2026-10-06 | Melhorias de fluxo da #404 aplicadas: PO passa a listar validação de options + timeout do `HttpClient` quando a issue integra provedor externo; `/start-issue` (Passo 2.5) exige no contexto o tratamento de `ConcurrencyConflictException` e custo equivalente nos fluxos anti-enumeração; Red e Green proibidos de reescrever histórico, e Green de mover/editar testes no worktree; flaky de startup tests virou a issue #525 | `.claude/agents/{po,implementer-red,implementer-green}.md`, `.claude/commands/start-issue.md` e `docs/memory/404.md` |
+| 2026-10-06 | #405 (L, ~16 arquivos) mantida sem divisão por decisão do Caique (sessão única); escopo original já entregue pela #404, issue reaproveitada para débitos de FE + banner; melhoria de fluxo aplicada: PO confere se o escopo da issue "filha" já foi entregue pela pai antes da análise | `.claude/agents/po.md`, `docs/sprint-planning.md` e `docs/memory/405.md` |
