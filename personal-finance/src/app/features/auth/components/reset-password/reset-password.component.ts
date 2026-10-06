@@ -58,7 +58,7 @@ export class ResetPasswordComponent {
 
     this.auth.resetPassword({ email: email!, code: code!, newPassword: newPassword! }).subscribe({
       // loading permanece true no sucesso: evita novo envio durante a navegação
-      next: () => this.router.navigate(['/login']),
+      next: () => this.router.navigate(['/login'], { state: { notice: 'Senha redefinida com sucesso. Entre com a nova senha.' } }),
       error: (err) => {
         this.loading.set(false);
         this.apiError.set(err?.status === 429

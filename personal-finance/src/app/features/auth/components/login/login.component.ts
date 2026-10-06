@@ -91,6 +91,9 @@ export class LoginComponent implements OnDestroy {
   private coinId        = 0;
   private readonly timers: ReturnType<typeof setTimeout>[] = [];
 
+  // Mensagem de sucesso vinda de reset-password/confirm-email via history.state
+  readonly notice = signal<string | null>(this.readNotice());
+
   readonly mfaStep         = signal(false);
   readonly useRecoveryCode = signal(false);
 
@@ -102,6 +105,11 @@ export class LoginComponent implements OnDestroy {
     email:    ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required]],
   });
+
+  private readNotice(): string | null {
+    const notice = (history.state as { notice?: unknown } | null)?.notice;
+    return typeof notice === 'string' && notice.length > 0 ? notice : null;
+  }
 
  pickQuote(): string {
     const raw = sessionStorage.getItem(QUOTES_STORAGE_KEY);

@@ -170,21 +170,12 @@
   font-size: 0.875rem;
 }
 
-.login-register {
-  margin-top: 20px;
-  text-align: center;
+.login-notice {
+  padding: 10px 14px;
+  background: var(--color-success-bg);
+  color: var(--color-success);
+  border-radius: var(--v2-radius-sm);
   font-size: 0.875rem;
-  color: var(--text-muted);
-}
-
-.login-register a {
-  color: var(--terracotta);
-  text-decoration: none;
-  font-weight: 500;
-}
-
-.login-register a:hover {
-  text-decoration: underline;
 }
 
 .login-links {

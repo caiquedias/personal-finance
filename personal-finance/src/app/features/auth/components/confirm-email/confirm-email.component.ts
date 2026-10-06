@@ -52,7 +52,7 @@ export class ConfirmEmailComponent implements OnDestroy {
 
     this.auth.confirmEmail({ email: email!, code: code! }).subscribe({
       // loading permanece true no sucesso: evita novo envio durante a navegação
-      next: () => this.router.navigate(['/login']),
+      next: () => this.router.navigate(['/login'], { state: { notice: 'E-mail confirmado com sucesso. Você já pode entrar.' } }),
       error: (err) => {
         this.loading.set(false);
         this.apiError.set(err?.status === 429

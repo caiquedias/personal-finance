@@ -12,12 +12,6 @@ export interface ConfirmEmailRequest         { email: string; code: string; }
 export interface ResendConfirmationRequest   { email: string; }
 export interface GenericMessageResponse      { message: string; }
 
-export interface ForgotPasswordRequest       { email: string; }
-export interface PasswordResetConfirmRequest { email: string; code: string; newPassword: string; }
-export interface ConfirmEmailRequest         { email: string; code: string; }
-export interface ResendConfirmationRequest   { email: string; }
-export interface GenericMessageResponse      { message: string; }
-
 export interface LoginRequest {
   email:    string;
   password: string;

@@ -106,6 +106,18 @@ describe('ConfirmEmailComponent', () => {
       expect((router.navigate as jasmine.Spy).calls.mostRecent().args[0]).toEqual(['/login']);
     });
 
+    it('sucesso: navega para /login com state.notice (banner de sucesso)', () => {
+      authSpy.confirmEmail.and.returnValue(of({ message: 'ok' }));
+      component.form.patchValue({ code: '654321' });
+
+      component.onSubmit();
+
+      const args = (router.navigate as jasmine.Spy).calls.mostRecent().args;
+      expect(args[0]).toEqual(['/login']);
+      expect(typeof args[1]?.state?.notice).toBe('string');
+      expect(args[1].state.notice.length).toBeGreaterThan(0);
+    });
+
     it('400: mostra a mensagem da API, não navega e mantém o código digitado', () => {
       authSpy.confirmEmail.and.returnValue(
         throwError(() => ({ status: 400, error: { message: 'Código inválido ou expirado.' } })));
@@ -252,6 +264,14 @@ describe('ConfirmEmailComponent', () => {
   describe('template', () => {
     beforeEach(async () => {
       await create({ state: { email: 'ana@x.com' } });
+    });
+
+    it('campo do código: inputmode numeric, maxlength 6 e autocomplete one-time-code', () => {
+      const input: HTMLInputElement = fixture.nativeElement.querySelector('#code');
+
+      expect(input.getAttribute('inputmode')).toBe('numeric');
+      expect(input.getAttribute('maxlength')).toBe('6');
+      expect(input.getAttribute('autocomplete')).toBe('one-time-code');
     });
 
     it('exibe o erro da API no DOM', () => {
