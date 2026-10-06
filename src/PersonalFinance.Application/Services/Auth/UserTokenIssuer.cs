@@ -2,6 +2,7 @@ using PersonalFinance.Application.Interfaces;
 using PersonalFinance.Application.Options;
 using PersonalFinance.Domain.Entities.Auth;
 using PersonalFinance.Domain.Enums;
+using PersonalFinance.Domain.Exceptions;
 using PersonalFinance.Domain.Interfaces.Repositories;
 
 namespace PersonalFinance.Application.Services.Auth;
@@ -54,7 +55,17 @@ public sealed class UserTokenIssuer
         token.SetTokenHash(_codes.ComputeHash(token.Id, user.Id, purpose, code));
 
         await _tokens.AddAsync(token, ct);
-        await _uow.CommitAsync(ct);
+
+        try
+        {
+            await _uow.CommitAsync(ct);
+        }
+        catch (ConcurrencyConflictException)
+        {
+            // Corrida (DELETE concorrente do token ou e-mail duplicado): sem enfileirar nem propagar,
+            // para não criar oráculo de enumeração (409 só para contas existentes)
+            return false;
+        }
 
         // Só após persistir: nunca enviar um código que não foi gravado
         var message = purpose == UserTokenPurpose.PasswordReset
