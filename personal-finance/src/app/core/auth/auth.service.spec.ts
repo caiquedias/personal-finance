@@ -297,4 +297,97 @@ describe('AuthService', () => {
       expect(result).toEqual({ recoveryCodes: ['A', 'B'] });
     });
   });
+
+  // ── Recuperação de conta (#404) — endpoints anônimos, sem tocar na sessão ──────────
+  describe('recuperação de conta', () => {
+    const BASE = 'https://localhost:51841/api/v1/auth';
+
+    beforeEach(() => {
+      localStorage.clear();
+      setup();
+    });
+
+    function expectSessionUntouched(): void {
+      expect(service.isAuthenticated()).toBeFalse();
+      expect(service.currentUser()).toBeNull();
+      expect(localStorage.getItem(TOKEN_KEY)).toBeNull();
+      expect(localStorage.getItem(USER_KEY)).toBeNull();
+      expect(routerSpy.navigate).not.toHaveBeenCalled();
+    }
+
+    it('forgotPassword: POST /auth/password/forgot com {email} e devolve a resposta genérica', () => {
+      let result: any;
+      (service as any).forgotPassword({ email: 'a@b.com' }).subscribe((r: any) => result = r);
+
+      const req = httpMock.expectOne(`${BASE}/password/forgot`);
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual({ email: 'a@b.com' });
+      req.flush({ message: 'Se o e-mail existir, enviamos um código.' });
+
+      expect(result).toEqual({ message: 'Se o e-mail existir, enviamos um código.' });
+      expectSessionUntouched();
+    });
+
+    it('resetPassword: POST /auth/password/reset com {email, code, newPassword}', () => {
+      let emitted = false;
+      (service as any)
+        .resetPassword({ email: 'a@b.com', code: '123456', newPassword: 'NovaSenha@456' })
+        .subscribe(() => emitted = true);
+
+      const req = httpMock.expectOne(`${BASE}/password/reset`);
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual({ email: 'a@b.com', code: '123456', newPassword: 'NovaSenha@456' });
+      req.flush({ message: 'Senha redefinida.' });
+
+      expect(emitted).toBeTrue();
+      expectSessionUntouched();
+    });
+
+    it('resetPassword: 400 propaga o erro sem criar sessão nem navegar', () => {
+      let status = 0;
+      (service as any)
+        .resetPassword({ email: 'a@b.com', code: '000000', newPassword: 'NovaSenha@456' })
+        .subscribe({ error: (e: any) => status = e.status });
+
+      httpMock.expectOne(`${BASE}/password/reset`)
+        .flush({ message: 'Código inválido ou expirado.' }, { status: 400, statusText: 'Bad Request' });
+
+      expect(status).toBe(400);
+      expectSessionUntouched();
+    });
+
+    it('confirmEmail: POST /auth/email/confirm com {email, code}', () => {
+      let emitted = false;
+      (service as any).confirmEmail({ email: 'a@b.com', code: '654321' }).subscribe(() => emitted = true);
+
+      const req = httpMock.expectOne(`${BASE}/email/confirm`);
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual({ email: 'a@b.com', code: '654321' });
+      req.flush({ message: 'E-mail confirmado.' });
+
+      expect(emitted).toBeTrue();
+      expectSessionUntouched();
+    });
+
+    it('resendConfirmation: POST /auth/email/resend com {email}', () => {
+      let emitted = false;
+      (service as any).resendConfirmation({ email: 'a@b.com' }).subscribe(() => emitted = true);
+
+      const req = httpMock.expectOne(`${BASE}/email/resend`);
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual({ email: 'a@b.com' });
+      req.flush({ message: 'ok' });
+
+      expect(emitted).toBeTrue();
+      expectSessionUntouched();
+    });
+
+    it('não envia Authorization manual nos endpoints de recuperação (são anônimos)', () => {
+      (service as any).forgotPassword({ email: 'a@b.com' }).subscribe();
+
+      const req = httpMock.expectOne(`${BASE}/password/forgot`);
+      expect(req.request.headers.has('Authorization')).toBeFalse();
+      req.flush({});
+    });
+  });
 });

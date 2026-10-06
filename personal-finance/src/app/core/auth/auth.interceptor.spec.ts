@@ -75,6 +75,30 @@ describe('authInterceptor', () => {
     expect(authSpy.logout).not.toHaveBeenCalled();
   });
 
+  it('não chama logout em 400 dos endpoints de recuperação (código inválido nunca é 401)', () => {
+    setup(null);
+
+    http.post(`${api}/auth/password/reset`, {}).subscribe({ error: () => {} });
+    httpMock.expectOne(`${api}/auth/password/reset`)
+      .flush({ message: 'Código inválido ou expirado.' }, { status: 400, statusText: 'Bad Request' });
+
+    http.post(`${api}/auth/email/confirm`, {}).subscribe({ error: () => {} });
+    httpMock.expectOne(`${api}/auth/email/confirm`)
+      .flush({ message: 'Código inválido ou expirado.' }, { status: 400, statusText: 'Bad Request' });
+
+    expect(authSpy.logout).not.toHaveBeenCalled();
+  });
+
+  it('não chama logout em 429 do rate limit de recuperação', () => {
+    setup(null);
+
+    http.post(`${api}/auth/password/forgot`, {}).subscribe({ error: () => {} });
+    httpMock.expectOne(`${api}/auth/password/forgot`)
+      .flush({ message: 'Tente novamente em 30 segundos.' }, { status: 429, statusText: 'Too Many Requests' });
+
+    expect(authSpy.logout).not.toHaveBeenCalled();
+  });
+
   it('não sobrescreve Authorization já presente (verify com challenge) mesmo com token salvo', () => {
     setup('saved-token');
 
