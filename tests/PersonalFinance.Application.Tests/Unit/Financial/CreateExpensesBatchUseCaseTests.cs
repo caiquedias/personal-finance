@@ -37,7 +37,7 @@ public class CreateExpensesBatchUseCaseTests
 
         var dto = new CreateExpensesBatchDto(periodId, userId, [MakeItem(catId1), MakeItem(catId2)]);
         var sut = new CreateExpensesBatchUseCase(
-            _expenseRepo.Object, _periodRepo.Object, _categoryRepo.Object, _uow.Object);
+            _expenseRepo.Object, _periodRepo.Object, _categoryRepo.Object, _uow.Object, PersonalFinance.Application.Tests.Unit.Support.TestValidators.Valid<CreateExpensesBatchDto>());
 
         var result = await sut.ExecuteAsync(dto);
 
@@ -50,7 +50,7 @@ public class CreateExpensesBatchUseCaseTests
     {
         var dto = new CreateExpensesBatchDto(Guid.NewGuid(), Guid.NewGuid(), []);
         var sut = new CreateExpensesBatchUseCase(
-            _expenseRepo.Object, _periodRepo.Object, _categoryRepo.Object, _uow.Object);
+            _expenseRepo.Object, _periodRepo.Object, _categoryRepo.Object, _uow.Object, PersonalFinance.Application.Tests.Unit.Support.TestValidators.Valid<CreateExpensesBatchDto>());
 
         var act = () => sut.ExecuteAsync(dto);
         await act.Should().ThrowAsync<DomainException>();
@@ -68,7 +68,7 @@ public class CreateExpensesBatchUseCaseTests
 
         var dto = new CreateExpensesBatchDto(periodId, userId, [MakeItem(Guid.NewGuid())]);
         var sut = new CreateExpensesBatchUseCase(
-            _expenseRepo.Object, _periodRepo.Object, _categoryRepo.Object, _uow.Object);
+            _expenseRepo.Object, _periodRepo.Object, _categoryRepo.Object, _uow.Object, PersonalFinance.Application.Tests.Unit.Support.TestValidators.Valid<CreateExpensesBatchDto>());
 
         var act = () => sut.ExecuteAsync(dto);
         await act.Should().ThrowAsync<DomainException>();
@@ -89,10 +89,26 @@ public class CreateExpensesBatchUseCaseTests
 
         var dto = new CreateExpensesBatchDto(periodId, userId, [MakeItem(catId)]);
         var sut = new CreateExpensesBatchUseCase(
-            _expenseRepo.Object, _periodRepo.Object, _categoryRepo.Object, _uow.Object);
+            _expenseRepo.Object, _periodRepo.Object, _categoryRepo.Object, _uow.Object, PersonalFinance.Application.Tests.Unit.Support.TestValidators.Valid<CreateExpensesBatchDto>());
 
         var act = () => sut.ExecuteAsync(dto);
         await act.Should().ThrowAsync<DomainException>();
         _uow.Verify(u => u.CommitAsync(default), Times.Never);
+    }
+
+    [Fact(DisplayName = "CreateBatch: validator reprova deve lançar ValidationException sem acessar repositório nem persistir")]
+    public async Task CreateBatch_WhenValidatorFails_ShouldThrowValidationExceptionWithoutPersisting()
+    {
+        var sut = PersonalFinance.Application.Tests.Unit.Support.UseCaseFactory.Create<CreateExpensesBatchUseCase>(
+            _expenseRepo.Object, _periodRepo.Object, _categoryRepo.Object, _uow.Object,
+            PersonalFinance.Application.Tests.Unit.Support.TestValidators.Invalid<CreateExpensesBatchDto>());
+
+        var act = () => sut.ExecuteAsync(new CreateExpensesBatchDto(
+            Guid.NewGuid(), Guid.NewGuid(), new[] { MakeItem(Guid.NewGuid()) }));
+
+        await act.Should().ThrowAsync<FluentValidation.ValidationException>();
+        _expenseRepo.Invocations.Should().BeEmpty();
+        _periodRepo.Invocations.Should().BeEmpty();
+        _uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 }

@@ -17,7 +17,7 @@ public class CreatePaymentStatusUseCaseTests
 
     public CreatePaymentStatusUseCaseTests()
     {
-        _sut = new CreatePaymentStatusUseCase(_repository.Object, _uow.Object);
+        _sut = new CreatePaymentStatusUseCase(_repository.Object, _uow.Object, Support.TestValidators.Valid<CreatePaymentStatusDto>());
     }
 
     [Fact(DisplayName = "Deve criar status com dados válidos")]
@@ -71,5 +71,17 @@ public class CreatePaymentStatusUseCaseTests
             new CreatePaymentStatusDto("Novo Status", "Desc"));
 
         result.Id.Should().Be(10);
+    }
+
+    [Fact(DisplayName = "Deve lançar ValidationException e não persistir quando o validator rejeita o DTO")]
+    public async Task Execute_WhenValidatorFails_ShouldThrowValidationExceptionWithoutPersisting()
+    {
+        var sut = new CreatePaymentStatusUseCase(_repository.Object, _uow.Object, Support.TestValidators.Invalid<CreatePaymentStatusDto>());
+
+        var act = () => sut.ExecuteAsync(new CreatePaymentStatusDto("Parcelado", "Desc"));
+
+        await act.Should().ThrowAsync<FluentValidation.ValidationException>();
+        _repository.VerifyNoOtherCalls();
+        _uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 }

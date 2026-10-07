@@ -1,0 +1,80 @@
+name: Security — Dependency Audit
+
+on:
+  pull_request:
+  schedule:
+    - cron: '0 9 * * 1' # segunda-feira, 09:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+concurrency:
+  group: security-audit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  dotnet-audit:
+    name: NuGet vulnerable packages
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        run: dotnet restore PersonalFinance.sln
+
+      # `dotnet list package --vulnerable` sai com exit 0 mesmo com vulnerabilidade — o gate é o jq abaixo
+      - name: Audit (direct + transitive)
+        run: dotnet list PersonalFinance.sln package --vulnerable --include-transitive --format json > nuget-audit.json
+
+      - name: Fail on High/Critical
+        run: |
+          # JSON inválido deve falhar o step (jq -e), nunca passar em silêncio
+          jq -e . nuget-audit.json > /dev/null
+          FOUND=$(jq -r '
+            [.projects[]?.frameworks[]? | (.topLevelPackages // [])[], (.transitivePackages // [])[]
+              | . as $p | .vulnerabilities[]? | select(.severity == "High" or .severity == "Critical")
+              | "\($p.id) \($p.resolvedVersion) \(.severity) \(.advisoryurl)"] | unique | .[]' nuget-audit.json)
+          {
+            echo "### NuGet — vulnerabilidades High/Critical"
+            if [ -z "$FOUND" ]; then echo "Nenhuma."; else echo '```'; echo "$FOUND"; echo '```'; fi
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ -n "$FOUND" ]; then echo "$FOUND"; exit 1; fi
+
+  npm-audit:
+    name: npm vulnerable packages
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: personal-finance
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: personal-finance/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      # Só dependências de produção: devDependencies (ex.: braces via karma) não vão para o bundle
+      - name: Audit (production)
+        run: |
+          # Sem pipe: preserva o exit code do npm audit e escreve o summary sempre
+          rc=0
+          npm audit --omit=dev --audit-level=high > npm-audit.txt 2>&1 || rc=$?
+          cat npm-audit.txt
+          { echo '### npm — vulnerabilidades (produção)'; echo '```'; tail -n 20 npm-audit.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          exit $rc

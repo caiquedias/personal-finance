@@ -11,6 +11,26 @@ export const routes: Routes = [
         .then(m => m.LoginComponent)
   },
 
+  // Recuperação de conta — públicas (usuário deslogado)
+  {
+    path: 'forgot-password',
+    loadComponent: () =>
+      import('./features/auth/components/forgot-password/forgot-password.component')
+        .then(m => m.ForgotPasswordComponent)
+  },
+  {
+    path: 'reset-password',
+    loadComponent: () =>
+      import('./features/auth/components/reset-password/reset-password.component')
+        .then(m => m.ResetPasswordComponent)
+  },
+  {
+    path: 'confirm-email',
+    loadComponent: () =>
+      import('./features/auth/components/confirm-email/confirm-email.component')
+        .then(m => m.ConfirmEmailComponent)
+  },
+
   // Rotas protegidas — dentro do shell com sidebar + header
   {
     path: '',
@@ -85,6 +105,12 @@ export const routes: Routes = [
                 .then(m => m.PurgeDetailComponent)
           },
         ]
+      },
+      {
+        path: 'account/security',
+        loadComponent: () =>
+          import('./features/auth/components/mfa-setup/mfa-setup.component')
+            .then(m => m.MfaSetupComponent)
       },
       {
         path: 'admin/users',

@@ -1,3 +1,4 @@
+using FluentValidation;
 using PersonalFinance.Application.DTOs.Financial;
 using PersonalFinance.Domain.Entities.Financial;
 using PersonalFinance.Domain.Enums;
@@ -20,23 +21,28 @@ public sealed class CreateExpenseUseCase
     private readonly IPeriodRepository   _periodRepository;
     private readonly ICategoryRepository _categoryRepository;
     private readonly IUnitOfWork         _unitOfWork;
+    private readonly IValidator<CreateExpenseDto> _validator;
 
     public CreateExpenseUseCase(
         IExpenseRepository  expenseRepository,
         IPeriodRepository   periodRepository,
         ICategoryRepository categoryRepository,
-        IUnitOfWork         unitOfWork)
+        IUnitOfWork         unitOfWork,
+        IValidator<CreateExpenseDto> validator)
     {
         _expenseRepository  = expenseRepository;
         _periodRepository   = periodRepository;
         _categoryRepository = categoryRepository;
         _unitOfWork         = unitOfWork;
+        _validator          = validator;
     }
 
     public async Task<ExpenseResponseDto> ExecuteAsync(
         CreateExpenseDto dto,
         CancellationToken ct = default)
     {
+        await _validator.ValidateAndThrowAsync(dto, ct);
+
         // Garante que o período existe e pertence ao usuário
         var periodExists = await _periodRepository
             .ExistsByIdAndUserAsync(dto.PeriodId, dto.UserId, ct);
@@ -93,21 +99,26 @@ public sealed class UpdateExpenseUseCase
     private readonly IExpenseRepository  _expenseRepository;
     private readonly ICategoryRepository _categoryRepository;
     private readonly IUnitOfWork         _unitOfWork;
+    private readonly IValidator<UpdateExpenseDto> _validator;
 
     public UpdateExpenseUseCase(
         IExpenseRepository  expenseRepository,
         ICategoryRepository categoryRepository,
-        IUnitOfWork         unitOfWork)
+        IUnitOfWork         unitOfWork,
+        IValidator<UpdateExpenseDto> validator)
     {
         _expenseRepository  = expenseRepository;
         _categoryRepository = categoryRepository;
         _unitOfWork         = unitOfWork;
+        _validator          = validator;
     }
 
     public async Task ExecuteAsync(
         UpdateExpenseDto dto,
         CancellationToken ct = default)
     {
+        await _validator.ValidateAndThrowAsync(dto, ct);
+
         var expense = await _expenseRepository
             .GetByIdAndUserAsync(dto.Id, dto.UserId, ct);
 
@@ -211,23 +222,28 @@ public sealed class CreateExpensesBatchUseCase
     private readonly IPeriodRepository   _periodRepository;
     private readonly ICategoryRepository _categoryRepository;
     private readonly IUnitOfWork         _unitOfWork;
+    private readonly IValidator<CreateExpensesBatchDto> _validator;
 
     public CreateExpensesBatchUseCase(
         IExpenseRepository  expenseRepository,
         IPeriodRepository   periodRepository,
         ICategoryRepository categoryRepository,
-        IUnitOfWork         unitOfWork)
+        IUnitOfWork         unitOfWork,
+        IValidator<CreateExpensesBatchDto> validator)
     {
         _expenseRepository  = expenseRepository;
         _periodRepository   = periodRepository;
         _categoryRepository = categoryRepository;
         _unitOfWork         = unitOfWork;
+        _validator          = validator;
     }
 
     public async Task<IReadOnlyList<ExpenseResponseDto>> ExecuteAsync(
         CreateExpensesBatchDto dto,
         CancellationToken ct = default)
     {
+        await _validator.ValidateAndThrowAsync(dto, ct);
+
         if (dto.Items.Count == 0)
             throw new DomainException("A lista de despesas não pode ser vazia.");
 

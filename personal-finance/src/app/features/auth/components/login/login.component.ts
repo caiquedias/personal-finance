@@ -1,5 +1,5 @@
 import { Component, ElementRef, inject, OnDestroy, signal, ViewChild } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { AuthService } from '../../../../core/auth/auth.service';
 
@@ -70,7 +70,7 @@ const QUOTES_STORAGE_KEY = 'login_quotes_usage';
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, RouterLink],
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.css']
 })
@@ -91,10 +91,25 @@ export class LoginComponent implements OnDestroy {
   private coinId        = 0;
   private readonly timers: ReturnType<typeof setTimeout>[] = [];
 
+  // Mensagem de sucesso vinda de reset-password/confirm-email via history.state
+  readonly notice = signal<string | null>(this.readNotice());
+
+  readonly mfaStep         = signal(false);
+  readonly useRecoveryCode = signal(false);
+
+  readonly mfaForm = this.fb.group({
+    code: ['', [Validators.required]],
+  });
+
   readonly form = this.fb.group({
     email:    ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required]],
   });
+
+  private readNotice(): string | null {
+    const notice = (history.state as { notice?: unknown } | null)?.notice;
+    return typeof notice === 'string' && notice.length > 0 ? notice : null;
+  }
 
  pickQuote(): string {
     const raw = sessionStorage.getItem(QUOTES_STORAGE_KEY);
@@ -173,11 +188,62 @@ export class LoginComponent implements OnDestroy {
     const { email, password } = this.form.getRawValue();
 
     this.auth.login({ email: email!, password: password! }).subscribe({
-      next: () => this.router.navigate(['/']),
+      next: (response) => {
+        if (response.mfaRequired) {
+          this.loading.set(false);
+          this.mfaForm.reset({ code: '' });
+          this.useRecoveryCode.set(false);
+          this.mfaStep.set(true);
+          return;
+        }
+        this.router.navigate(['/']);
+      },
       error: (err) => {
         this.loading.set(false);
         this.apiError.set(err.error?.message ?? 'Credenciais inválidas.');
       }
     });
+  }
+
+  onVerify(): void {
+    if (this.loading()) return;
+    if (this.mfaForm.invalid) {
+      this.mfaForm.markAllAsTouched();
+      return;
+    }
+
+    this.loading.set(true);
+    this.apiError.set(null);
+
+    const code = (this.mfaForm.getRawValue().code ?? '').trim();
+
+    this.auth.verifyMfa(code).subscribe({
+      next: () => this.router.navigate(['/']),
+      error: (err) => {
+        this.loading.set(false);
+        if (err.status === 401) {
+          // Challenge expirado — recomeça pelas credenciais
+          this.auth.clearMfaChallenge();
+          this.mfaStep.set(false);
+          this.apiError.set('Sessão de verificação expirada. Entre novamente.');
+          return;
+        }
+        this.apiError.set(err.error?.message ?? 'Não foi possível verificar o código.');
+      }
+    });
+  }
+
+  toggleRecoveryCode(): void {
+    this.useRecoveryCode.update(v => !v);
+    this.mfaForm.reset({ code: '' });
+    this.apiError.set(null);
+  }
+
+  backToCredentials(): void {
+    this.auth.clearMfaChallenge();
+    this.mfaStep.set(false);
+    this.useRecoveryCode.set(false);
+    this.apiError.set(null);
+    this.loading.set(false);
   }
 }

@@ -1,3 +1,4 @@
+using FluentValidation;
 using PersonalFinance.Application.DTOs.Financial;
 using PersonalFinance.Application.Interfaces;
 using PersonalFinance.Domain.Entities.Financial;
@@ -18,19 +19,24 @@ public sealed class CreatePeriodUseCase
 {
     private readonly IPeriodRepository _periodRepository;
     private readonly IUnitOfWork       _unitOfWork;
+    private readonly IValidator<CreatePeriodDto> _validator;
 
     public CreatePeriodUseCase(
         IPeriodRepository periodRepository,
-        IUnitOfWork       unitOfWork)
+        IUnitOfWork       unitOfWork,
+        IValidator<CreatePeriodDto> validator)
     {
         _periodRepository = periodRepository;
         _unitOfWork       = unitOfWork;
+        _validator        = validator;
     }
 
     public async Task<PeriodResponseDto> ExecuteAsync(
         CreatePeriodDto dto,
         CancellationToken ct = default)
     {
+        await _validator.ValidateAndThrowAsync(dto, ct);
+
         var existing = await _periodRepository
             .GetByUserYearMonthAsync(dto.UserId, dto.Year, dto.Month, ct);
 

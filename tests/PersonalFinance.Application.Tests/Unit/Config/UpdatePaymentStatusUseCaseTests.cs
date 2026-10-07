@@ -17,7 +17,7 @@ public class UpdatePaymentStatusUseCaseTests
 
     public UpdatePaymentStatusUseCaseTests()
     {
-        _sut = new UpdatePaymentStatusUseCase(_repository.Object, _uow.Object);
+        _sut = new UpdatePaymentStatusUseCase(_repository.Object, _uow.Object, Support.TestValidators.Valid<UpdatePaymentStatusDto>());
     }
 
     [Fact(DisplayName = "Deve atualizar status com dados válidos")]
@@ -96,5 +96,17 @@ public class UpdatePaymentStatusUseCaseTests
         var act = () => _sut.ExecuteAsync(new UpdatePaymentStatusDto(99, "Nome", "Desc"));
 
         await act.Should().ThrowAsync<DomainException>().WithMessage("*não encontrado*");
+    }
+
+    [Fact(DisplayName = "Deve lançar ValidationException e não persistir quando o validator rejeita o DTO")]
+    public async Task Execute_WhenValidatorFails_ShouldThrowValidationExceptionWithoutPersisting()
+    {
+        var sut = new UpdatePaymentStatusUseCase(_repository.Object, _uow.Object, Support.TestValidators.Invalid<UpdatePaymentStatusDto>());
+
+        var act = () => sut.ExecuteAsync(new UpdatePaymentStatusDto(5, "Parcelado", "Desc"));
+
+        await act.Should().ThrowAsync<FluentValidation.ValidationException>();
+        _repository.VerifyNoOtherCalls();
+        _uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 }

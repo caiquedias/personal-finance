@@ -45,6 +45,10 @@ Você tem acesso restrito a **somente arquivos de teste** — nunca crie ou edit
   (ex.: PDFsharp, PdfPig `PdfDocumentBuilder`) e os **ids de pacote NuGet** (`dotnet add package` /
   restore num scratch) — nunca assumir nomes de propriedades, métodos ou ids de memória; a versão
   instalada pode não tê-los (ex.: `DocumentSecurityLevel` inexistente no PDFsharp 6.1.1, id `PdfPig` ≠ `UglyToad.PdfPig`)
+- **Fixtures e relógio:** antes de asserir sobre dados de um helper (roles, claims), conferir no código
+  de produção o que o caminho usado realmente grava; nunca recalcular valores dependentes de `UtcNow`
+  (TOTP) após setup lento — guardar o valor da etapa anterior. Ver `docs/testing.md` → "Testes
+  dependentes de relógio" (#393)
 - Commitar ao finalizar: `test(escopo): red — testes falhando #<issue-id>`
 
 ## Shell e ambiente
@@ -72,6 +76,12 @@ cd .claude/worktrees/<id>-<slug>
 git branch --show-current
 ```
 O output deve ser `claude/<id>-<slug>`. Se não for, interrompa e reporte ao Macro Agent.
+
+**Commits: `git -C <worktree> commit ...`** — o hook pre-bash avalia o branch pelo cwd do shell e bloqueia `git commit` quando o cwd não é o worktree (ocorrido na #402 em todos os spawns). Use sempre `git -C .claude/worktrees/<id>-<slug> add/commit`.
+
+**Nunca reescrever histórico** (`filter-branch`, `rebase`, `commit --amend`, `reset --hard`) — o histórico da branch
+pode já ter sido enviado ao remoto (#404: mensagens reescritas com `filter-branch` só para ajustar o trailer).
+Errou a mensagem? Siga em frente com um novo commit.
 
 **Toda chamada de Write/Edit usa o caminho absoluto dentro deste worktree** — o `cd` acima só afeta
 o cwd do Bash tool, não o path que você passa para Write/Edit. Antes de escrever o **primeiro**

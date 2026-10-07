@@ -9,6 +9,9 @@ _(formato esperado: `<issue-number>` ou `<issue-url>`)_
 ## Passo 1 — Ler, analisar e apresentar o plano
 
 1. Leia a issue via `gh issue view <number> --repo caiquedias/personal-finance --json number,title,body,labels`
+   Verifique também se a issue tem comentário de Sprint Planning com a estimativa:
+   `gh issue view <number> --repo caiquedias/personal-finance --json comments --jq '.comments[].body' | grep -i "Estimativa:"`
+   — sem resultado, o PO gera o Sprint Planning no passo 3/4 (o `/end-issue` precisa da estimativa para medir desvio).
 2. Derive o nome da branch: `feat/<id>-<slug>` (slug em kebab-case do título)
 3. **Spawne o PO em Modo Análise de Impacto** (autônomo — não pedir permissão ao Caique). Passe:
    - Issue number, título e body
@@ -21,6 +24,13 @@ _(formato esperado: `<issue-number>` ou `<issue-url>`)_
    4. **Green (task a task)** — implementar: `<tasks da issue>`
    5. **QA** → **UX Validator** (se frontend) → **Reviewer**
    6. Push + PR `claude/` → `feat/` (vinculado ao projeto) + mover issue **e PR** para **In Review**
+   **Sem `Estimativa:` e sem comentário de Sprint Planning na issue:** não perguntar ao Caique se roda o
+   planning. Ainda no passo 3, peça ao PO (`subagent_type: "po"`) um Sprint Planning completo
+   (Estimativa em h, Prioridade, Size, Risco, arquivos afetados — `docs/sprint-planning.md`) baseado na issue e
+   na Análise de Impacto, e inclua no plano, logo abaixo dos 6 itens, uma linha:
+   `📋 Planning gerado pelo PO: Estimativa Xh | Size X | Risco X — comentário na issue pendente do seu OK.`
+   O comentário `## 📋 Sprint Planning` só é postado na issue (e Estimativa/Size no board) após o OK do Caique
+   (regra de pré-ação). Size L/XL: propor a divisão junto, como em `docs/sprint-planning.md`.
 5. **Aguarde confirmação do Caique antes de avançar**
 
 ---
@@ -51,6 +61,11 @@ cd .claude/worktrees/<id>-<slug> && git branch --show-current
 ```
 O output **deve ser exatamente** `claude/<id>-<slug>`.
 
+**Baseline da suíte (antes do Red):** o worktree está em `origin/develop`, então rode a suíte dos projetos
+que a issue toca (`dotnet test <projeto>`, `DOTNET_CLI_UI_LANGUAGE=en`) e anote no contexto (Passo 2.5) qualquer
+falha existente (`## Falhas pré-existentes`). Se houver, informe ao Caique e peça decisão (corrigir na issue /
+issue separada / aceitar) **antes** do Red — evita o ciclo QA → decisão → Green da #401.
+
 **Issue com frontend:** o worktree não tem `node_modules`. Rode `npm ci` em `personal-finance/` (no worktree)
 antes do Red, para ele não gastar um spawn instalando dependências.
 
@@ -72,6 +87,10 @@ Antes de spawnar **qualquer** sub-agente, escreva **um único arquivo** no scrat
 - Interfaces/contratos de domínio relevantes (somente assinaturas)
 - Resultado da Análise de Impacto do PO (Passo 1, item 3)
 - Decisões já confirmadas com o Caique
+- **Fluxo anti-enumeração** (register/forgot/resend ou qualquer endpoint que deve responder igual para conta
+  existente e inexistente): registrar como requisito que **todo commit do fluxo trata `ConcurrencyConflictException`
+  com a mesma resposta genérica** (sem 409) e que o caminho de usuário inexistente/inativo gasta custo
+  equivalente ao do caminho real (sem Argon2 se os testes exigirem `Hash` Never) — #404 pagou isso num ciclo de correção
 
 A partir daqui, **todo** prompt de spawn passa o **caminho deste arquivo**, nunca o conteúdo
 colado. Se partes só devem ser lidas por um dos agentes, nomear seções (`## Para Red` /
@@ -88,6 +107,7 @@ Passe no prompt **apenas fatos desta sessão**:
 - Issue number, título e URL
 - **Caminho do arquivo de contexto** (Passo 2.5)
 - Path do worktree: `.claude/worktrees/<id>-<slug>`
+- Lembrar: commits via `git -C <worktree>` (o hook pre-bash avalia o cwd)
 
 Aguarde RED CONCLUÍDO antes de avançar.
 

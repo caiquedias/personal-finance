@@ -17,7 +17,7 @@ public class CreateSourceTypeUseCaseTests
 
     public CreateSourceTypeUseCaseTests()
     {
-        _sut = new CreateSourceTypeUseCase(_repository.Object, _uow.Object);
+        _sut = new CreateSourceTypeUseCase(_repository.Object, _uow.Object, Support.TestValidators.Valid<CreateSourceTypeDto>());
     }
 
     [Fact(DisplayName = "Deve criar tipo de fonte com dados válidos")]
@@ -55,5 +55,17 @@ public class CreateSourceTypeUseCaseTests
 
         await act.Should().ThrowAsync<DomainException>();
         _uow.Verify(u => u.CommitAsync(default), Times.Never);
+    }
+
+    [Fact(DisplayName = "Deve lançar ValidationException e não persistir quando o validator rejeita o DTO")]
+    public async Task Execute_WhenValidatorFails_ShouldThrowValidationExceptionWithoutPersisting()
+    {
+        var sut = new CreateSourceTypeUseCase(_repository.Object, _uow.Object, Support.TestValidators.Invalid<CreateSourceTypeDto>());
+
+        var act = () => sut.ExecuteAsync(new CreateSourceTypeDto("Empresarial"));
+
+        await act.Should().ThrowAsync<FluentValidation.ValidationException>();
+        _repository.VerifyNoOtherCalls();
+        _uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 }

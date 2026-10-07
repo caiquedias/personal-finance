@@ -1,3 +1,4 @@
+using FluentValidation;
 using PersonalFinance.Application.DTOs.Financial;
 using PersonalFinance.Domain.Entities.Financial;
 using PersonalFinance.Domain.Exceptions;
@@ -15,19 +16,24 @@ public sealed class SaveExpenseOrderUseCase
     private readonly IExpenseOrderRepository _orderRepository;
     private readonly IExpenseRepository      _expenseRepository;
     private readonly IUnitOfWork             _unitOfWork;
+    private readonly IValidator<SaveExpenseOrderDto> _validator;
 
     public SaveExpenseOrderUseCase(
         IExpenseOrderRepository orderRepository,
         IExpenseRepository      expenseRepository,
-        IUnitOfWork             unitOfWork)
+        IUnitOfWork             unitOfWork,
+        IValidator<SaveExpenseOrderDto> validator)
     {
         _orderRepository   = orderRepository;
         _expenseRepository = expenseRepository;
         _unitOfWork        = unitOfWork;
+        _validator         = validator;
     }
 
     public async Task ExecuteAsync(SaveExpenseOrderDto dto, CancellationToken ct = default)
     {
+        await _validator.ValidateAndThrowAsync(dto, ct);
+
         var items = dto.Items.ToList();
 
         if (items.Count == 0)

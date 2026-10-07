@@ -13,11 +13,16 @@ public sealed record LoginDto(
     string Password
 );
 
-/// <summary>Retorno do login: token JWT e dados básicos do usuário.</summary>
+/// <summary>
+/// Retorno do login: token JWT e dados básicos do usuário. Campos de MFA são aditivos:
+/// com MfaRequired=true, Token é null e MfaToken é o token intermediário do 2º fator.
+/// </summary>
 public sealed record LoginResponseDto(
-    string Token,
+    string? Token,
     string Name,
-    string Email
+    string Email,
+    bool MfaRequired = false,
+    string? MfaToken = null
 );
 
 /// <summary>Retorno de criação/consulta de usuário. Nunca expõe PasswordHash.</summary>

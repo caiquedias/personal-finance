@@ -20,7 +20,7 @@ public class UpdateIncomeUseCaseTests
     private static readonly Guid IncomeId = Guid.NewGuid();
 
     public UpdateIncomeUseCaseTests() =>
-        _sut = new UpdateIncomeUseCase(_incomeRepo.Object, _uow.Object);
+        _sut = new UpdateIncomeUseCase(_incomeRepo.Object, _uow.Object, PersonalFinance.Application.Tests.Unit.Support.TestValidators.Valid<UpdateIncomeDto>());
 
     private static Income FakeIncome() => Income.Create(
         Guid.NewGuid(), UserId, FortnightType.First,
@@ -89,5 +89,20 @@ public class UpdateIncomeUseCaseTests
 
         await act.Should().ThrowAsync<Exception>();
         _uow.Verify(u => u.CommitAsync(default), Times.Never);
+    }
+
+    [Fact(DisplayName = "Execute: validator reprova deve lançar ValidationException sem acessar repositório nem persistir")]
+    public async Task Execute_WhenValidatorFails_ShouldThrowValidationExceptionWithoutPersisting()
+    {
+        var sut = PersonalFinance.Application.Tests.Unit.Support.UseCaseFactory.Create<UpdateIncomeUseCase>(
+            _incomeRepo.Object, _uow.Object,
+            PersonalFinance.Application.Tests.Unit.Support.TestValidators.Invalid<UpdateIncomeDto>());
+
+        var act = () => sut.ExecuteAsync(new UpdateIncomeDto(
+            Guid.NewGuid(), Guid.NewGuid(), FortnightType.First, "x", 1m, new DateOnly(2026, 5, 5), null));
+
+        await act.Should().ThrowAsync<FluentValidation.ValidationException>();
+        _incomeRepo.Invocations.Should().BeEmpty();
+        _uow.Verify(u => u.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 }
