@@ -34,7 +34,7 @@ type MfaSetupStep = 'setup' | 'verify' | 'recovery' | 'active';
             <p class="mfa-text">Ou digite a chave manualmente:</p>
             <code class="mfa-secret" data-testid="mfa-secret">{{ secret() }}</code>
 
-            <form class="mfa-form" (ngSubmit)="confirm()">
+            <form class="mfa-form" (submit)="$event.preventDefault(); confirm()">
               <label for="mfa-setup-code" class="mfa-label">Código</label>
               <input
                 id="mfa-setup-code"

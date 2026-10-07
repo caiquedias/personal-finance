@@ -91,6 +91,18 @@ describe('MfaSetupComponent', () => {
       await createAndSettle();
     });
 
+    it('submit do formulário chama enableMfa e não dispara o submit nativo (recarga da página)', () => {
+      authSpy.enableMfa.and.returnValue(new Subject());
+      component.codeControl.setValue('123456');
+
+      const form: HTMLFormElement = fixture.nativeElement.querySelector('form');
+      const event = new Event('submit', { cancelable: true });
+      form.dispatchEvent(event);
+
+      expect(authSpy.enableMfa).toHaveBeenCalledOnceWith('123456');
+      expect(event.defaultPrevented).toBeTrue();
+    });
+
     it('código vazio: não chama enableMfa', () => {
       component.codeControl.setValue('');
       component.confirm();
