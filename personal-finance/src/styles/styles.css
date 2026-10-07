@@ -1,8 +1,77 @@
-@import '_modal.css';
-@import '_variables.css';
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import './_modal.css' layer(base);
+@import './_variables.css' layer(base);
+@import 'tailwindcss' source(none);
+@source '../app/**/*.{html,ts}';
+@source '../index.html';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  /* Raios e sombras vêm de _variables.css — evita colisão com o tema default do Tailwind */
+  --radius-*: initial;
+  --shadow-*: initial;
+
+  --color-border-2: #b8ad9a;
+  --color-border: #c8bfaf;
+
+  --color-ink-2: #5c4e3c;
+  --color-ink-3: #8a7a68;
+  --color-ink-4: #b0a090;
+  --color-ink: #3a2e22;
+
+  --color-sage-2: #527a58;
+  --color-sage: #6b8f71;
+
+  --color-terra-2: #9a5339;
+  --color-terra: #b5674a;
+
+  --color-sand-2: #a88d68;
+  --color-sand: #c4a882;
+
+  --color-rust-2: #a34e2c;
+  --color-rust: #c0603a;
+
+  --color-olive-2: #667840;
+  --color-olive: #7a8c4a;
+
+  --color-cream: #faf7f2;
+
+  --color-bg-2: #ede8de;
+  --color-bg-3: #e4ddd1;
+  --color-bg-4: #d9d1c3;
+  --color-bg: #f5f0e8;
+
+  --color-dark-bg: #1e1a14;
+  --color-dark-bg2: #26211a;
+  --color-dark-bg3: #2f2920;
+  --color-dark-bg4: #3a3026;
+  --color-dark-ink: #e8e0d4;
+  --color-dark-ink2: #c8bfaf;
+  --color-dark-ink3: #a89888;
+  --color-dark-border: #4a3f32;
+
+  --font-sans: Inter, system-ui, sans-serif;
+  --font-mono: JetBrains Mono, Courier New, monospace;
+
+}
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+}
 
 /* ── Density tokens animáveis (CSS Houdini @property) ── */
 @property --density-gap {
