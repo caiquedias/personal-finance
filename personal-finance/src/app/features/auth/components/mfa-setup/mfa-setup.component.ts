@@ -79,8 +79,8 @@ type MfaSetupStep = 'setup' | 'verify' | 'recovery' | 'active';
     </div>
   `,
   styles: [`
-    .mfa-page { max-width: 480px; display: flex; flex-direction: column; gap: 16px; }
-    .mfa-title { font-size: 1.25rem; color: var(--ink); }
+    .mfa-page { width: 100%; max-width: 480px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+    .mfa-title { font-size: 1.25rem; color: var(--ink); text-align: center; }
     .mfa-card { display: flex; flex-direction: column; gap: 12px; padding: 20px; }
     .mfa-text { color: var(--ink2); font-size: 0.875rem; }
     .mfa-qr { width: 220px; height: 220px; align-self: center; border-radius: var(--radius); }
