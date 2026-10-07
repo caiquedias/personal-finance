@@ -13,7 +13,8 @@ describe('app routes — MFA', () => {
     const child = shell!.children!.find(c => c.path === 'account/security');
     expect(child).toBeDefined();
     const cmp: any = await (child!.loadComponent as () => Promise<any>)();
-    expect(cmp.name).toBe('MfaSetupComponent');
+    // esbuild pode sufixar o nome da classe (ex.: MfaSetupComponent2) ao desambiguar no bundle de teste
+    expect(cmp.name).toMatch(/^MfaSetupComponent\d*$/);
   });
 
   it('verify não tem rota própria (fica no /login público)', () => {
@@ -49,7 +50,7 @@ describe('app routes — recuperação de conta (#404)', () => {
         const route = routes.find(r => r.path === path);
         expect(route?.loadComponent).toBeDefined();
         const cmp: any = await (route!.loadComponent as () => Promise<any>)();
-        expect(cmp.name).toBe(expectedComponents[path]);
+        expect(cmp.name).toMatch(new RegExp(`^${expectedComponents[path]}\\d*$`));
       });
     });
   });

@@ -74,6 +74,8 @@ correspondente.
 |---|---|---|
 | Repositório / EF Core / migration | **Integration** (`WebApplicationFactory` + InMemory) | único escopo que valida contra o `DbContext` real |
 | Use case, Validator, lógica de negócio pura | **Unit** já basta | mais rápido, sem custo de factory |
+| `package.json` / `package-lock.json` (npm) | `npm ci` limpo em container Linux (`docker run --rm -v <dir com os 2 arquivos>:/app -w /app node:20 npm ci`) além de build e testes | lockfile gerado no Windows omite deps opcionais de outras plataformas e `npm audit fix` pode desalinhar `@angular/*`; `npm ci --dry-run` local não reproduz (#406) |
+| Stack de CSS/build (Tailwind, PostCSS, builder, tema) | Inspecionar o **CSS compilado** (sem diretivas literais, utilitários gerados, tokens sem colisão) | build e testes passam mesmo com o CSS quebrado (#406) |
 
 Rodar Integration sem nenhum arquivo de repositório/migration no diff não adiciona cobertura.
 
