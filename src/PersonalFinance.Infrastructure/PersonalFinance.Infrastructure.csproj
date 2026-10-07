@@ -28,6 +28,9 @@
 
     <!-- Leitura de Excel com suporte a cores de célula (MIT license) -->
     <PackageReference Include="ClosedXML" Version="0.104.1" />
+    <!-- Pin de transitivos do ClosedXML com CVE (GHSA-f32c-w444-8ppv, GHSA-qj66-m88j-hmgj, GHSA-73j8-2gch-69rq) -->
+    <PackageReference Include="System.IO.Packaging" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Bcl.Memory" Version="9.0.14" />
 
     <!-- Leitura de PDF do extrato bancário (Apache-2.0) -->
     <PackageReference Include="PdfPig" Version="0.1.9" />
