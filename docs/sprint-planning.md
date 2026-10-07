@@ -56,6 +56,7 @@ Para issues ainda no `Backlog` que precisam ser planejadas para uma sprint:
 1. Listar issues: `gh issue list --state open --limit 50 --json number,title,body,labels --repo caiquedias/personal-finance`
 2. Explorar codebase — identificar o que existe e o que falta implementar
 3. Para cada issue, definir: Estimativa (h), Prioridade, Size (XS/S/M/L/XL), arquivos afetados
+   - **Issues `[Security]` de dependências/scan:** rodar antes `dotnet list <sln> package --vulnerable --include-transitive` e `npm audit --omit=dev` (em `personal-finance/`) para dimensionar o baseline — baseline sujo vira upgrades e muda o Size (#406: XS → M)
 4. **Issues L/XL ou com >15 arquivos afetados → propor divisão em sub-issues antes de iniciar**
 5. Postar comentário de planejamento na issue:
    ```
@@ -186,6 +187,8 @@ aqui até que uma issue de tooling/infra justifique abrir work item.
 | 2026-10-06 | Flaky de startup tests: `UserTokenOptionsStartupValidationTests.InvalidFrontendBaseUrl_ShouldFailStartup("/relative/path")` falhou 1 de 3 execuções completas (nunca reproduzido depois); 11+ classes em `Integration/` usam `WithWebHostBuilder` sem `[Collection]`/`DisableParallelization` | #404 | Baixa (tooling, S) — `[Collection("StartupFactories")]` com `DisableParallelization` nas classes `*StartupValidationTests` — issue #525 (Backlog) |
 | 2026-10-06 | Sem teste de integração do dispatcher real com timeout do Brevo (só unitários do sender e do dispatcher) | #404 | Baixa |
 | 2026-10-07 | `braces` (GHSA-vfj7-8cjw-p6xm, high, ReDoS) sem versão corrigida upstream, via `karma`/`chokidar` — dev-only (watcher de teste), fora do bundle. O scan de CI usa `npm audit --omit=dev` para o npm. Resolução: migrar testes de Karma/Jasmine para Vitest (`@angular/build:unit-test`) — migração dos ~933 specs, sizing L; issue ainda não aberta por decisão do Caique | #406 | Baixa — issue de migração Karma → Vitest quando priorizada |
+| 2026-10-07 | `security-audit.yml` (gate NuGet) é fail-open: se o feed de vulnerabilidades estiver indisponível, o JSON sai com `problems` e sem pacotes e o job passa verde sem auditar. Opcional: `jq` falhar se `.problems` tiver erro, ou checar NU1900 no restore. Gate cobre só High/Critical (decisão consciente) | #406 | Média — endurecer o gate quando houver issue de tooling |
+| 2026-10-07 | `personal-finance/postcss.config.js` ficou morto após a migração Tailwind 4 (Angular só lê `.postcssrc.json`); `git rm` bloqueado pelo hook em execução autônoma | #406 | Baixa — remover manualmente |
 
 ---
 
