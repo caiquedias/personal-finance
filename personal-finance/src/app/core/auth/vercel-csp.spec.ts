@@ -1,4 +1,5 @@
 import vercelConfig from '../../../../vercel.json';
+import { environment } from '../../../environments/environment.prod';
 
 interface VercelHeader { key: string; value: string }
 interface VercelRule { source: string; headers: VercelHeader[] }
@@ -27,10 +28,33 @@ describe('vercel.json — CSP do SPA', () => {
     expect(script).toBe("script-src 'self'");
   });
 
-  it('connect-src inclui self e o host do Render', () => {
+  it('connect-src inclui self e a origem de environment.prod.apiUrl', () => {
     const connect = directive('connect-src');
     expect(connect).toContain("'self'");
-    expect(connect).toContain('https://personal-finance-zkyj.onrender.com');
+    expect(connect).toContain(new URL(environment.apiUrl).origin);
+  });
+
+  it('style-src mantém unsafe-inline por decisão registrada (nonce inviável em hosting estático)', () => {
+    expect(directive('style-src')).toContain("'unsafe-inline'");
+    expect(directive('script-src')).not.toContain("'unsafe-inline'");
+  });
+
+  it('define HSTS com max-age >= 1 ano e includeSubDomains, sem preload', () => {
+    const hsts = headers.find(h => h.key === 'Strict-Transport-Security')?.value ?? '';
+    expect(hsts).not.toBe('');
+    const maxAge = Number(/max-age=(\d+)/.exec(hsts)?.[1] ?? 0);
+    expect(maxAge).toBeGreaterThanOrEqual(31536000);
+    expect(hsts).toContain('includeSubDomains');
+    expect(hsts).not.toContain('preload');
+  });
+
+  it('define Permissions-Policy negando camera, microphone, geolocation e payment', () => {
+    const pp = headers.find(h => h.key === 'Permissions-Policy')?.value ?? '';
+    expect(pp).not.toBe('');
+    for (const feature of ['camera', 'microphone', 'geolocation', 'payment']) {
+      expect(pp).toContain(`${feature}=()`);
+    }
+    expect(pp).not.toContain('clipboard-write');
   });
 
   it('permite Google Fonts em style-src e font-src', () => {
