@@ -38,6 +38,8 @@ jobs:
 
       - name: Fail on High/Critical
         run: |
+          # JSON inválido deve falhar o step (jq -e), nunca passar em silêncio
+          jq -e . nuget-audit.json > /dev/null
           FOUND=$(jq -r '
             [.projects[]?.frameworks[]? | (.topLevelPackages // [])[], (.transitivePackages // [])[]
               | . as $p | .vulnerabilities[]? | select(.severity == "High" or .severity == "Critical")
@@ -70,5 +72,9 @@ jobs:
       # Só dependências de produção: devDependencies (ex.: braces via karma) não vão para o bundle
       - name: Audit (production)
         run: |
-          npm audit --omit=dev --audit-level=high | tee npm-audit.txt
+          # Sem pipe: preserva o exit code do npm audit e escreve o summary sempre
+          rc=0
+          npm audit --omit=dev --audit-level=high > npm-audit.txt 2>&1 || rc=$?
+          cat npm-audit.txt
           { echo '### npm — vulnerabilidades (produção)'; echo '```'; tail -n 20 npm-audit.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          exit $rc
