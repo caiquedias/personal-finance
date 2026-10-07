@@ -1,10 +1,16 @@
 @import './_modal.css' layer(base);
 @import './_variables.css' layer(base);
-@import 'tailwindcss';
+@import 'tailwindcss' source(none);
+@source '../app/**/*.{html,ts}';
+@source '../index.html';
 
 @custom-variant dark (&:is(.dark *));
 
 @theme {
+  /* Raios e sombras vêm de _variables.css — evita colisão com o tema default do Tailwind */
+  --radius-*: initial;
+  --shadow-*: initial;
+
   --color-border-2: #b8ad9a;
   --color-border: #c8bfaf;
 
@@ -47,15 +53,6 @@
   --font-sans: Inter, system-ui, sans-serif;
   --font-mono: JetBrains Mono, Courier New, monospace;
 
-  --radius-sm: 4px;
-  --radius: 8px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
-
-  --shadow-card: 0 1px 3px rgba(58, 46, 34, 0.08);
-  --shadow-card-hover: 0 4px 12px rgba(58, 46, 34, 0.12);
-  --shadow-modal: 0 8px 32px rgba(58, 46, 34, 0.16);
 }
 
 /*
