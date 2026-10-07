@@ -66,6 +66,15 @@ git branch --show-current
 ```
 O output deve ser `claude/<id>-<slug>`. Se não for, interrompa e reporte ao Macro Agent.
 
+**Commits: `git -C <worktree> commit ...`** — o hook pre-bash avalia o branch pelo cwd do shell e bloqueia `git commit` quando o cwd não é o worktree (ocorrido na #402 em todos os spawns). Use sempre `git -C .claude/worktrees/<id>-<slug> add/commit`.
+
+**Nunca reescrever histórico** (`filter-branch`, `rebase`, `commit --amend`, `reset --hard`) e **nunca mover, apagar
+ou editar arquivos de teste dentro do worktree, nem temporariamente** (#404: testes de outras tasks foram movidos
+para o scratchpad para validar o compile-red, e um `mv` de volta foi negado, exigindo `git checkout`). Se o projeto
+de testes não compila por causa de tasks futuras, valide o que dá (`dotnet build src/PersonalFinance.Api`, `--filter`
+só quando o projeto compila) e reporte "compile-red esperado"; se precisar rodar um subconjunto, faça numa **cópia
+temporária fora do worktree** (scratchpad) — nunca mexa nos arquivos do worktree.
+
 **Toda chamada de Write/Edit usa o caminho absoluto dentro deste worktree** — o `cd` acima só afeta
 o cwd do Bash tool. Path sem o segmento `.claude/worktrees/<id>-<slug>/` escreve na branch base
 silenciosamente, e arquivos novos criados lá ficam untracked, fora do alcance de `rm`/`git clean`

@@ -145,4 +145,21 @@ public class ExceptionMiddlewareTests
 
         ctx.Response.ContentType.Should().Be("application/json");
     }
+
+    [Fact(DisplayName = "ConcurrencyConflictException deve retornar 409 com JSON padrão")]
+    public async Task Invoke_ConcurrencyConflictException_ShouldReturn409()
+    {
+        var middleware = CreateSut(_ => throw new ConcurrencyConflictException());
+        var ctx = CreateContext();
+
+        var (status, body) = await InvokeAsync(middleware, ctx);
+        var json = JsonSerializer.Deserialize<JsonElement>(body);
+
+        status.Should().Be((int)HttpStatusCode.Conflict);
+        ctx.Response.ContentType.Should().Be("application/json");
+        json.GetProperty("status").GetInt32().Should().Be(409);
+        json.GetProperty("error").GetString().Should().NotBeNullOrWhiteSpace();
+        json.GetProperty("message").GetString().Should().Be("O registro foi alterado por outra operação. Tente novamente.");
+        json.TryGetProperty("traceId", out _).Should().BeTrue();
+    }
 }

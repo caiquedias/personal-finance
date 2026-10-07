@@ -1,3 +1,4 @@
+using FluentValidation;
 using PersonalFinance.Application.DTOs.Admin;
 using PersonalFinance.Domain.Entities.Lookup;
 using PersonalFinance.Domain.Exceptions;
@@ -38,16 +39,20 @@ public sealed class CreatePaymentStatusUseCase
 {
     private readonly IPaymentStatusRepository _repository;
     private readonly IUnitOfWork              _uow;
+    private readonly IValidator<CreatePaymentStatusDto> _validator;
 
-    public CreatePaymentStatusUseCase(IPaymentStatusRepository repository, IUnitOfWork uow)
+    public CreatePaymentStatusUseCase(IPaymentStatusRepository repository, IUnitOfWork uow, IValidator<CreatePaymentStatusDto> validator)
     {
         _repository = repository;
         _uow        = uow;
+        _validator  = validator;
     }
 
     public async Task<LookupResponseDto> ExecuteAsync(
         CreatePaymentStatusDto dto, CancellationToken ct = default)
     {
+        await _validator.ValidateAndThrowAsync(dto, ct);
+
         if (string.IsNullOrWhiteSpace(dto.Name))
             throw new DomainException("O nome do status de pagamento é obrigatório.");
 
@@ -73,16 +78,20 @@ public sealed class UpdatePaymentStatusUseCase
 {
     private readonly IPaymentStatusRepository _repository;
     private readonly IUnitOfWork              _uow;
+    private readonly IValidator<UpdatePaymentStatusDto> _validator;
 
-    public UpdatePaymentStatusUseCase(IPaymentStatusRepository repository, IUnitOfWork uow)
+    public UpdatePaymentStatusUseCase(IPaymentStatusRepository repository, IUnitOfWork uow, IValidator<UpdatePaymentStatusDto> validator)
     {
         _repository = repository;
         _uow        = uow;
+        _validator  = validator;
     }
 
     public async Task<LookupResponseDto> ExecuteAsync(
         UpdatePaymentStatusDto dto, CancellationToken ct = default)
     {
+        await _validator.ValidateAndThrowAsync(dto, ct);
+
         if (SeedIds.PaymentStatus.Contains(dto.Id))
             throw new DomainException("Itens de sistema não podem ser alterados.");
 
@@ -153,16 +162,20 @@ public sealed class CreateSourceTypeUseCase
 {
     private readonly ISourceTypeRepository _repository;
     private readonly IUnitOfWork           _uow;
+    private readonly IValidator<CreateSourceTypeDto> _validator;
 
-    public CreateSourceTypeUseCase(ISourceTypeRepository repository, IUnitOfWork uow)
+    public CreateSourceTypeUseCase(ISourceTypeRepository repository, IUnitOfWork uow, IValidator<CreateSourceTypeDto> validator)
     {
         _repository = repository;
         _uow        = uow;
+        _validator  = validator;
     }
 
     public async Task<LookupResponseDto> ExecuteAsync(
         CreateSourceTypeDto dto, CancellationToken ct = default)
     {
+        await _validator.ValidateAndThrowAsync(dto, ct);
+
         if (string.IsNullOrWhiteSpace(dto.Name))
             throw new DomainException("O nome do tipo de fonte é obrigatório.");
 
@@ -183,16 +196,20 @@ public sealed class UpdateSourceTypeUseCase
 {
     private readonly ISourceTypeRepository _repository;
     private readonly IUnitOfWork           _uow;
+    private readonly IValidator<UpdateSourceTypeDto> _validator;
 
-    public UpdateSourceTypeUseCase(ISourceTypeRepository repository, IUnitOfWork uow)
+    public UpdateSourceTypeUseCase(ISourceTypeRepository repository, IUnitOfWork uow, IValidator<UpdateSourceTypeDto> validator)
     {
         _repository = repository;
         _uow        = uow;
+        _validator  = validator;
     }
 
     public async Task<LookupResponseDto> ExecuteAsync(
         UpdateSourceTypeDto dto, CancellationToken ct = default)
     {
+        await _validator.ValidateAndThrowAsync(dto, ct);
+
         if (SeedIds.SourceType.Contains(dto.Id))
             throw new DomainException("Itens de sistema não podem ser alterados.");
 
@@ -261,16 +278,20 @@ public sealed class CreateFortnightTypeUseCase
 {
     private readonly IFortnightTypeRepository _repository;
     private readonly IUnitOfWork              _uow;
+    private readonly IValidator<CreateFortnightTypeDto> _validator;
 
-    public CreateFortnightTypeUseCase(IFortnightTypeRepository repository, IUnitOfWork uow)
+    public CreateFortnightTypeUseCase(IFortnightTypeRepository repository, IUnitOfWork uow, IValidator<CreateFortnightTypeDto> validator)
     {
         _repository = repository;
         _uow        = uow;
+        _validator  = validator;
     }
 
     public async Task<LookupResponseDto> ExecuteAsync(
         CreateFortnightTypeDto dto, CancellationToken ct = default)
     {
+        await _validator.ValidateAndThrowAsync(dto, ct);
+
         if (string.IsNullOrWhiteSpace(dto.Name))
             throw new DomainException("O nome do tipo de quinzena é obrigatório.");
 
@@ -291,16 +312,20 @@ public sealed class UpdateFortnightTypeUseCase
 {
     private readonly IFortnightTypeRepository _repository;
     private readonly IUnitOfWork              _uow;
+    private readonly IValidator<UpdateFortnightTypeDto> _validator;
 
-    public UpdateFortnightTypeUseCase(IFortnightTypeRepository repository, IUnitOfWork uow)
+    public UpdateFortnightTypeUseCase(IFortnightTypeRepository repository, IUnitOfWork uow, IValidator<UpdateFortnightTypeDto> validator)
     {
         _repository = repository;
         _uow        = uow;
+        _validator  = validator;
     }
 
     public async Task<LookupResponseDto> ExecuteAsync(
         UpdateFortnightTypeDto dto, CancellationToken ct = default)
     {
+        await _validator.ValidateAndThrowAsync(dto, ct);
+
         if (SeedIds.FortnightType.Contains(dto.Id))
             throw new DomainException("Itens de sistema não podem ser alterados.");
 

@@ -15,4 +15,7 @@ public interface IUserRepository
     Task AddAsync(User user, CancellationToken ct = default);
     Task UpdateAsync(User user, CancellationToken ct = default);
     Task<IEnumerable<User>> GetAllAsync(CancellationToken ct = default);
+
+    /// <summary>Stamp de sessão atual de um usuário ativo e não removido; null se inexistente/inativo.</summary>
+    Task<Guid?> GetSecurityStampAsync(Guid id, CancellationToken ct = default);
 }

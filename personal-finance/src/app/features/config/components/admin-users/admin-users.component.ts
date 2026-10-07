@@ -55,10 +55,17 @@ export class AdminUsersComponent implements OnInit {
   readonly showCreateModal = signal(false);
   readonly showEditModal   = signal(false);
   readonly showResetModal  = signal(false);
+  readonly showResetMfaModal = signal(false);
 
   readonly createError = signal<string | null>(null);
   readonly editError   = signal<string | null>(null);
   readonly resetError  = signal<string | null>(null);
+
+  // Feedback do reset de MFA (banner na listagem)
+  readonly actionMessage = signal<string | null>(null);
+  readonly actionError   = signal<string | null>(null);
+
+  private actionMessageTimer: ReturnType<typeof setTimeout> | null = null;
 
   nameFilter   = '';
   emailFilter  = '';
@@ -225,6 +232,44 @@ export class AdminUsersComponent implements OnInit {
       next: () => { this.showResetModal.set(false); this.loadingAction.set(false); },
       error: err => { this.resetError.set(err.error?.message ?? 'Erro ao resetar senha.'); this.loadingAction.set(false); },
     });
+  }
+
+  openResetMfa(user: AdminUserResponse): void {
+    this.clearActionMessageTimer();
+    this.actionMessage.set(null);
+    this.actionError.set(null);
+    this.selectedUser.set(user);
+    this.resetError.set(null);
+    this.showResetMfaModal.set(true);
+  }
+
+  onConfirmResetMfa(): void {
+    const user = this.selectedUser();
+    if (!user) return;
+    this.clearActionMessageTimer();
+    this.resetError.set(null);
+    this.loadingAction.set(true);
+    this.api.resetUserMfa(user.id).subscribe({
+      next: () => {
+        this.users.update(list => list.map(u => u.id === user.id ? { ...u, mfaEnabled: false, mfaSetupPending: false } : u));
+        this.showResetMfaModal.set(false);
+        this.actionMessage.set(`MFA de ${user.name} resetado com sucesso.`);
+        this.loadingAction.set(false);
+        // Auto-dismiss do banner de sucesso (erro permanece no modal)
+        this.actionMessageTimer = setTimeout(() => {
+          this.actionMessage.set(null);
+          this.actionMessageTimer = null;
+        }, 5000);
+      },
+      error: err => { this.resetError.set(err.error?.message ?? 'Erro ao resetar MFA.'); this.loadingAction.set(false); },
+    });
+  }
+
+  private clearActionMessageTimer(): void {
+    if (this.actionMessageTimer !== null) {
+      clearTimeout(this.actionMessageTimer);
+      this.actionMessageTimer = null;
+    }
   }
 
   formatDate(d: string): string {

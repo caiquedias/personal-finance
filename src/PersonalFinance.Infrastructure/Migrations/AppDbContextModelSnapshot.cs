@@ -22,6 +22,127 @@ namespace PersonalFinance.Infrastructure.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("PersonalFinance.Domain.Entities.Auth.AuditLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Action")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("ActorUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(7)");
+
+                    b.Property<string>("Details")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("IpAddress")
+                        .HasMaxLength(45)
+                        .HasColumnType("nvarchar(45)");
+
+                    b.Property<Guid>("TargetUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActorUserId");
+
+                    b.HasIndex("CreatedAt")
+                        .HasDatabaseName("IX_AuditLog_CreatedAt");
+
+                    b.HasIndex("TargetUserId")
+                        .HasDatabaseName("IX_AuditLog_TargetUserId");
+
+                    b.ToTable("AuditLog", (string)null);
+                });
+
+            modelBuilder.Entity("PersonalFinance.Domain.Entities.Auth.LoginThrottle", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("FailedCount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("IpAddress")
+                        .IsRequired()
+                        .HasMaxLength(45)
+                        .HasColumnType("nvarchar(45)");
+
+                    b.Property<DateTime?>("LockedUntil")
+                        .HasColumnType("datetime2(7)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("WindowStart")
+                        .HasColumnType("datetime2(7)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("WindowStart")
+                        .HasDatabaseName("IX_LoginThrottle_WindowStart");
+
+                    b.HasIndex("UserId", "IpAddress")
+                        .IsUnique()
+                        .HasDatabaseName("IX_LoginThrottle_UserId_IpAddress");
+
+                    b.ToTable("LoginThrottle", (string)null);
+                });
+
+            modelBuilder.Entity("PersonalFinance.Domain.Entities.Auth.MfaRecoveryCode", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("Id");
+
+                    b.Property<string>("CodeHash")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("nvarchar(512)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(7)")
+                        .HasColumnName("CreatedAt");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2(7)")
+                        .HasColumnName("DeletedAt");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true)
+                        .HasColumnName("IsActive");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2(7)")
+                        .HasColumnName("UpdatedAt");
+
+                    b.Property<DateTime?>("UsedAt")
+                        .HasColumnType("datetime2(7)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("IX_MfaRecoveryCode_UserId");
+
+                    b.ToTable("MfaRecoveryCode", (string)null);
+                });
+
             modelBuilder.Entity("PersonalFinance.Domain.Entities.Auth.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -41,11 +162,44 @@ namespace PersonalFinance.Infrastructure.Migrations
                         .HasColumnType("nvarchar(200)")
                         .HasColumnName("Email");
 
+                    b.Property<DateTime?>("EmailConfirmedAt")
+                        .HasColumnType("datetime2(7)")
+                        .HasColumnName("EmailConfirmedAt");
+
+                    b.Property<int>("FailedLoginCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0)
+                        .HasColumnName("FailedLoginCount");
+
                     b.Property<bool>("IsActive")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
                         .HasDefaultValue(true)
                         .HasColumnName("IsActive");
+
+                    b.Property<long?>("LastUsedTotpStep")
+                        .HasColumnType("bigint")
+                        .HasColumnName("LastUsedTotpStep");
+
+                    b.Property<DateTime?>("LockedUntil")
+                        .HasColumnType("datetime2(7)")
+                        .HasColumnName("LockedUntil");
+
+                    b.Property<bool>("MfaEnabled")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false)
+                        .HasColumnName("MfaEnabled");
+
+                    b.Property<DateTime?>("MfaEnabledAt")
+                        .HasColumnType("datetime2(7)")
+                        .HasColumnName("MfaEnabledAt");
+
+                    b.Property<string>("MfaSecretEncrypted")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)")
+                        .HasColumnName("MfaSecretEncrypted");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -56,6 +210,17 @@ namespace PersonalFinance.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(512)")
                         .HasColumnName("PasswordHash");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion")
+                        .HasColumnName("RowVersion");
+
+                    b.Property<Guid>("SecurityStamp")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("SecurityStamp");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2(7)")
@@ -95,6 +260,55 @@ namespace PersonalFinance.Infrastructure.Migrations
                         .HasDatabaseName("IX_UserRole_UserId");
 
                     b.ToTable("UserRole", (string)null);
+                });
+
+            modelBuilder.Entity("PersonalFinance.Domain.Entities.Auth.UserToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Attempts")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2(7)");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("datetime2(7)");
+
+                    b.Property<bool>("IsInvalidated")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<int>("Purpose")
+                        .HasColumnType("int");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<DateTime?>("UsedAt")
+                        .HasColumnType("datetime2(7)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "Purpose")
+                        .HasDatabaseName("IX_UserToken_UserId_Purpose");
+
+                    b.ToTable("UserToken", (string)null);
                 });
 
             modelBuilder.Entity("PersonalFinance.Domain.Entities.Config.Category", b =>
@@ -643,7 +857,49 @@ namespace PersonalFinance.Infrastructure.Migrations
                         });
                 });
 
+            modelBuilder.Entity("PersonalFinance.Domain.Entities.Auth.AuditLog", b =>
+                {
+                    b.HasOne("PersonalFinance.Domain.Entities.Auth.User", null)
+                        .WithMany()
+                        .HasForeignKey("ActorUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("PersonalFinance.Domain.Entities.Auth.User", null)
+                        .WithMany()
+                        .HasForeignKey("TargetUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("PersonalFinance.Domain.Entities.Auth.LoginThrottle", b =>
+                {
+                    b.HasOne("PersonalFinance.Domain.Entities.Auth.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("PersonalFinance.Domain.Entities.Auth.MfaRecoveryCode", b =>
+                {
+                    b.HasOne("PersonalFinance.Domain.Entities.Auth.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("PersonalFinance.Domain.Entities.Auth.UserRole", b =>
+                {
+                    b.HasOne("PersonalFinance.Domain.Entities.Auth.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("PersonalFinance.Domain.Entities.Auth.UserToken", b =>
                 {
                     b.HasOne("PersonalFinance.Domain.Entities.Auth.User", null)
                         .WithMany()

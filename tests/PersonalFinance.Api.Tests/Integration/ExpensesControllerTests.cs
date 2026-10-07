@@ -138,7 +138,7 @@ namespace PersonalFinance.Api.Tests.Integration
                 description = "Atualizado",
                 amount = 200.00,
                 dueDate = "2026-08-15",
-                paymentStatus = 1
+                status = 1
             });
 
             r.StatusCode.Should().Be(HttpStatusCode.NoContent);

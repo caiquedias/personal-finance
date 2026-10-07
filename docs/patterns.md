@@ -50,5 +50,21 @@ animations: [
 | Interface reescrita perde métodos | ZIP sobrescreve sem consultar código atual | Nunca reescrever interfaces — sempre `str_replace` |
 | `MarkAsPaid` rejeita data futura | Validação na entidade | Usar `UtcNow.AddDays(-1)` nos testes |
 | `HasData` não popula InMemory | EF Core HasData é SQL only | `SeedLookupData()` manual na factory |
+| Tailwind 4 não compila (diretivas literais no CSS final) | `@angular/build` só lê `.postcssrc.json`/`postcss.config.json`, ignora `postcss.config.js` | `personal-finance/.postcssrc.json` com `@tailwindcss/postcss` (#406) |
+| `@theme` do Tailwind sobrescreve `--radius*`/`--shadow*` de `_variables.css` | camada `theme` vence `base`; Tailwind 4 emite defaults de qualquer `var(--radius-*)` usado | `--radius-*: initial; --shadow-*: initial;` no `@theme` + `@import 'tailwindcss' source(none)` com `@source` explícito (#406) |
+| `npm ci` falha no CI com ERESOLVE (`@angular/animations` peer `core@21.2.7`) | `npm audit fix` atualizou só parte dos `@angular/*` | `npm update` dos pacotes desalinhados até todos na mesma versão do core (#406) |
+| `npm ci` falha no Linux com `@emnapi/*` ausentes | lockfile gerado no Windows omite deps opcionais wasm (`@tailwindcss/oxide-wasm32-wasi`) | `@emnapi/core`, `@emnapi/runtime`, `@emnapi/wasi-threads` como devDependencies diretas; validar com `npm ci` em container `node:20` (#406) |
+| Spec compara `cmp.name` e falha com `XComponent2` | esbuild sufixa o nome da classe ao desambiguar | `toMatch(/^XComponent\d*$/)` (#406) |
 | Produto cartesiano na `vw_PeriodSummary` | JOIN duplo Income + Expense | Subconsultas separadas por entidade |
 | B4/C4 sem fórmula no parser Excel | Planilha salva sem fórmulas | Fallback via `TryGetValue()` na célula |
+
+## Exceção ao soft-delete: `LoginThrottle` (#391)
+
+`LoginThrottle` (contador de falhas de login por conta + IP) é tabela efêmera: **exclusão física**,
+sem `DeletedAt` nem `HasQueryFilter`. Motivo: soft-delete acumularia linhas indefinidamente e um
+atacante poderia inflar a tabela. Linhas expiradas são removidas em lote antes de inserir um par novo
+(teto duro de 2.000 linhas; lockouts ativos nunca são apagados; tabela cheia de bloqueios ativos →
+fail-open do rastreio por par, seguindo só o teto global da conta).
+
+**LGPD:** o IP é dado pessoal. Retenção = janela do lockout (`LockoutMinutes`); depois disso a linha
+é elegível à remoção física na próxima inserção, e é removida imediatamente no login com sucesso.

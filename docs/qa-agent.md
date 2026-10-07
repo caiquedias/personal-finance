@@ -50,6 +50,10 @@ git diff --name-only HEAD~<n>..HEAD
   Ausência dessa asserção é `GAP_REPORT` do tipo cobertura
 - **Cada disjunto de condição composta exercitado**: `A || B || C` com testes que só satisfazem `A`
   e `B` deixa o ramo `C` sem prova nenhuma — cobertura de condição parcial
+- **Retry/concorrência (rowversion, índice único)**: o teste com mock de `IUnitOfWork` ou InMemory não
+  prova que o retry funciona com EF real. Conferir por leitura que, após a falha de commit, o
+  `DbContext` scoped não devolve entidades stale (tracker limpo / releitura do banco) e registrar como
+  limitação conhecida o que só é validável em SQL Server (#391)
 
 ## Somente-leitura é absoluto — mesmo em infraestrutura de teste local
 

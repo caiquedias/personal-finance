@@ -2,6 +2,7 @@ using ClosedXML.Excel;
 using PersonalFinance.Application.DTOs.Import;
 using PersonalFinance.Application.Interfaces;
 using PersonalFinance.Domain.Enums;
+using PersonalFinance.Domain.Exceptions;
 using System.Text.RegularExpressions;
 
 namespace PersonalFinance.Infrastructure.Services;
@@ -86,7 +87,34 @@ public sealed class ExcelParserService : IExcelParserService
         Stream fileStream,
         CancellationToken ct = default)
     {
-        using var workbook = new XLWorkbook(fileStream);
+        var stream = EnsureSeekable(fileStream);
+
+        // Valida assinatura ZIP (PK\x03\x04) — .xlsx é um pacote OOXML/ZIP
+        var header = new byte[ZipSignature.Length];
+        var read = 0;
+        while (read < header.Length)
+        {
+            var n = stream.Read(header, read, header.Length - read);
+            if (n == 0) break;
+            read += n;
+        }
+
+        if (read < ZipSignature.Length || !header.AsSpan().SequenceEqual(ZipSignature))
+            throw new DomainException(InvalidFileMessage);
+
+        stream.Position = 0;
+
+        XLWorkbook workbook;
+        try
+        {
+            workbook = new XLWorkbook(stream);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException and not DomainException)
+        {
+            throw new DomainException(InvalidFileMessage, ex);
+        }
+
+        using var _ = workbook;
         var result = new List<ParsedSheetDto>();
 
         foreach (var sheet in workbook.Worksheets)
@@ -97,6 +125,24 @@ public sealed class ExcelParserService : IExcelParserService
         }
 
         return Task.FromResult<IReadOnlyList<ParsedSheetDto>>(result);
+    }
+
+    private static readonly byte[] ZipSignature = { 0x50, 0x4B, 0x03, 0x04 };
+    private const string InvalidFileMessage = "O arquivo enviado não é um .xlsx válido.";
+
+    // Garante stream com seek; copia para memória quando necessário
+    private static Stream EnsureSeekable(Stream source)
+    {
+        if (source.CanSeek)
+        {
+            source.Position = 0;
+            return source;
+        }
+
+        var ms = new MemoryStream();
+        source.CopyTo(ms);
+        ms.Position = 0;
+        return ms;
     }
 
     // ── Parser de aba ─────────────────────────────────────────────────────────

@@ -49,12 +49,25 @@ public static class InfrastructureExtensions
         services.AddScoped<ISourceTypeRepository, SourceTypeRepository>();
         services.AddScoped<IFortnightTypeRepository, FortnightTypeRepository>();
         services.AddScoped<IUserRoleRepository, UserRoleRepository>();
+        services.AddScoped<ILoginThrottleRepository, LoginThrottleRepository>();
+        services.AddScoped<IAuditLogRepository, AuditLogRepository>();
         services.AddScoped<IAdminUserRepository, AdminUserRepository>();
 
         // ── Auth ──────────────────────────────────────────────────────────────
         services.Configure<JwtSettings>(configuration.GetSection("JwtSettings"));
         services.AddScoped<IPasswordHasher, Argon2PasswordHasher>();
         services.AddScoped<ITokenService, JwtTokenService>();
+
+        // MFA/TOTP (#393): cifra do secret (AES-256-GCM) e serviço TOTP. As options Auth:Mfa
+        // (com validação no startup) são registradas em AddApplicationUseCases.
+        services.AddScoped<IMfaRecoveryCodeRepository, MfaRecoveryCodeRepository>();
+        services.AddSingleton<ITotpService, TotpService>();
+        services.AddSingleton<ISecretProtector, AesGcmSecretProtector>();
+
+        // Reset de senha / verificação de e-mail (#404). As options Auth:UserTokens são registradas na Api (task 11).
+        services.AddScoped<IUserTokenRepository, UserTokenRepository>();
+        services.AddSingleton<IOneTimeCodeService, HmacOneTimeCodeService>();
+        services.AddSingleton<IEmailQueue, ChannelEmailQueue>();
 
         // ── Import (legado Excel) ─────────────────────────────────────────────────────
         services.AddScoped<IExcelParserService, ExcelParserService>();

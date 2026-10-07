@@ -6,15 +6,36 @@ export interface RegisterRequest {
   password: string;
 }
 
+export interface ForgotPasswordRequest       { email: string; }
+export interface PasswordResetConfirmRequest { email: string; code: string; newPassword: string; }
+export interface ConfirmEmailRequest         { email: string; code: string; }
+export interface ResendConfirmationRequest   { email: string; }
+export interface GenericMessageResponse      { message: string; }
+
 export interface LoginRequest {
   email:    string;
   password: string;
 }
 
 export interface LoginResponse {
-  token: string;
+  token: string | null;
   name:  string;
   email: string;
+  mfaRequired?: boolean;
+  mfaToken?: string | null;
+}
+
+export interface MfaVerifyRequest {
+  code: string;
+}
+
+export interface MfaSetupResponse {
+  secret:     string;
+  otpAuthUri: string;
+}
+
+export interface EnableMfaResponse {
+  recoveryCodes: string[];
 }
 
 export interface UserResponse {
@@ -261,6 +282,8 @@ export interface AdminUserResponse {
   isDeleted: boolean;
   createdAt: string;
   roles:     string[];
+  mfaEnabled:      boolean;
+  mfaSetupPending: boolean;
 }
 
 export interface AssignRoleRequest       { roleId: number; }

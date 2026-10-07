@@ -56,6 +56,7 @@ Para issues ainda no `Backlog` que precisam ser planejadas para uma sprint:
 1. Listar issues: `gh issue list --state open --limit 50 --json number,title,body,labels --repo caiquedias/personal-finance`
 2. Explorar codebase — identificar o que existe e o que falta implementar
 3. Para cada issue, definir: Estimativa (h), Prioridade, Size (XS/S/M/L/XL), arquivos afetados
+   - **Issues `[Security]` de dependências/scan:** rodar antes `dotnet list <sln> package --vulnerable --include-transitive` e `npm audit --omit=dev` (em `personal-finance/`) para dimensionar o baseline — baseline sujo vira upgrades e muda o Size (#406: XS → M)
 4. **Issues L/XL ou com >15 arquivos afetados → propor divisão em sub-issues antes de iniciar**
 5. Postar comentário de planejamento na issue:
    ```
@@ -87,14 +88,25 @@ por classe é regra obrigatória, não só a feature).
 
 > Size decide divisão de escopo, não estimativa de tempo — ver "Fórmula de Estimativa" abaixo.
 
+> **Infra base antes do sizing:** em issue "filha" (ex.: `Parte de #N`), conferir se a infra que ela
+> assume (pacote, registro DI, middleware, ponto de invocação) já existe no código. Se não existir,
+> contá-la no sizing ou criar issue de base antes. Caso real: #396 foi estimada M (~8-10 arquivos) e
+> entregou 35 porque o FluentValidation não existia no projeto.
+
+> **Escopo já entregue pela issue pai:** conferir também o inverso — se o que a issue "filha" pede já existe
+> em `develop` (escopo ampliado da pai). Caso real: #405 pedia as telas de reset que a #404 já entregara;
+> virou limpeza de débitos + banner (Size L, ~16 arquivos) em vez de duplicar componentes.
+
 ---
 
 ## Fórmula de Estimativa
 
-> **Última calibração:** 2026-09-28 · n=2 issues com codificação medida
-> **Origem dos números:** sem prior herdado de outro projeto — amostra local ainda pequena (n=2, alvo
-> ~10). Fórmula sugerida pelo script: codificação mediana 5min (p75 6min) + piso de orquestração 2min
-> = 7min por issue; sem correlação calculável entre nº de arquivos e tempo. Tratar como indicativo.
+> **Última calibração:** 2026-10-05 · n=23 issues com codificação medida
+> **Origem dos números:** amostra local (n=23, 11 issues novas desde 2026-10-02). Fórmula sugerida pelo
+> script: codificação mediana 4min (p75 8min, p90 25min) + piso de orquestração 9min = 13min por issue;
+> correlação entre nº de arquivos e tempo no limiar do sinal (Pearson 0,404; Spearman 0,417), mas as medianas
+> por bucket de Size seguem não-monotônicas — Size segue só para divisão de escopo. Maioria das issues com 0
+> ciclos de retrabalho (15 de 23). Tratar como indicativo.
 
 Até a primeira calibração, `Estimativa: Xh` do comentário de planning continua sendo um número
 definido manualmente por Caique/PO — **não** deriva do Size (correlação entre nº de arquivos e
@@ -141,7 +153,8 @@ ela for planejada.
 
 | Issue | Decisão | Motivo | Bloqueia |
 |---|---|---|---|
-| — | — | — | — |
+| #391 | IP > 45 chars faz `LoginThrottle.Create` lançar `DomainException("IP inválido.")` após senha errada, devolvendo mensagem diferente de "Credenciais inválidas." (oráculo). Mitigação futura: truncar/normalizar o IP no controller | Review do ciclo 3 | Não |
+| #391 | O `Verify` real do Argon2 é refeito a cada tentativa do retry de concorrência (custo de CPU) | Review do ciclo 3 | Não |
 
 ---
 
@@ -152,7 +165,30 @@ aqui até que uma issue de tooling/infra justifique abrir work item.
 
 | Data | Achado | Origem | Ação sugerida / status |
 |---|---|---|---|
-| — | — | — | — |
+| 2026-10-02 | #391 resolvido no ciclo 2: ForwardedHeaders só de redes privadas, rowversion + retry no contador, Verify dummy (inexistente/bloqueado/inativo), validação das options no startup, Retry-After no 429, lockout por (conta, IP) com teto global | #391 | Resolvido |
+| 2026-10-02 | Risco residual: atacante com MUITOS IPs ainda pode atingir o teto global (`GlobalMaxFailedAttempts`, default 50) e bloquear a conta da vítima por `LockoutMinutes` | #391 | Aceito; mitigação futura: CAPTCHA/notificação ao usuário |
+| 2026-10-02 | Risco residual: contador global do `User` sem coluna de janela — zera só no sucesso ou após expirar o lockout | #391 | Aceito |
+| 2026-10-02 | Risco residual: tabela de throttle cheia de bloqueios ativos → rastreio por (conta, IP) em fail-open (só teto global) | #391 | Aceito (fail-closed permitiria negar login a todos) |
+| 2026-10-02 | `/mfa/disable` e `/mfa/enable` sem rate limit nem contagem de falhas no lockout — token completo roubado pode tentar senha sem limite (disable ainda exige senha E código) | #393 | Média — policy de rate limit + contagem de falhas |
+| 2026-10-02 | `code` sem limite de tamanho antes do Argon2 em Verify/Disable (até 10 verificações por falha) | #393 | Baixa — rejeitar `code` > 16 chars antes de hashear |
+| 2026-10-02 | FE MFA: build avisa `qrcode` não-ESM (`allowedCommonJsDependencies`); `package.json` com reordenação cosmética de chaves; 400 do `/mfa/setup` exibe erro acima do card "ativo"; confirmar que o interceptor ignora 401 em `/auth/` no verify; `as any` no spy do `qr-code.service.spec` | #394 | Baixa — não tratado na #405 (qrcode/allowedCommonJsDependencies e `as any` seguem pendentes); interceptor/401 fora do escopo |
+| 2026-10-02 | `Unprotect` com chave rotacionada/secret corrompido vira 500 no verify/disable | #393 | Baixa — erro controlado + procedimento de reset (#479) |
+| 2026-10-02 | Respostas de `/mfa/setup` e `/mfa/enable` sem `Cache-Control: no-store` | #393 | Baixa |
+| 2026-10-02 | `Program.cs` importa namespace do controller só para ler `MfaVerifyController.ChallengeScheme` | #393 | Baixa (cosmético) |
+| 2026-10-02 | Deploy: sem `Auth__Mfa__EncryptionKey` a app não sobe em nenhum ambiente — criar a variável no Render antes do merge em `master` | #393 | Lembrete |
+| 2026-10-06 | Deploy: sem `Auth__UserTokens__HmacKey` (Base64 de 32 bytes) a app não sobe em nenhum ambiente — criar no Render antes do merge em `master`, junto de `Email__Brevo__ApiKey/SenderEmail/SenderName`, `Email__Enabled=true`, `App__FrontendBaseUrl` (https, sem barra final) e `Auth__EmailVerification__Enforce=false` (só ligar após validar em release e conferir que nenhum usuário ficou com `EmailConfirmedAt` nulo) | #404 | Lembrete |
+| 2026-10-06 | Risco residual: fila de e-mail em memória perde mensagens em restart/spin-down do Render (usuário pode reenviar); remetente sem domínio próprio no Brevo pode cair em spam (DMARC) | #404 | Aceito; mitigação futura: domínio próprio com SPF/DKIM/DMARC |
+| 2026-10-06 | Resolvido no ciclo de correção: Brevo validado no startup com `Email:Enabled=true` + timeout 15s; corrida no issuer/register/forgot/resend vira 202 genérico (sem 409); HMAC e leitura dummy no complete/confirm para usuário inexistente/inativo/removido | #404 | Resolvido |
+| 2026-10-06 | Risco residual: a equalização de timing do complete/confirm é aproximada — usuário real com código errado ainda faz commit do contador de tentativas; mitigado por rate limit por IP e resposta idêntica | #404 | Aceito |
+| 2026-10-06 | Cooldown do `UserTokenIssuer` não é atômico (requisições paralelas passam pela checagem e disparam vários e-mails; só o token mais recente vale); em cooldown, o `PasswordResetRequested` não é persistido (auditoria só da 1ª solicitação por janela); no conflito de commit o AuditLog adicionado antes é descartado pelo `ChangeTracker.Clear()`; qualquer violação de unicidade no commit do issuer vira `false` silencioso | #404 | Baixa — mitigação futura: índice único (UserId, Purpose) com tratamento de conflito |
+| 2026-10-06 | Os 4 endpoints de recuperação dividem a policy `account-recovery` (5 req/min por IP); em NAT compartilhado pode dar 429 legítimo | #404 | Baixa — configurável por `RateLimiting__AccountRecovery__*` |
+| 2026-10-06 | `RunDummyVerificationAsync` duplicado em `ConfirmEmailUseCase` e `CompletePasswordResetUseCase`; `RegisterUserUseCase._unitOfWork` sem uso (ctor exigido pelos testes) | #404 | Baixa — extrair helper e remover o campo junto com os testes |
+| 2026-10-06 | FE: `AuthService.register` ainda tipado `Observable<UserResponse>` (API devolve 202 `{ message }`, sem caller no app); links "Esqueci minha senha"/"Confirmar e-mail" também aparecem no passo MFA do login; campo do código aceita letras na digitação (só a validação bloqueia); `.login-register` CSS morto pré-existente | #404 | Resolvido na #405 |
+| 2026-10-06 | Flaky de startup tests: `UserTokenOptionsStartupValidationTests.InvalidFrontendBaseUrl_ShouldFailStartup("/relative/path")` falhou 1 de 3 execuções completas (nunca reproduzido depois); 11+ classes em `Integration/` usam `WithWebHostBuilder` sem `[Collection]`/`DisableParallelization` | #404 | Baixa (tooling, S) — `[Collection("StartupFactories")]` com `DisableParallelization` nas classes `*StartupValidationTests` — issue #525 (Backlog) |
+| 2026-10-06 | Sem teste de integração do dispatcher real com timeout do Brevo (só unitários do sender e do dispatcher) | #404 | Baixa |
+| 2026-10-07 | `braces` (GHSA-vfj7-8cjw-p6xm, high, ReDoS) sem versão corrigida upstream, via `karma`/`chokidar` — dev-only (watcher de teste), fora do bundle. O scan de CI usa `npm audit --omit=dev` para o npm. Resolução: migrar testes de Karma/Jasmine para Vitest (`@angular/build:unit-test`) — migração dos ~933 specs, sizing L; issue ainda não aberta por decisão do Caique | #406 | Baixa — issue de migração Karma → Vitest quando priorizada |
+| 2026-10-07 | `security-audit.yml` (gate NuGet) é fail-open: se o feed de vulnerabilidades estiver indisponível, o JSON sai com `problems` e sem pacotes e o job passa verde sem auditar. Opcional: `jq` falhar se `.problems` tiver erro, ou checar NU1900 no restore. Gate cobre só High/Critical (decisão consciente) | #406 | Média — endurecer o gate quando houver issue de tooling |
+| 2026-10-07 | `personal-finance/postcss.config.js` ficou morto após a migração Tailwind 4 (Angular só lê `.postcssrc.json`); `git rm` bloqueado pelo hook em execução autônoma | #406 | Baixa — remover manualmente |
 
 ---
 
@@ -163,4 +199,9 @@ especificação — inclusive as recalibrações da fórmula de estimativa.
 
 | Data | Decisão | Onde está documentada |
 |---|---|---|
-| — | — | — |
+| 2026-10-02 | Recalibração da fórmula de estimativa: codificação mediana 5min → 4min, piso de orquestração 2min → 4min, total 7min → 8min por issue (n=2 → 12); correlação nº de arquivos × tempo continua inexistente | `Fórmula de Estimativa` (acima) e `node scripts/calibrate-estimates.js` |
+| 2026-10-05 | Recalibração da fórmula de estimativa: codificação mediana 4min (p75 6min → 8min), piso de orquestração 4min → 9min, total 8min → 13min por issue (n=12 → 23); correlação nº de arquivos × tempo no limiar (Pearson 0,404), medianas por Size ainda não-monotônicas | `Fórmula de Estimativa` (acima) e `node scripts/calibrate-estimates.js` |
+| 2026-10-06 | #402 (XL, ~43 arquivos) mantida sem divisão em sub-issues por decisão do Caique (sessão única); Estimativa 1h gerada pelo PO na própria sessão; `/start-issue` passou a gerar o planning via PO quando a issue não tem estimativa | `docs/memory/402.md` e `.claude/commands/start-issue.md` |
+| 2026-10-06 | #404 (XL, ~98 arquivos, backend + frontend) mantida sem divisão em sub-issues por decisão do Caique (sessão única); Estimativa 3h gerada pelo PO após 3 rodadas de análise (escopo cresceu de ~20 para ~98 arquivos ao fechar fila de e-mail, HMAC, enforcement de login, correção de enumeração no register e telas Angular); planning postado na issue após OK do Caique | Comentário `## 📋 Sprint Planning` da #404 |
+| 2026-10-06 | Melhorias de fluxo da #404 aplicadas: PO passa a listar validação de options + timeout do `HttpClient` quando a issue integra provedor externo; `/start-issue` (Passo 2.5) exige no contexto o tratamento de `ConcurrencyConflictException` e custo equivalente nos fluxos anti-enumeração; Red e Green proibidos de reescrever histórico, e Green de mover/editar testes no worktree; flaky de startup tests virou a issue #525 | `.claude/agents/{po,implementer-red,implementer-green}.md`, `.claude/commands/start-issue.md` e `docs/memory/404.md` |
+| 2026-10-06 | #405 (L, ~16 arquivos) mantida sem divisão por decisão do Caique (sessão única); escopo original já entregue pela #404, issue reaproveitada para débitos de FE + banner; melhoria de fluxo aplicada: PO confere se o escopo da issue "filha" já foi entregue pela pai antes da análise | `.claude/agents/po.md`, `docs/sprint-planning.md` e `docs/memory/405.md` |
