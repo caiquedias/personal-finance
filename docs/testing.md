@@ -135,3 +135,11 @@ seguinte" usar offset +30s, sempre dentro da janela ±1 do servidor. Preferir re
 Antes de asserir sobre dados criados por um helper de fixture (roles, claims, defaults), conferir no
 código de produção o que o caminho usado realmente grava — ex.: `RegisterUserUseCase` não atribui role
 (só `CreateUserByAdminUseCase` atribui "User"), então um JWT de usuário registrado não tem claim de role (#393).
+
+## Formulários — submeter o `<form>` real, não chamar o handler (#515)
+
+Em spec de componente com `<form>`, dispare o evento `submit` no elemento
+(`form.dispatchEvent(new Event('submit', { cancelable: true }))`) e verifique a chamada ao serviço **e**
+`event.defaultPrevented`. Chamar `component.onSubmit()` direto não prova que o template está ligado: na #394,
+`<form (ngSubmit)>` sem `[formGroup]`/`NgForm` nunca disparava e o navegador recarregava a página — o spec
+passava porque invocava `confirm()` diretamente.

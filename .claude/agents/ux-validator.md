@@ -22,6 +22,8 @@ Você tem **acesso de somente leitura e execução do app** — não edite nenhu
 
 - Verificar rotas em `app.routes.ts` — todas acessíveis e lazy-loaded corretamente
 - Verificar navegação: CTAs apontando para o destino correto, `routerLink` corretos
+- Verificar formulários: todo `<form (ngSubmit)>` precisa de `[formGroup]` ou `NgForm`; sem isso o evento não dispara e o submit nativo recarrega a página (#394/#515). Checar com `grep -rn "ngSubmit" <componente>` e, com o app rodando, submeter o form e confirmar que a request sai (sem recarga)
+- Verificar alcance: toda rota nova acessível por menu/CTA (não só digitando a URL) e layout centralizado/responsivo como as demais telas
 - Verificar estrutura de componentes standalone — sem NgModules indevidos
 - Verificar `ThemeService` dark/light não quebrado nas novas telas
 - Verificar `authInterceptor` — rotas protegidas redirecionam para login quando sem token
