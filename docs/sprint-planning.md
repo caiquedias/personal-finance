@@ -56,6 +56,7 @@ Para issues ainda no `Backlog` que precisam ser planejadas para uma sprint:
 1. Listar issues: `gh issue list --state open --limit 50 --json number,title,body,labels --repo caiquedias/personal-finance`
 2. Explorar codebase — identificar o que existe e o que falta implementar
 3. Para cada issue, definir: Estimativa (h), Prioridade, Size (XS/S/M/L/XL), arquivos afetados
+   - **Issues `[Security]` de dependências/scan:** rodar antes `dotnet list <sln> package --vulnerable --include-transitive` e `npm audit --omit=dev` (em `personal-finance/`) para dimensionar o baseline — baseline sujo vira upgrades e muda o Size (#406: XS → M)
 4. **Issues L/XL ou com >15 arquivos afetados → propor divisão em sub-issues antes de iniciar**
 5. Postar comentário de planejamento na issue:
    ```
